@@ -2,7 +2,7 @@ export type PlanType = 'free_trial' | 'starter' | 'pro'
 
 export type CraftType = 'cross_stitch' | 'goblene' | 'diamond'
 
-export type CanvasType = '11CT' | '14CT'
+export type CanvasType = '11CT' | '14CT' | '16CT' | '18CT'
 
 export interface DmcColor {
   id: number

@@ -6,6 +6,8 @@ import type { CraftType, CanvasType, GeneratedSchema, ColorUsage } from '@/types
 const CANVAS_CONFIG = {
   '11CT': { stitchesPerCm: 4.3, strands: 3 },
   '14CT': { stitchesPerCm: 5.5, strands: 2 },
+  '16CT': { stitchesPerCm: 6.3, strands: 2 },
+  '18CT': { stitchesPerCm: 7.1, strands: 1 },
 }
 
 // Skein-uri necesare: 1 skein = ~8m, un punct folosește ~4cm de ață

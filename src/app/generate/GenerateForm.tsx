@@ -165,7 +165,12 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
                 <h2 className="font-semibold text-gray-900 mb-4">3. Canvas</h2>
                 <div className="grid grid-cols-2 gap-3 mb-4">
-                  {(['11CT', '14CT'] as const).map(ct => (
+                  {([
+                    { ct: '11CT', strands: '3 fire', desc: '4.3 pt/cm — relaxat' },
+                    { ct: '14CT', strands: '2 fire', desc: '5.5 pt/cm — standard' },
+                    { ct: '16CT', strands: '2 fire', desc: '6.3 pt/cm — fin' },
+                    { ct: '18CT', strands: '1 fir',  desc: '7.1 pt/cm — foarte fin' },
+                  ] as const).map(({ ct, strands, desc }) => (
                     <button
                       key={ct}
                       onClick={() => changeSetting(() => setCanvasType(ct))}
@@ -174,13 +179,11 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
                       }`}
                     >
                       <div className="font-bold text-gray-900">{ct}</div>
-                      <div className="text-xs text-gray-500">{ct === '11CT' ? '3 fire ață' : '2 fire ață'}</div>
+                      <div className="text-xs text-violet-600">{strands}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400">
-                  {canvasType === '11CT' ? '4.3 puncte/cm — lucrare mai relaxată' : '5.5 puncte/cm — detalii mai fine'}
-                </p>
               </div>
             )}
 
