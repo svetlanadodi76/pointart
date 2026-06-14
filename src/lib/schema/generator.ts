@@ -10,8 +10,8 @@ const CANVAS_CONFIG = {
   '18CT': { stitchesPerCm: 7.1, strands: 1 },
 }
 
-// Skein-uri necesare: 1 skein = ~8m, un punct folosește ~4cm de ață
-const CM_PER_STITCH = 4
+// 1 sculă DMC = 8m = 800cm. Un punct consumă ~1.5cm de ață per fir (diagonala 14CT × 4 brațe + overhead)
+const CM_PER_STITCH = 1.5
 const METERS_PER_SKEIN = 800
 
 function quantizeColor(r: number, g: number, b: number, factor = 24): [number, number, number] {
@@ -20,6 +20,48 @@ function quantizeColor(r: number, g: number, b: number, factor = 24): [number, n
     Math.round(g / factor) * factor,
     Math.round(b / factor) * factor,
   ]
+}
+
+// Elimină pixeli izolați: dacă un punct nu are niciun vecin de aceeași culoare,
+// îl înlocuiește cu culoarea majoritară din vecinii săi. Rulăm 2 pasuri.
+function smoothIsolatedPixels(grid: number[][], passes = 2): number[][] {
+  let current = grid.map(row => [...row])
+  const H = current.length
+  const W = current[0].length
+
+  for (let pass = 0; pass < passes; pass++) {
+    const next = current.map(row => [...row])
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const val = current[y][x]
+        // 8 vecini (inclusiv diagonale) — mai conservator pe margini
+        const neighbors: number[] = []
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dy === 0 && dx === 0) continue
+            const ny = y + dy, nx = x + dx
+            if (ny >= 0 && ny < H && nx >= 0 && nx < W) neighbors.push(current[ny][nx])
+          }
+        }
+        const matchesAny = neighbors.some(n => n === val)
+        if (!matchesAny) {
+          // Înlocuiește doar cu vecinii ortogonali (nu diagonali) — mai natural
+          const ortho = [
+            y > 0 ? current[y-1][x] : null,
+            y < H-1 ? current[y+1][x] : null,
+            x > 0 ? current[y][x-1] : null,
+            x < W-1 ? current[y][x+1] : null,
+          ].filter(n => n !== null) as number[]
+          const freq = new Map<number, number>()
+          for (const n of ortho) freq.set(n, (freq.get(n) ?? 0) + 1)
+          const best = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0]
+          next[y][x] = best
+        }
+      }
+    }
+    current = next
+  }
+  return current
 }
 
 function averageColors(colors: [number, number, number][]): [number, number, number] {
@@ -41,9 +83,10 @@ export async function generateSchema(
   const widthStitches = Math.round(settings.widthCm * config.stitchesPerCm)
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
 
-  // Redimensionează imaginea la dimensiunea grilei
+  // Redimensionează cu kernel lanczos3 (calitate maximă) + ușoară saturație
   const { data: pixels, info } = await sharp(imageBuffer)
-    .resize(widthStitches, heightStitches, { fit: 'fill' })
+    .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
+    .modulate({ saturation: 1.15 })
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
@@ -119,9 +162,14 @@ export async function generateSchema(
     grid.push(row)
   }
 
+  // Smoothing adaptiv: mai puține pasuri la scheme mici (detalii fine = 1-2 pixeli)
+  const minDim = Math.min(widthStitches, heightStitches)
+  const smoothPasses = minDim < 80 ? 0 : minDim < 130 ? 1 : 2
+  const smoothedGrid = smoothPasses > 0 ? smoothIsolatedPixels(grid, smoothPasses) : grid
+
   // Recalculează numărul real de puncte per culoare din grilă
   const stitchCounts = new Array(colorGroups.length).fill(0)
-  for (const row of grid) {
+  for (const row of smoothedGrid) {
     for (const idx of row) stitchCounts[idx]++
   }
 
@@ -156,7 +204,7 @@ export async function generateSchema(
   })
 
   return {
-    grid,
+    grid: smoothedGrid,
     colors,
     widthStitches,
     heightStitches,

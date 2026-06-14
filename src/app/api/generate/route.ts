@@ -46,7 +46,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
     }
 
-    const imageBuffer = Buffer.from(await file.arrayBuffer())
+    let imageBuffer = Buffer.from(await file.arrayBuffer())
+
+    // Convertește HEIC/HEIF la JPEG (Sharp 0.35 suportă HEIC dacă libheif e disponibil)
+    const fname = (file.name || '').toLowerCase()
+    if (fname.endsWith('.heic') || fname.endsWith('.heif')) {
+      try {
+        const sharp = (await import('sharp')).default
+        imageBuffer = await sharp(imageBuffer).jpeg({ quality: 92 }).toBuffer()
+      } catch {
+        return NextResponse.json({
+          error: 'Formatul HEIC nu este suportat. Te rugăm să convertești poza în JPG sau PNG înainte de upload (iPhone: Setări → Poze → Format → Cel mai compatibil).'
+        }, { status: 400 })
+      }
+    }
 
     const schema = await generateSchema(imageBuffer, {
       craftType,

@@ -189,7 +189,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                       <Text style={styles.legendCode}>DMC {color.dmcColor.code}</Text>
                       <Text style={styles.legendName}>{color.dmcColor.name}</Text>
                       <Text style={styles.legendQty}>
-                        {color.skeins} {color.unit === 'packets' ? 'pach.' : 'skeins'}
+                        {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}
                       </Text>
                     </View>
                   ))}

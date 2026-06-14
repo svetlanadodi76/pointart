@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { GeneratedSchema } from '@/types'
@@ -25,6 +25,7 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
   const [canvasType, setCanvasType] = useState('14CT')
   const [widthCm, setWidthCm] = useState(30)
   const [heightCm, setHeightCm] = useState(25)
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape')
   const [maxColors, setMaxColors] = useState(30)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<GeneratedSchema | null>(null)
@@ -40,13 +41,33 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
     setResult(null)
     setError(null)
     setSettingsChanged(false)
-    const url = URL.createObjectURL(file)
-    setPreview(url)
+    if (fileRef.current) fileRef.current.value = ''
+
+    const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+      || file.type === 'image/heic' || file.type === 'image/heif'
+
+    if (isHeic) {
+      // Browserul nu poate reda HEIC — arătăm placeholder, Sharp procesează pe server
+      setPreview('__heic__')
+    } else {
+      const reader = new FileReader()
+      reader.onload = (e) => setPreview(e.target?.result as string)
+      reader.readAsDataURL(file)
+    }
   }
 
   function handlePreset(w: number, h: number) {
-    setWidthCm(w)
-    setHeightCm(h)
+    const [fw, fh] = orientation === 'portrait' ? [Math.min(w, h), Math.max(w, h)] : [Math.max(w, h), Math.min(w, h)]
+    setWidthCm(fw)
+    setHeightCm(fh)
+    if (result) setSettingsChanged(true)
+  }
+
+  function handleOrientation(o: 'landscape' | 'portrait') {
+    if (o === orientation) return
+    setOrientation(o)
+    setWidthCm(heightCm)
+    setHeightCm(widthCm)
     if (result) setSettingsChanged(true)
   }
 
@@ -111,13 +132,19 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
                 onClick={() => fileRef.current?.click()}
                 className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-colors"
               >
-                {preview ? (
+                {preview === '__heic__' ? (
+                  <div>
+                    <div className="text-4xl mb-2">📱</div>
+                    <p className="text-gray-700 font-medium">{image?.name}</p>
+                    <p className="text-amber-600 text-xs mt-1">Format iPhone HEIC — previzualizarea nu e disponibilă în browser, dar generarea funcționează</p>
+                  </div>
+                ) : preview ? (
                   <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-contain" />
                 ) : (
                   <div>
                     <div className="text-4xl mb-3">📷</div>
                     <p className="text-gray-600 font-medium">Click pentru a încărca</p>
-                    <p className="text-gray-400 text-sm mt-1">JPG, PNG, WebP — max 10MB</p>
+                    <p className="text-gray-400 text-sm mt-1">JPG, PNG, WebP, HEIC — max 10MB</p>
                   </div>
                 )}
               </div>
@@ -189,21 +216,51 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
 
             {/* Dimensiune */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="font-semibold text-gray-900 mb-4">4. Dimensiunea lucrării</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-gray-900">4. Dimensiunea lucrării</h2>
+                <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
+                  <button
+                    onClick={() => handleOrientation('landscape')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      orientation === 'landscape' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    title="Orizontal (lățime > înălțime)"
+                  >
+                    <span className="inline-block w-5 h-3.5 border-2 border-current rounded-sm" />
+                    Orizontal
+                  </button>
+                  <button
+                    onClick={() => handleOrientation('portrait')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      orientation === 'portrait' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    title="Vertical (înălțime > lățime)"
+                  >
+                    <span className="inline-block w-3.5 h-5 border-2 border-current rounded-sm" />
+                    Vertical
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-2 mb-4">
-                {SIZE_PRESETS.map(p => (
+                {SIZE_PRESETS.map(p => {
+                  const [pw, ph] = orientation === 'portrait'
+                    ? [Math.min(p.width, p.height), Math.max(p.width, p.height)]
+                    : [p.width, p.height]
+                  const isActive = widthCm === pw && heightCm === ph
+                  return (
                   <button
                     key={p.label}
                     onClick={() => handlePreset(p.width, p.height)}
                     className={`p-2 rounded-lg border text-sm transition-colors ${
-                      widthCm === p.width && heightCm === p.height
+                      isActive
                         ? 'border-violet-500 bg-violet-50 text-violet-700'
                         : 'border-gray-200 text-gray-600 hover:border-violet-300'
                     }`}
                   >
                     {p.label}
                   </button>
-                ))}
+                  )
+                })}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -222,8 +279,10 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
                 </div>
               </div>
               <p className="text-xs text-gray-400 mt-2">
-                → {Math.round(widthCm * (canvasType === '11CT' ? 4.3 : 5.5))} ×{' '}
-                {Math.round(heightCm * (canvasType === '11CT' ? 4.3 : 5.5))} puncte
+                {(() => {
+                  const spc = { '11CT': 4.3, '14CT': 5.5, '16CT': 6.3, '18CT': 7.1 }[canvasType] ?? 5.5
+                  return `→ ${Math.round(widthCm * spc)} × ${Math.round(heightCm * spc)} puncte`
+                })()}
               </p>
             </div>
 
@@ -314,54 +373,155 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
 }
 
 function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
+  const [view, setView] = useState<'schema' | 'final'>('schema')
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(4, Math.min(12, Math.floor(600 / schema.widthStitches)))
 
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-gray-900">Schema generată</h2>
-        <span className="text-sm text-gray-500">
-          {schema.widthStitches}×{schema.heightStitches} puncte
-        </span>
-      </div>
+  // Randează preview final pe canvas când se schimbă view-ul
+  useEffect(() => {
+    if (view !== 'final' || !canvasRef.current) return
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-      {/* Grila */}
-      <div className="overflow-auto border border-gray-200 rounded-lg">
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${schema.widthStitches}, ${CELL_SIZE}px)` }}>
-          {schema.grid.map((row, y) =>
-            row.map((colorIdx, x) => {
-              const color = schema.colors[colorIdx]
-              const isRuler10x = x % 10 === 0 || y % 10 === 0
-              return (
-                <div
-                  key={`${y}-${x}`}
-                  title={`${color.dmcColor.code} ${color.symbol}`}
-                  style={{
-                    width: CELL_SIZE,
-                    height: CELL_SIZE,
-                    backgroundColor: color.dmcColor.hex,
-                    border: isRuler10x ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: CELL_SIZE > 8 ? CELL_SIZE * 0.6 : 0,
-                    color: 'rgba(0,0,0,0.5)',
-                    lineHeight: 1,
-                  }}
-                >
-                  {CELL_SIZE > 8 ? color.symbol : ''}
-                </div>
-              )
-            })
-          )}
+    const scale = Math.max(2, Math.floor(600 / schema.widthStitches))
+    canvas.width = schema.widthStitches * scale
+    canvas.height = schema.heightStitches * scale
+
+    for (let y = 0; y < schema.heightStitches; y++) {
+      for (let x = 0; x < schema.widthStitches; x++) {
+        const colorIdx = schema.grid[y][x]
+        ctx.fillStyle = schema.colors[colorIdx].dmcColor.hex
+        ctx.fillRect(x * scale, y * scale, scale, scale)
+      }
+    }
+  }, [view, schema])
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+      {/* Header cu toggle */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold text-gray-900">Previzualizare</h2>
+          <p className="text-xs text-gray-400">{schema.widthStitches}×{schema.heightStitches} puncte • {schema.widthCm}×{schema.heightCm} cm</p>
+        </div>
+        <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+          <button
+            onClick={() => setView('schema')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              view === 'schema' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            📐 Schema
+          </button>
+          <button
+            onClick={() => setView('final')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              view === 'final' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            🖼️ Final
+          </button>
         </div>
       </div>
+
+      {/* Schema cu simboluri + riglă numerotată */}
+      {view === 'schema' && (
+        <div className="overflow-auto border border-gray-200 rounded-lg">
+          <div style={{ display: 'inline-block', minWidth: 'max-content' }}>
+            {/* Riglă sus */}
+            <div style={{ display: 'flex', paddingLeft: 24 }}>
+              {Array.from({ length: Math.floor(schema.widthStitches / 10) + 1 }, (_, i) => {
+                const col = i * 10
+                if (col >= schema.widthStitches) return null
+                return (
+                  <div
+                    key={col}
+                    style={{
+                      width: Math.min(10, schema.widthStitches - col) * CELL_SIZE,
+                      fontSize: 9, color: '#9ca3af', userSelect: 'none',
+                      paddingLeft: 1, lineHeight: '14px', flexShrink: 0,
+                    }}
+                  >
+                    {col === 0 ? '' : col}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Riglă stânga + grilă */}
+            <div style={{ display: 'flex' }}>
+              {/* Riglă stânga */}
+              <div style={{ width: 24, position: 'relative', flexShrink: 0 }}>
+                {Array.from({ length: Math.floor(schema.heightStitches / 10) + 1 }, (_, i) => {
+                  const row = i * 10
+                  if (row >= schema.heightStitches) return null
+                  return (
+                    <div
+                      key={row}
+                      style={{
+                        position: 'absolute',
+                        top: row * CELL_SIZE,
+                        right: 2, left: 0,
+                        fontSize: 9, color: '#9ca3af',
+                        textAlign: 'right', lineHeight: 1,
+                        userSelect: 'none', paddingTop: 1,
+                      }}
+                    >
+                      {row === 0 ? '' : row}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Grilă */}
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${schema.widthStitches}, ${CELL_SIZE}px)` }}>
+                {schema.grid.map((row, y) =>
+                  row.map((colorIdx, x) => {
+                    const color = schema.colors[colorIdx]
+                    const isRuler = x % 10 === 0 || y % 10 === 0
+                    return (
+                      <div
+                        key={`${y}-${x}`}
+                        title={`${color.dmcColor.code} ${color.symbol}`}
+                        style={{
+                          width: CELL_SIZE, height: CELL_SIZE,
+                          backgroundColor: color.dmcColor.hex,
+                          border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: CELL_SIZE > 8 ? CELL_SIZE * 0.6 : 0,
+                          color: 'rgba(0,0,0,0.5)', lineHeight: 1,
+                        }}
+                      >
+                        {CELL_SIZE > 8 ? color.symbol : ''}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview final — canvas pixel art */}
+      {view === 'final' && (
+        <div className="overflow-auto border border-gray-200 rounded-lg">
+          <canvas
+            ref={canvasRef}
+            style={{ display: 'block', imageRendering: 'pixelated', maxWidth: '100%' }}
+          />
+          <p className="text-xs text-gray-400 text-center py-2">
+            Cum va arăta lucrarea terminată cu culorile DMC selectate
+          </p>
+        </div>
+      )}
 
       {/* Legendă culori */}
       <div>
         <h3 className="font-medium text-gray-800 mb-3">Culori folosite ({schema.colors.length})</h3>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {schema.colors
+        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+          {[...schema.colors]
             .sort((a, b) => b.count - a.count)
             .map((color, i) => (
               <div key={i} className="flex items-center gap-3 text-sm">
@@ -371,10 +531,10 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                 >
                   {color.symbol}
                 </div>
-                <span className="font-mono text-gray-700 w-12">DMC {color.dmcColor.code}</span>
-                <span className="text-gray-500 flex-1">{color.dmcColor.name}</span>
-                <span className="text-gray-400 text-xs">
-                  {color.skeins} {color.unit === 'packets' ? 'pachete' : 'seturi'}
+                <span className="font-mono text-gray-700 w-14 text-xs">DMC {color.dmcColor.code}</span>
+                <span className="text-gray-500 flex-1 text-xs">{color.dmcColor.name}</span>
+                <span className="text-gray-400 text-xs whitespace-nowrap">
+                  {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}
                 </span>
               </div>
             ))}
@@ -382,8 +542,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
       </div>
 
       <div className="text-xs text-gray-400 border-t pt-3">
-        Dimensiune: {schema.widthCm}×{schema.heightCm} cm •{' '}
-        {schema.widthStitches * schema.heightStitches} puncte total
+        {schema.widthStitches * schema.heightStitches} puncte total • {schema.colors.length} culori DMC
       </div>
     </div>
   )
