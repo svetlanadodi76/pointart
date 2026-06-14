@@ -28,6 +28,7 @@ export interface ColorUsage {
   symbol: string
   count: number
   skeins: number
+  unit: 'skeins' | 'packets' // skeins = ață, packets = diamante
 }
 
 export interface GeneratedSchema {

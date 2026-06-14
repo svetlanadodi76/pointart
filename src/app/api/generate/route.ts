@@ -1,0 +1,97 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { generateSchema } from '@/lib/schema/generator'
+import type { CraftType, CanvasType } from '@/types'
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
+  }
+
+  // Verifică abonamentul
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!subscription || subscription.status !== 'active') {
+    return NextResponse.json({ error: 'Abonament inactiv' }, { status: 403 })
+  }
+
+  // Verifică trial
+  if (subscription.plan === 'free_trial') {
+    if (subscription.schemas_remaining <= 0) {
+      return NextResponse.json({ error: 'Limita trial depășită' }, { status: 403 })
+    }
+    const trialExpired = new Date(subscription.trial_ends_at) < new Date()
+    if (trialExpired) {
+      return NextResponse.json({ error: 'Perioada trial a expirat' }, { status: 403 })
+    }
+  }
+
+  try {
+    const formData = await request.formData()
+    const file = formData.get('image') as File
+    const craftType = formData.get('craftType') as CraftType
+    const canvasType = formData.get('canvasType') as CanvasType
+    const widthCm = parseFloat(formData.get('widthCm') as string)
+    const heightCm = parseFloat(formData.get('heightCm') as string)
+    const maxColors = parseInt(formData.get('maxColors') as string)
+
+    if (!file || !craftType || !widthCm || !heightCm) {
+      return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
+    }
+
+    const imageBuffer = Buffer.from(await file.arrayBuffer())
+
+    const schema = await generateSchema(imageBuffer, {
+      craftType,
+      canvasType: canvasType || '14CT',
+      widthCm,
+      heightCm,
+      maxColors: maxColors || 30,
+    })
+
+    // Salvează imaginea originală în Supabase Storage
+    const fileName = `${user.id}/${Date.now()}.jpg`
+    await supabase.storage.from('images').upload(fileName, imageBuffer, {
+      contentType: 'image/jpeg',
+      upsert: true,
+    })
+
+    const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(fileName)
+
+    // Salvează schema în baza de date
+    const { data: savedSchema } = await supabase.from('schemas').insert({
+      user_id: user.id,
+      name: `Schema ${new Date().toLocaleDateString('ro-RO')}`,
+      craft_type: craftType,
+      canvas_type: canvasType,
+      width_stitches: schema.widthStitches,
+      height_stitches: schema.heightStitches,
+      width_cm: schema.widthCm,
+      height_cm: schema.heightCm,
+      max_colors: maxColors,
+      colors_used: schema.colors.length,
+      original_image_url: publicUrl,
+      schema_data: schema,
+    }).select().single()
+
+    // Scade o schemă din trial dacă e cazul
+    if (subscription.plan === 'free_trial') {
+      await supabase.from('subscriptions').update({
+        schemas_remaining: subscription.schemas_remaining - 1
+      }).eq('user_id', user.id)
+    }
+
+    return NextResponse.json({ schema, schemaId: savedSchema?.id })
+
+  } catch (error) {
+    console.error('Eroare generare:', error)
+    return NextResponse.json({ error: 'Eroare la procesarea imaginii' }, { status: 500 })
+  }
+}
