@@ -1,8 +1,15 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { GeneratedSchema } from '@/types'
+import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
+
+const PDFDownloadLink = dynamic(
+  () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
+  { ssr: false }
+)
 
 const SIZE_PRESETS = [
   { label: '20×15 cm (mic)', width: 20, height: 15 },
@@ -263,7 +270,30 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
           </div>
 
           {/* Coloana dreapta — preview rezultat */}
-          <div>
+          <div className="space-y-4">
+            {result && subscription?.plan !== 'free_trial' && (
+              <PDFDownloadLink
+                document={<SchemaPDF schema={result} name="Schema PointArt" />}
+                fileName="pointart-schema.pdf"
+              >
+                {({ loading: pdfLoading }: { loading: boolean }) => (
+                  <button
+                    disabled={pdfLoading}
+                    className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {pdfLoading ? '⏳ Pregătesc PDF...' : '📄 Descarcă PDF'}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            )}
+            {result && subscription?.plan === 'free_trial' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                <p className="text-amber-700 text-sm font-medium">📄 Descărcarea PDF necesită un plan plătit</p>
+                <Link href="/pricing" className="text-violet-700 text-sm font-medium hover:underline mt-1 block">
+                  Vezi planurile →
+                </Link>
+              </div>
+            )}
             {result ? (
               <SchemaPreview schema={result} />
             ) : (
