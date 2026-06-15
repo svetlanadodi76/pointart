@@ -64,12 +64,16 @@ create policy "Users can update own profile" on profiles
 -- Politici subscriptions
 create policy "Users can view own subscription" on subscriptions
   for select using (auth.uid() = user_id);
+create policy "Users can update own subscription" on subscriptions
+  for update using (auth.uid() = user_id);
 
 -- Politici schemas
 create policy "Users can view own schemas" on schemas
   for select using (auth.uid() = user_id);
 create policy "Users can insert own schemas" on schemas
   for insert with check (auth.uid() = user_id);
+create policy "Users can update own schemas" on schemas
+  for update using (auth.uid() = user_id);
 create policy "Users can delete own schemas" on schemas
   for delete using (auth.uid() = user_id);
 

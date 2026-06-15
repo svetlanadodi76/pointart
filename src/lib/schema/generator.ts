@@ -136,40 +136,88 @@ export async function generateSchema(
     colorToIndex.set(colorGroups[i].qKey, i)
   }
 
-  // Construiește grila
-  const grid: number[][] = []
-  for (let y = 0; y < heightStitches; y++) {
-    const row: number[] = []
-    for (let x = 0; x < widthStitches; x++) {
-      const pixelIdx = (y * widthStitches + x) * 3
-      const [qr, qg, qb] = quantizeColor(pixels[pixelIdx], pixels[pixelIdx + 1], pixels[pixelIdx + 2])
-      const key = `${qr},${qg},${qb}`
+  const minDim = Math.min(widthStitches, heightStitches)
 
-      // Găsește cel mai apropiat grup
-      let colorIdx = colorToIndex.get(key)
-      if (colorIdx === undefined) {
-        // Culoare care nu e în top N — găsește cel mai apropiat grup
+  let finalGrid: number[][]
+
+  if (minDim >= 80) {
+    // Floyd-Steinberg dithering — gradiente fine, tranziții realiste
+    // Buffer float pentru acumularea erorilor de culoare
+    const buf = new Float32Array(widthStitches * heightStitches * 3)
+    for (let i = 0; i < pixels.length; i++) buf[i] = pixels[i]
+
+    finalGrid = Array.from({ length: heightStitches }, () => new Array(widthStitches).fill(0))
+
+    for (let y = 0; y < heightStitches; y++) {
+      for (let x = 0; x < widthStitches; x++) {
+        const idx = (y * widthStitches + x) * 3
+        const r = Math.max(0, Math.min(255, buf[idx]))
+        const g = Math.max(0, Math.min(255, buf[idx + 1]))
+        const b = Math.max(0, Math.min(255, buf[idx + 2]))
+
+        // Cel mai apropiat DMC din paletă (distanță perceptuală)
         let minDist = Infinity
-        colorIdx = 0
+        let bestIdx = 0
         for (let i = 0; i < colorGroups.length; i++) {
           const dmc = colorGroups[i].dmc
-          const dist = Math.abs(qr - dmc.r) + Math.abs(qg - dmc.g) + Math.abs(qb - dmc.b)
-          if (dist < minDist) { minDist = dist; colorIdx = i }
+          const dr = r - dmc.r, dg = g - dmc.g, db = b - dmc.b
+          const dist = 2*dr*dr + 4*dg*dg + 3*db*db
+          if (dist < minDist) { minDist = dist; bestIdx = i }
         }
+
+        finalGrid[y][x] = bestIdx
+        const chosen = colorGroups[bestIdx].dmc
+
+        // Eroarea de cuantizare — clamp ±15 (cross-stitch = blocuri mari, nu zgomot pixel)
+        const MAX_ERR = 15
+        const er = Math.max(-MAX_ERR, Math.min(MAX_ERR, r - chosen.r))
+        const eg = Math.max(-MAX_ERR, Math.min(MAX_ERR, g - chosen.g))
+        const eb = Math.max(-MAX_ERR, Math.min(MAX_ERR, b - chosen.b))
+
+        // Difuzare la 25% — tranziții subtile la margini, fără zgomot pe zone uniforme
+        const DIFFUSE = 0.25
+        const addErr = (nx: number, ny: number, f: number) => {
+          if (nx < 0 || nx >= widthStitches || ny >= heightStitches) return
+          const ni = (ny * widthStitches + nx) * 3
+          buf[ni]     += er * f * DIFFUSE
+          buf[ni + 1] += eg * f * DIFFUSE
+          buf[ni + 2] += eb * f * DIFFUSE
+        }
+        addErr(x + 1, y,     7 / 16)
+        addErr(x - 1, y + 1, 3 / 16)
+        addErr(x,     y + 1, 5 / 16)
+        addErr(x + 1, y + 1, 1 / 16)
       }
-      row.push(colorIdx)
     }
-    grid.push(row)
+  } else {
+    // Scheme mici: nearest-neighbor simplu (dithering nu e vizibil la dimensiuni mici)
+    finalGrid = []
+    for (let y = 0; y < heightStitches; y++) {
+      const row: number[] = []
+      for (let x = 0; x < widthStitches; x++) {
+        const pixelIdx = (y * widthStitches + x) * 3
+        const [qr, qg, qb] = quantizeColor(pixels[pixelIdx], pixels[pixelIdx + 1], pixels[pixelIdx + 2])
+        const key = `${qr},${qg},${qb}`
+        let colorIdx = colorToIndex.get(key)
+        if (colorIdx === undefined) {
+          let minD = Infinity; colorIdx = 0
+          for (let i = 0; i < colorGroups.length; i++) {
+            const dmc = colorGroups[i].dmc
+            const d = Math.abs(qr - dmc.r) + Math.abs(qg - dmc.g) + Math.abs(qb - dmc.b)
+            if (d < minD) { minD = d; colorIdx = i }
+          }
+        }
+        row.push(colorIdx)
+      }
+      finalGrid.push(row)
+    }
+    // Smoothing ușor doar pentru scheme mici (nearest-neighbor)
+    if (minDim >= 50) finalGrid = smoothIsolatedPixels(finalGrid, 1)
   }
 
-  // Smoothing adaptiv: mai puține pasuri la scheme mici (detalii fine = 1-2 pixeli)
-  const minDim = Math.min(widthStitches, heightStitches)
-  const smoothPasses = minDim < 80 ? 0 : minDim < 130 ? 1 : 2
-  const smoothedGrid = smoothPasses > 0 ? smoothIsolatedPixels(grid, smoothPasses) : grid
-
-  // Recalculează numărul real de puncte per culoare din grilă
+  // Recalculează numărul real de puncte per culoare
   const stitchCounts = new Array(colorGroups.length).fill(0)
-  for (const row of smoothedGrid) {
+  for (const row of finalGrid) {
     for (const idx of row) stitchCounts[idx]++
   }
 
@@ -204,7 +252,7 @@ export async function generateSchema(
   })
 
   return {
-    grid: smoothedGrid,
+    grid: finalGrid,
     colors,
     widthStitches,
     heightStitches,

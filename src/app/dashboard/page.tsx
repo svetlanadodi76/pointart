@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { logout } from '../auth/actions'
 import Link from 'next/link'
+import { SchemaCard } from './SchemaCard'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -24,6 +25,39 @@ export default async function DashboardPage() {
   const trialDaysLeft = subscription?.trial_ends_at
     ? Math.max(0, Math.ceil((new Date(subscription.trial_ends_at).getTime() - Date.now()) / 86400000))
     : 0
+
+  type SchemaRow = {
+    id: string
+    name: string
+    craft_type: string
+    canvas_type: string | null
+    width_stitches: number
+    height_stitches: number
+    colors_used: number
+    created_at: string
+    folder: string | null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any
+  }
+
+  const schemaList: SchemaRow[] = (schemas ?? []) as SchemaRow[]
+
+  // Extrage folderele existente (unice, fără null)
+  const existingFolders: string[] = [...new Set(
+    schemaList.map(s => s.folder).filter(Boolean) as string[]
+  )].sort()
+
+  // Grupare scheme pe foldere
+  const grouped = new Map<string, SchemaRow[]>()
+  for (const schema of schemaList) {
+    const key = schema.folder ?? ''
+    if (!grouped.has(key)) grouped.set(key, [])
+    grouped.get(key)!.push(schema)
+  }
+
+  // Ordine: foldere numite (alfabetic) → fără folder la urmă
+  const namedFolders = existingFolders // deja sortate
+  const unfoldered = grouped.get('') ?? []
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -70,27 +104,45 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* Liste scheme */}
-        {schemas && schemas.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {schemas.map(schema => (
-              <div key={schema.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">{schema.name}</h3>
-                  <span className="text-xs bg-violet-50 text-violet-700 px-2 py-1 rounded-full">
-                    {schema.craft_type === 'cross_stitch' ? 'Broderie' : schema.craft_type === 'goblene' ? 'Goblene' : 'Diamante'}
-                  </span>
+        {schemaList.length > 0 ? (
+          <div className="space-y-8">
+            {/* Foldere numite */}
+            {namedFolders.map(folderName => (
+              <section key={folderName}>
+                <div className="flex items-center gap-2 mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-violet-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                  </svg>
+                  <h2 className="text-lg font-semibold text-gray-700">{folderName}</h2>
+                  <span className="text-xs text-gray-400">({(grouped.get(folderName) ?? []).length})</span>
                 </div>
-                <div className="text-sm text-gray-500 space-y-1">
-                  <p>📐 {schema.width_stitches}×{schema.height_stitches} puncte</p>
-                  <p>🎨 {schema.colors_used} culori DMC</p>
-                  {schema.canvas_type && <p>🧵 Canvas {schema.canvas_type}</p>}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(grouped.get(folderName) ?? []).map(schema => (
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} />
+                  ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-3">
-                  {new Date(schema.created_at).toLocaleDateString('ro-RO')}
-                </p>
-              </div>
+              </section>
             ))}
+
+            {/* Scheme fără folder */}
+            {unfoldered.length > 0 && (
+              <section>
+                {namedFolders.length > 0 && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                    </svg>
+                    <h2 className="text-lg font-semibold text-gray-500">Fără folder</h2>
+                    <span className="text-xs text-gray-400">({unfoldered.length})</span>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {unfoldered.map(schema => (
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-16 text-center">

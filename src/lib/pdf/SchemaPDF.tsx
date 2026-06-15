@@ -33,18 +33,13 @@ interface SchemaPDFProps {
 export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) {
   const { grid, colors, widthStitches, heightStitches, widthCm, heightCm } = schema
 
-  // Calculează dimensiunea celulei ca să încapă în pagină
-  const availableWidth = CONTENT_WIDTH - 20 // 20 pentru rigla din stânga
-  const availableHeight = PAGE_HEIGHT - MARGIN * 2 - 60 - LEGEND_HEIGHT // 60 header, LEGEND_HEIGHT legendă
-  const cellW = Math.min(8, availableWidth / widthStitches)
-  const cellH = Math.min(8, availableHeight / heightStitches)
-  const cellSize = Math.min(cellW, cellH)
-  const fontSize = cellSize * 0.65
+  // Celulă fixă de 6px — suficient pentru simboluri vizibile, schema se împarte în pagini
+  const availableWidth = CONTENT_WIDTH - 20
+  const availableHeight = PAGE_HEIGHT - MARGIN * 2 - 60 - LEGEND_HEIGHT
+  const cellSize = 6
+  const fontSize = cellSize * 0.7
 
-  const gridWidth = widthStitches * cellSize
-  const gridHeight = heightStitches * cellSize
-
-  // Dacă grila nu încape pe o pagină, o împărțim pe secțiuni
+  // Câte rânduri/coloane încap pe o pagină la 6px/celulă
   const rowsPerPage = Math.floor(availableHeight / cellSize)
   const colsPerPage = Math.floor(availableWidth / cellSize)
   const pageRows = Math.ceil(heightStitches / rowsPerPage)
@@ -138,12 +133,12 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                         x={x} y={y}
                         width={cellSize} height={cellSize}
                         fill={color.dmcColor.hex}
-                        stroke={isRulerH || isRulerV ? '#00000066' : '#00000022'}
-                        strokeWidth={isRulerH || isRulerV ? 0.5 : 0.3}
+                        stroke="#000000"
+                        strokeWidth={0.35}
                       />
                       {cellSize >= 5 && (
                         <Text
-                          style={{ fontSize, fill: '#000000aa', textAnchor: 'middle' }}
+                          style={{ fontSize, fill: '#000000cc', textAnchor: 'middle' }}
                           x={x + cellSize / 2}
                           y={y + cellSize * 0.75}
                         >
@@ -161,7 +156,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                 return (
                   <Line key={`vline-${i}`}
                     x1={x} y1={14} x2={x} y2={14 + secHeight * cellSize}
-                    stroke="#00000066" strokeWidth={0.7}
+                    stroke="#000000" strokeWidth={1.5}
                   />
                 )
               })}
@@ -170,7 +165,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                 return (
                   <Line key={`hline-${i}`}
                     x1={20} y1={y} x2={20 + secWidth * cellSize} y2={y}
-                    stroke="#00000066" strokeWidth={0.7}
+                    stroke="#000000" strokeWidth={1.5}
                   />
                 )
               })}
@@ -182,15 +177,15 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                 <Text style={styles.legendTitle}>Culori folosite ({colors.length})</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                   {sortedColors.map((color, i) => (
-                    <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 8 }]}>
+                    <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
                       <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
                         <Text style={styles.legendSymbolText}>{color.symbol}</Text>
                       </View>
-                      <Text style={styles.legendCode}>DMC {color.dmcColor.code}</Text>
-                      <Text style={styles.legendName}>{color.dmcColor.name}</Text>
-                      <Text style={styles.legendQty}>
+                      <Text style={[styles.legendCode, { width: 42 }]}>DMC {color.dmcColor.code}</Text>
+                      <Text style={[styles.legendQty, { width: 38, textAlign: 'left' }]}>
                         {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}
                       </Text>
+                      <Text style={styles.legendName}>{color.dmcColor.name}</Text>
                     </View>
                   ))}
                 </View>
