@@ -69,7 +69,10 @@ export default async function DashboardPage() {
             <span className="text-xl font-bold text-violet-700">PointArt</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-gray-500 text-sm">{user.email}</span>
+            <span className="text-gray-500 text-sm hidden sm:block">{user.email}</span>
+            <Link href="/pricing" className="text-violet-600 hover:text-violet-800 text-sm font-medium transition-colors">
+              Planuri
+            </Link>
             <form action={logout}>
               <button type="submit" className="text-gray-500 hover:text-gray-700 text-sm font-medium">
                 Ieși din cont
