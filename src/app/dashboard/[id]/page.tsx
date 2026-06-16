@@ -77,6 +77,8 @@ export default async function SchemaDetailPage({ params }: Props) {
           schema={schemaData}
           name={schema.name}
           canDownloadPdf={canDownloadPdf}
+          craftType={schema.craft_type}
+          canvasType={schema.canvas_type}
         />
       </div>
     </div>

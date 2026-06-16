@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { GeneratedSchema } from '@/types'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
+import { FabricPDF } from '@/lib/pdf/FabricPDF'
 
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
@@ -334,19 +335,34 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
           {/* Coloana dreapta — preview rezultat */}
           <div className="space-y-4">
             {result && subscription?.plan !== 'free_trial' && (
-              <PDFDownloadLink
-                document={<SchemaPDF schema={result} name="Schema PointArt" />}
-                fileName="pointart-schema.pdf"
-              >
-                {({ loading: pdfLoading }: { loading: boolean }) => (
-                  <button
-                    disabled={pdfLoading}
-                    className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {pdfLoading ? '⏳ Pregătesc PDF...' : '📄 Descarcă PDF'}
-                  </button>
-                )}
-              </PDFDownloadLink>
+              <div className="flex flex-col gap-2">
+                <PDFDownloadLink
+                  document={<SchemaPDF schema={result} name="Schema PointArt" />}
+                  fileName="pointart-schema.pdf"
+                >
+                  {({ loading: pdfLoading }: { loading: boolean }) => (
+                    <button
+                      disabled={pdfLoading}
+                      className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {pdfLoading ? '⏳ Pregătesc...' : '📄 Descarcă PDF schemă'}
+                    </button>
+                  )}
+                </PDFDownloadLink>
+                <PDFDownloadLink
+                  document={<FabricPDF schema={result} name="Schema PointArt" craftType={craftType as any} canvasType={canvasType as any} />}
+                  fileName="pointart-tiparire-pinza.pdf"
+                >
+                  {({ loading: pdfLoading }: { loading: boolean }) => (
+                    <button
+                      disabled={pdfLoading}
+                      className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {pdfLoading ? '⏳ Pregătesc...' : '🖨️ Tipărire pe pânză (1:1)'}
+                    </button>
+                  )}
+                </PDFDownloadLink>
+              </div>
             )}
             {result && subscription?.plan === 'free_trial' && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">

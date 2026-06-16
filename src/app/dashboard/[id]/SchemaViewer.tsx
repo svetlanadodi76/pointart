@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
-import type { GeneratedSchema } from '@/types'
+import { FabricPDF } from '@/lib/pdf/FabricPDF'
+import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
 
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
@@ -14,9 +15,11 @@ interface Props {
   schema: GeneratedSchema
   name: string
   canDownloadPdf: boolean
+  craftType: CraftType
+  canvasType: CanvasType | null
 }
 
-export function SchemaViewer({ schema, name, canDownloadPdf }: Props) {
+export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasType }: Props) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(4, Math.min(12, Math.floor(700 / schema.widthStitches)))
@@ -62,19 +65,34 @@ export function SchemaViewer({ schema, name, canDownloadPdf }: Props) {
         </div>
 
         {canDownloadPdf ? (
-          <PDFDownloadLink
-            document={<SchemaPDF schema={schema} name={name} />}
-            fileName={`${name.replace(/\s+/g, '-')}.pdf`}
-          >
-            {({ loading: pdfLoading }: { loading: boolean }) => (
-              <button
-                disabled={pdfLoading}
-                className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors disabled:opacity-60 text-sm"
-              >
-                {pdfLoading ? '⏳ Pregătesc PDF...' : '📄 Descarcă PDF'}
-              </button>
-            )}
-          </PDFDownloadLink>
+          <div className="flex flex-wrap gap-2">
+            <PDFDownloadLink
+              document={<SchemaPDF schema={schema} name={name} />}
+              fileName={`${name.replace(/\s+/g, '-')}.pdf`}
+            >
+              {({ loading: pdfLoading }: { loading: boolean }) => (
+                <button
+                  disabled={pdfLoading}
+                  className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-60 text-sm"
+                >
+                  {pdfLoading ? '⏳ Pregătesc...' : '📄 PDF schemă'}
+                </button>
+              )}
+            </PDFDownloadLink>
+            <PDFDownloadLink
+              document={<FabricPDF schema={schema} name={name} craftType={craftType} canvasType={canvasType ?? '14CT'} />}
+              fileName={`${name.replace(/\s+/g, '-')}-pinza.pdf`}
+            >
+              {({ loading: pdfLoading }: { loading: boolean }) => (
+                <button
+                  disabled={pdfLoading}
+                  className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors disabled:opacity-60 text-sm"
+                >
+                  {pdfLoading ? '⏳ Pregătesc...' : '🖨️ Tipărire pânză (1:1)'}
+                </button>
+              )}
+            </PDFDownloadLink>
+          </div>
         ) : (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-amber-700 text-sm">
             📄 PDF disponibil doar pe plan plătit
