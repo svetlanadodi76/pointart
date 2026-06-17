@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getSubscription } from '@/lib/supabase/getSubscription'
 import { generateSchema } from '@/lib/schema/generator'
 import type { CraftType, CanvasType } from '@/types'
 
@@ -11,26 +12,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
   }
 
-  // Verifică abonamentul
-  const { data: subscription } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
+  // Verifică și auto-expiră abonamentul dacă e cazul
+  const subscription = await getSubscription(supabase, user.id)
 
   if (!subscription || subscription.status !== 'active') {
-    return NextResponse.json({ error: 'Abonament inactiv' }, { status: 403 })
+    return NextResponse.json({ error: 'Abonament inactiv sau expirat' }, { status: 403 })
   }
 
-  // Verifică trial
-  if (subscription.plan === 'free_trial') {
-    if (subscription.schemas_remaining <= 0) {
-      return NextResponse.json({ error: 'Limita trial depășită' }, { status: 403 })
-    }
-    const trialExpired = new Date(subscription.trial_ends_at) < new Date()
-    if (trialExpired) {
-      return NextResponse.json({ error: 'Perioada trial a expirat' }, { status: 403 })
-    }
+  // Verifică limita de scheme (trial și starter)
+  if (subscription.plan !== 'pro' && (subscription.schemas_remaining ?? 0) <= 0) {
+    return NextResponse.json({ error: 'Limita de scheme depășită' }, { status: 403 })
   }
 
   try {

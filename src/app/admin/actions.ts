@@ -13,7 +13,13 @@ async function checkAdmin() {
   return user
 }
 
-export async function activateStarter(userId: string) {
+export async function activateStarter(
+  userId: string,
+  userEmail: string,
+  amountEur?: number,
+  amountMdl?: number,
+  note?: string,
+) {
   await checkAdmin()
   const admin = createAdminClient()
   await admin.from('subscriptions').update({
@@ -23,10 +29,26 @@ export async function activateStarter(userId: string) {
     trial_ends_at: null,
     current_period_end: null,
   }).eq('user_id', userId)
+
+  await admin.from('payments').insert({
+    user_id: userId,
+    user_email: userEmail,
+    plan: 'starter',
+    amount_eur: amountEur ?? null,
+    amount_mdl: amountMdl ?? null,
+    note: note ?? null,
+  })
+
   revalidatePath('/admin')
 }
 
-export async function activatePro(userId: string) {
+export async function activatePro(
+  userId: string,
+  userEmail: string,
+  amountEur?: number,
+  amountMdl?: number,
+  note?: string,
+) {
   await checkAdmin()
   const admin = createAdminClient()
   const periodEnd = new Date()
@@ -38,6 +60,16 @@ export async function activatePro(userId: string) {
     trial_ends_at: null,
     current_period_end: periodEnd.toISOString(),
   }).eq('user_id', userId)
+
+  await admin.from('payments').insert({
+    user_id: userId,
+    user_email: userEmail,
+    plan: 'pro',
+    amount_eur: amountEur ?? null,
+    amount_mdl: amountMdl ?? null,
+    note: note ?? null,
+  })
+
   revalidatePath('/admin')
 }
 

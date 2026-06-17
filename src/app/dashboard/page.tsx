@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getSubscription } from '@/lib/supabase/getSubscription'
 import { redirect } from 'next/navigation'
 import { logout } from '../auth/actions'
 import Link from 'next/link'
@@ -10,11 +11,7 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/auth/login')
 
-  const { data: subscription } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
+  const subscription = await getSubscription(supabase, user.id)
 
   const { data: schemas } = await supabase
     .from('schemas')
@@ -83,8 +80,42 @@ export default async function DashboardPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Banner trial */}
-        {subscription?.plan === 'free_trial' && subscription?.status === 'active' && (
+        {/* Banner expirat */}
+        {subscription?.status === 'expired' && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔒</span>
+              <div>
+                <p className="font-semibold text-red-800">
+                  {subscription.plan === 'free_trial' ? 'Perioada trial a expirat' : 'Abonamentul tău a expirat'}
+                </p>
+                <p className="text-red-600 text-sm">Schemele tale sunt păstrate. Activează un plan pentru a genera altele noi.</p>
+              </div>
+            </div>
+            <Link href="/pricing" className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+              Reînnoiește
+            </Link>
+          </div>
+        )}
+
+        {/* Banner trial activ — scheme epuizate */}
+        {subscription?.plan === 'free_trial' && subscription?.status === 'active' && (subscription.schemas_remaining ?? 0) <= 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔒</span>
+              <div>
+                <p className="font-semibold text-red-800">Ai folosit schema trial</p>
+                <p className="text-red-600 text-sm">Activează un plan plătit pentru a genera scheme noi.</p>
+              </div>
+            </div>
+            <Link href="/pricing" className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+              Upgrade
+            </Link>
+          </div>
+        )}
+
+        {/* Banner trial activ — scheme disponibile */}
+        {subscription?.plan === 'free_trial' && subscription?.status === 'active' && (subscription.schemas_remaining ?? 0) > 0 && (
           <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-2xl">⏰</span>
@@ -97,6 +128,27 @@ export default async function DashboardPage() {
               Upgrade
             </Link>
           </div>
+        )}
+
+        {/* Banner Pro expiră în curând (3 zile) */}
+        {subscription?.plan === 'pro' && subscription?.status === 'active' && subscription.current_period_end && (
+          (() => {
+            const daysLeft = Math.ceil((new Date(subscription.current_period_end).getTime() - Date.now()) / 86400000)
+            return daysLeft <= 3 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <div>
+                    <p className="font-semibold text-amber-800">Abonamentul Pro expiră în {daysLeft} {daysLeft === 1 ? 'zi' : 'zile'}</p>
+                    <p className="text-amber-600 text-sm">Efectuează transferul pentru a continua fără întreruperi.</p>
+                  </div>
+                </div>
+                <Link href="/pricing" className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
+                  Reînnoiește
+                </Link>
+              </div>
+            ) : null
+          })()
         )}
 
         {/* Titlu + buton */}

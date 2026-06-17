@@ -3,18 +3,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { AdminPanel } from './AdminPanel'
+import { PaymentsSection } from './PaymentsSection'
 
 export default async function AdminPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Acces doar pentru admin
   if (!user || user.email !== process.env.ADMIN_EMAIL) {
     redirect('/dashboard')
   }
 
-  // Fetch toți utilizatorii cu subscripții (bypass RLS cu admin client)
   const admin = createAdminClient()
+
   const { data: subscriptions } = await admin
     .from('subscriptions')
     .select('user_id, plan, status, schemas_remaining, trial_ends_at, current_period_end, created_at')
@@ -23,6 +23,15 @@ export default async function AdminPage() {
   const { data: profiles } = await admin
     .from('profiles')
     .select('id, email')
+
+  const { data: paymentsRaw } = await admin
+    .from('payments')
+    .select('id, user_email, plan, amount_eur, amount_mdl, note, created_at')
+    .order('created_at', { ascending: false })
+
+  const payments = paymentsRaw ?? []
+  const totalEur = payments.reduce((sum: number, p: { amount_eur: number | null }) => sum + (p.amount_eur ?? 0), 0)
+  const totalMdl = payments.reduce((sum: number, p: { amount_mdl: number | null }) => sum + (p.amount_mdl ?? 0), 0)
 
   const emailMap = new Map((profiles ?? []).map((p: { id: string; email: string }) => [p.id, p.email]))
 
@@ -59,9 +68,9 @@ export default async function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Statistici */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'Total utilizatori', value: stats.total, color: 'text-gray-900' },
             { label: 'Trial activ', value: stats.trial, color: 'text-blue-600' },
@@ -80,6 +89,9 @@ export default async function AdminPage() {
           <h2 className="font-semibold text-gray-900 mb-4">Utilizatori</h2>
           <AdminPanel users={users} />
         </div>
+
+        {/* Încasări */}
+        <PaymentsSection payments={payments} totalEur={totalEur} totalMdl={totalMdl} />
       </div>
     </div>
   )

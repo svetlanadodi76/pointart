@@ -15,14 +15,15 @@ export default async function SchemaDetailPage({ params }: Props) {
 
   if (!user) redirect('/auth/login')
 
-  const [{ data: schema }, { data: subscription }] = await Promise.all([
+  const [{ data: schema }, subscription] = await Promise.all([
     supabase.from('schemas').select('*').eq('id', id).eq('user_id', user.id).single(),
-    supabase.from('subscriptions').select('plan, status').eq('user_id', user.id).single(),
+    (await import('@/lib/supabase/getSubscription')).getSubscription(supabase, user.id),
   ])
 
   if (!schema) notFound()
 
-  const canDownloadPdf = subscription?.status === 'active' && subscription?.plan !== 'free_trial'
+  // PDF disponibil dacă a plătit vreodată (starter/pro), indiferent de status curent
+  const canDownloadPdf = subscription?.plan === 'starter' || subscription?.plan === 'pro'
   const schemaData = schema.schema_data as GeneratedSchema
 
   const craftLabel =
