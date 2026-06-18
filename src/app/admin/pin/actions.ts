@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppSettings } from '@/lib/supabase/getAppSettings'
+import { logSecurity } from '@/lib/supabase/logSecurity'
 import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
 import { redirect } from 'next/navigation'
@@ -23,7 +24,7 @@ async function verifyAdminEmail() {
 }
 
 export async function verifyPin(pin: string) {
-  await verifyAdminEmail()
+  const user = await verifyAdminEmail()
   const settings = await getAppSettings()
 
   if (!settings.admin_pin_hash) {
@@ -31,7 +32,10 @@ export async function verifyPin(pin: string) {
   }
 
   const valid = await bcrypt.compare(pin, settings.admin_pin_hash)
-  if (!valid) return { error: 'PIN incorect.' }
+  if (!valid) {
+    await logSecurity('admin_pin_failed', user.email ?? 'admin', 'PIN incorect introdus')
+    return { error: 'PIN incorect.' }
+  }
 
   const cookieStore = await cookies()
   cookieStore.set(COOKIE_NAME, settings.admin_pin_hash, COOKIE_OPTIONS)

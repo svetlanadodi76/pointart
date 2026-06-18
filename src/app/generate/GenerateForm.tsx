@@ -6,6 +6,9 @@ import Link from 'next/link'
 import type { GeneratedSchema } from '@/types'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
+import { LanguageToggle } from '@/components/LanguageToggle'
+import { t } from '@/lib/i18n/translations'
+import type { Lang } from '@/lib/i18n/translations'
 
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
@@ -19,7 +22,7 @@ const SIZE_PRESETS = [
   { label: '50×40 cm (foarte mare)', width: 50, height: 40 },
 ]
 
-export default function GenerateForm({ subscription }: { subscription: any }) {
+export default function GenerateForm({ subscription, lang = 'ro' }: { subscription: any; lang?: Lang }) {
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [craftType, setCraftType] = useState('cross_stitch')
@@ -108,7 +111,7 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-gray-400 hover:text-gray-600">←</Link>
             <div className="flex items-center gap-2">
@@ -116,7 +119,10 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
               <span className="font-bold text-violet-700">PointArt</span>
             </div>
           </div>
-          <span className="text-gray-500 text-sm">Schemă nouă</span>
+          <div className="flex items-center gap-3">
+            <LanguageToggle lang={lang} />
+            <span className="text-gray-500 text-sm hidden sm:block">{t(lang, 'generate.title')}</span>
+          </div>
         </div>
       </header>
 
@@ -217,7 +223,7 @@ export default function GenerateForm({ subscription }: { subscription: any }) {
 
             {/* Dimensiune */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <h2 className="font-semibold text-gray-900">4. Dimensiunea lucrării</h2>
                 <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
                   <button
@@ -416,7 +422,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
       {/* Header cu toggle */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-semibold text-gray-900">Previzualizare</h2>
           <p className="text-xs text-gray-400">{schema.widthStitches}×{schema.heightStitches} puncte • {schema.widthCm}×{schema.heightCm} cm</p>

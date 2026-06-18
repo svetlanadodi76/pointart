@@ -157,7 +157,7 @@ export function PricingCards({ currentPlan, userEmail, payment }: Props) {
       {/* Modal plată cu IBAN */}
       {selectedPlan && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-900">
                 Activare plan {selectedPlan.name}
@@ -185,7 +185,7 @@ export function PricingCards({ currentPlan, userEmail, payment }: Props) {
               <div>
                 <p className="text-xs text-gray-500 mb-1">IBAN</p>
                 <div className="flex items-center gap-2">
-                  <p className="font-mono font-bold text-gray-900 text-sm">{payment.iban}</p>
+                  <p className="font-mono font-bold text-gray-900 text-sm break-all">{payment.iban}</p>
                   <button onClick={copyIban} className="text-violet-600 hover:text-violet-800 text-xs font-medium shrink-0">
                     {copied ? '✓ Copiat' : 'Copiază'}
                   </button>

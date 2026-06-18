@@ -7,6 +7,7 @@ import { cookies } from 'next/headers'
 import { AdminPanel } from './AdminPanel'
 import { PaymentsSection } from './PaymentsSection'
 import { ActivityLog } from './ActivityLog'
+import { SecurityLog } from './SecurityLog'
 import { CollapsibleSection } from './CollapsibleSection'
 
 export default async function AdminPage() {
@@ -32,6 +33,7 @@ export default async function AdminPage() {
     { data: profiles },
     { data: paymentsRaw },
     { data: logsRaw },
+    { data: securityRaw },
   ] = await Promise.all([
     admin.from('subscriptions')
       .select('user_id, plan, status, schemas_remaining, trial_ends_at, current_period_end, created_at')
@@ -44,10 +46,15 @@ export default async function AdminPage() {
       .select('id, user_email, event, plan, note, created_at')
       .order('created_at', { ascending: false })
       .limit(100),
+    admin.from('security_logs')
+      .select('id, event, email, details, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
 
   const payments = paymentsRaw ?? []
   const logs = logsRaw ?? []
+  const securityLogs = securityRaw ?? []
   const totalEur = payments.reduce((sum: number, p: { amount_eur: number | null }) => sum + (p.amount_eur ?? 0), 0)
   const totalMdl = payments.reduce((sum: number, p: { amount_mdl: number | null }) => sum + (p.amount_mdl ?? 0), 0)
 
@@ -152,6 +159,15 @@ export default async function AdminPage() {
         {/* Jurnal activitate */}
         <CollapsibleSection title="Jurnal activitate" badge={logs.length} defaultOpen={false}>
           <ActivityLog logs={logs} />
+        </CollapsibleSection>
+
+        {/* Jurnal securitate */}
+        <CollapsibleSection
+          title="Jurnal securitate"
+          badge={securityLogs.length}
+          defaultOpen={false}
+        >
+          <SecurityLog logs={securityLogs} />
         </CollapsibleSection>
 
       </div>

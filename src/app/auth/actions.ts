@@ -2,16 +2,19 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { logSecurity } from '@/lib/supabase/logSecurity'
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
+  const email = formData.get('email') as string
 
   const { error } = await supabase.auth.signInWithPassword({
-    email: formData.get('email') as string,
+    email,
     password: formData.get('password') as string,
   })
 
   if (error) {
+    await logSecurity('login_failed', email, error.message)
     redirect('/auth/login?error=Date+incorecte')
   }
 
@@ -20,14 +23,16 @@ export async function login(formData: FormData) {
 
 export async function register(formData: FormData) {
   const supabase = await createClient()
+  const email = formData.get('email') as string
 
   const { error } = await supabase.auth.signUp({
-    email: formData.get('email') as string,
+    email,
     password: formData.get('password') as string,
     options: { data: { full_name: formData.get('name') as string } },
   })
 
   if (error) {
+    await logSecurity('register_failed', email, error.message)
     redirect('/auth/register?error=' + encodeURIComponent(error.message))
   }
 

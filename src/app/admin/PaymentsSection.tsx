@@ -23,7 +23,7 @@ export function PaymentsSection({ payments, totalEur, totalMdl }: Props) {
   return (
     <>
       {/* Totaluri */}
-      <div className="flex items-center gap-6 mb-5">
+      <div className="flex flex-wrap items-center gap-6 mb-5">
         <div>
           <p className="text-xs text-gray-400">Total EUR</p>
           <p className="text-xl font-bold text-violet-700">{totalEur.toFixed(2)} €</p>
@@ -57,7 +57,7 @@ export function PaymentsSection({ payments, totalEur, totalMdl }: Props) {
                       day: '2-digit', month: '2-digit', year: 'numeric',
                     })}
                   </td>
-                  <td className="px-4 py-3 text-gray-900 font-medium">{p.user_email}</td>
+                  <td className="px-4 py-3 text-gray-900 font-medium max-w-[160px] truncate">{p.user_email}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PLAN_COLORS[p.plan] ?? 'bg-gray-100 text-gray-600'}`}>
                       {p.plan === 'starter' ? 'Starter' : 'Pro'}

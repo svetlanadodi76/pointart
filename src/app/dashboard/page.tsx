@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation'
 import { logout } from '../auth/actions'
 import Link from 'next/link'
 import { SchemaCard } from './SchemaCard'
+import { LanguageToggle } from '@/components/LanguageToggle'
+import { getLang } from '@/lib/i18n/getLang'
+import { t } from '@/lib/i18n/translations'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -11,7 +14,10 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/auth/login')
 
-  const subscription = await getSubscription(supabase, user.id)
+  const [subscription, lang] = await Promise.all([
+    getSubscription(supabase, user.id),
+    getLang(),
+  ])
 
   const { data: schemas } = await supabase
     .from('schemas')
@@ -65,14 +71,15 @@ export default async function DashboardPage() {
             <span className="text-2xl">🧵</span>
             <span className="text-xl font-bold text-violet-700">PointArt</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <LanguageToggle lang={lang} />
             <span className="text-gray-500 text-sm hidden sm:block">{user.email}</span>
             <Link href="/pricing" className="text-violet-600 hover:text-violet-800 text-sm font-medium transition-colors">
-              Planuri
+              {t(lang, 'nav.pricing')}
             </Link>
             <form action={logout}>
               <button type="submit" className="text-gray-500 hover:text-gray-700 text-sm font-medium">
-                Ieși din cont
+                {t(lang, 'nav.logout')}
               </button>
             </form>
           </div>
@@ -82,66 +89,70 @@ export default async function DashboardPage() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Banner expirat */}
         {subscription?.status === 'expired' && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="text-2xl">🔒</span>
               <div>
                 <p className="font-semibold text-red-800">
-                  {subscription.plan === 'free_trial' ? 'Perioada trial a expirat' : 'Abonamentul tău a expirat'}
+                  {subscription.plan === 'free_trial' ? t(lang, 'banner.trial_expired') : t(lang, 'banner.sub_expired')}
                 </p>
-                <p className="text-red-600 text-sm">Schemele tale sunt păstrate. Activează un plan pentru a genera altele noi.</p>
+                <p className="text-red-600 text-sm">{t(lang, 'banner.expired_desc')}</p>
               </div>
             </div>
             <Link href="/pricing" className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
-              Reînnoiește
+              {t(lang, 'banner.renew')}
             </Link>
           </div>
         )}
 
         {/* Banner Starter — scheme epuizate */}
         {subscription?.plan === 'starter' && subscription?.status === 'active' && (subscription.schemas_remaining ?? 0) <= 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="text-2xl">🔒</span>
               <div>
-                <p className="font-semibold text-orange-800">Ai generat toate cele 3 scheme Starter</p>
-                <p className="text-orange-600 text-sm">Treci la Pro pentru scheme nelimitate.</p>
+                <p className="font-semibold text-orange-800">{t(lang, 'banner.starter_exhausted')}</p>
+                <p className="text-orange-600 text-sm">{t(lang, 'banner.starter_exhausted_desc')}</p>
               </div>
             </div>
             <Link href="/pricing" className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
-              Upgrade Pro
+              {t(lang, 'banner.upgrade_pro')}
             </Link>
           </div>
         )}
 
         {/* Banner trial activ — scheme epuizate */}
         {subscription?.plan === 'free_trial' && subscription?.status === 'active' && (subscription.schemas_remaining ?? 0) <= 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="text-2xl">🔒</span>
               <div>
-                <p className="font-semibold text-red-800">Ai folosit schema trial</p>
-                <p className="text-red-600 text-sm">Activează un plan plătit pentru a genera scheme noi.</p>
+                <p className="font-semibold text-red-800">{t(lang, 'banner.trial_used')}</p>
+                <p className="text-red-600 text-sm">{t(lang, 'banner.trial_used_desc')}</p>
               </div>
             </div>
             <Link href="/pricing" className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
-              Upgrade
+              {t(lang, 'banner.upgrade')}
             </Link>
           </div>
         )}
 
         {/* Banner trial activ — scheme disponibile */}
         {subscription?.plan === 'free_trial' && subscription?.status === 'active' && (subscription.schemas_remaining ?? 0) > 0 && (
-          <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="text-2xl">⏰</span>
               <div>
-                <p className="font-semibold text-violet-800">Trial gratuit — {trialDaysLeft} zile rămase</p>
-                <p className="text-violet-600 text-sm">Mai ai {subscription.schemas_remaining} schemă disponibilă în trial</p>
+                <p className="font-semibold text-violet-800">
+                  {t(lang, 'banner.trial_active').replace('{days}', String(trialDaysLeft))}
+                </p>
+                <p className="text-violet-600 text-sm">
+                  {t(lang, 'banner.trial_schemas_left').replace('{n}', String(subscription.schemas_remaining ?? 0))}
+                </p>
               </div>
             </div>
             <Link href="/pricing" className="bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors">
-              Upgrade
+              {t(lang, 'banner.upgrade')}
             </Link>
           </div>
         )}
@@ -151,16 +162,21 @@ export default async function DashboardPage() {
           (() => {
             const daysLeft = Math.ceil((new Date(subscription.current_period_end).getTime() - Date.now()) / 86400000)
             return daysLeft <= 3 ? (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">⚠️</span>
                   <div>
-                    <p className="font-semibold text-amber-800">Abonamentul Pro expiră în {daysLeft} {daysLeft === 1 ? 'zi' : 'zile'}</p>
-                    <p className="text-amber-600 text-sm">Efectuează transferul pentru a continua fără întreruperi.</p>
+                    <p className="font-semibold text-amber-800">
+                      {t(lang, 'banner.pro_expiring')
+                        .replace('{days}', String(daysLeft))
+                        .replace('{unit}', lang === 'ru' ? (daysLeft === 1 ? 'день' : 'дн.') : (daysLeft === 1 ? 'zi' : 'zile'))
+                      }
+                    </p>
+                    <p className="text-amber-600 text-sm">{t(lang, 'banner.pro_expiring_desc')}</p>
                   </div>
                 </div>
                 <Link href="/pricing" className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
-                  Reînnoiește
+                  {t(lang, 'banner.renew')}
                 </Link>
               </div>
             ) : null
@@ -168,10 +184,10 @@ export default async function DashboardPage() {
         )}
 
         {/* Titlu + buton */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Schemele mele</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">{t(lang, 'dashboard.my_schemas')}</h1>
           <Link href="/generate" className="bg-violet-700 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-violet-800 transition-colors flex items-center gap-2">
-            <span>+</span> Schemă nouă
+            {t(lang, 'dashboard.new_schema')}
           </Link>
         </div>
 
@@ -203,7 +219,7 @@ export default async function DashboardPage() {
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                     </svg>
-                    <h2 className="text-lg font-semibold text-gray-500">Fără folder</h2>
+                    <h2 className="text-lg font-semibold text-gray-500">{t(lang, 'dashboard.no_folder')}</h2>
                     <span className="text-xs text-gray-400">({unfoldered.length})</span>
                   </div>
                 )}
@@ -218,10 +234,10 @@ export default async function DashboardPage() {
         ) : (
           <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-16 text-center">
             <div className="text-5xl mb-4">🧵</div>
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">Nicio schemă încă</h2>
-            <p className="text-gray-500 mb-6">Generează prima ta schemă din orice fotografie</p>
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">{t(lang, 'dashboard.no_schemas')}</h2>
+            <p className="text-gray-500 mb-6">{t(lang, 'dashboard.no_schemas_desc')}</p>
             <Link href="/generate" className="bg-violet-700 text-white px-6 py-3 rounded-xl font-medium hover:bg-violet-800 transition-colors">
-              Generează acum
+              {t(lang, 'dashboard.generate_now')}
             </Link>
           </div>
         )}

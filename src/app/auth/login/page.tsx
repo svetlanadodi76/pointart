@@ -1,19 +1,26 @@
 import Link from 'next/link'
 import { login } from '../actions'
+import { getLang } from '@/lib/i18n/getLang'
+import { t } from '@/lib/i18n/translations'
+import { LanguageToggle } from '@/components/LanguageToggle'
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams
+  const lang = await getLang()
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <span className="text-2xl">🧵</span>
-            <span className="text-xl font-bold text-violet-700">PointArt</span>
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Bun venit înapoi</h1>
-          <p className="text-gray-500 mt-2">Intră în contul tău</p>
+          <div className="flex items-center justify-between mb-6">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <span className="text-2xl">🧵</span>
+              <span className="text-xl font-bold text-violet-700">PointArt</span>
+            </Link>
+            <LanguageToggle lang={lang} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">{t(lang, 'auth.login_subtitle')}</h1>
+          <p className="text-gray-500 mt-2">{t(lang, 'auth.login_title')}</p>
         </div>
 
         {error && (
@@ -25,7 +32,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <form action={login} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              {t(lang, 'auth.email')}
             </label>
             <input
               id="email"
@@ -40,10 +47,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <div>
             <div className="flex items-center justify-between mb-1">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Parolă
+                {t(lang, 'auth.password')}
               </label>
               <Link href="/auth/forgot-password" className="text-sm text-violet-600 hover:underline">
-                Ai uitat parola?
+                {t(lang, 'auth.forgot_password')}
               </Link>
             </div>
             <input
@@ -60,14 +67,14 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             type="submit"
             className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors"
           >
-            Intră în cont
+            {t(lang, 'auth.login_btn')}
           </button>
         </form>
 
         <p className="text-center text-gray-500 text-sm mt-6">
-          Nu ai cont?{' '}
+          {t(lang, 'auth.no_account')}{' '}
           <Link href="/auth/register" className="text-violet-700 font-medium hover:underline">
-            Înregistrează-te gratuit
+            {t(lang, 'auth.register_link')}
           </Link>
         </p>
       </div>

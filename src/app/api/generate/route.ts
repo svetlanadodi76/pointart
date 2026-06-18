@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSubscription } from '@/lib/supabase/getSubscription'
 import { generateSchema } from '@/lib/schema/generator'
+import { logSecurity } from '@/lib/supabase/logSecurity'
 import type { CraftType, CanvasType } from '@/types'
 
 export async function POST(request: NextRequest) {
@@ -16,11 +17,13 @@ export async function POST(request: NextRequest) {
   const subscription = await getSubscription(supabase, user.id)
 
   if (!subscription || subscription.status !== 'active') {
+    await logSecurity('generation_blocked', user.email ?? user.id, `plan=${subscription?.plan ?? 'none'} status=${subscription?.status ?? 'none'}`)
     return NextResponse.json({ error: 'Abonament inactiv sau expirat' }, { status: 403 })
   }
 
   // Verifică limita de scheme (trial și starter)
   if (subscription.plan !== 'pro' && (subscription.schemas_remaining ?? 0) <= 0) {
+    await logSecurity('generation_blocked', user.email ?? user.id, `plan=${subscription.plan} schemas_remaining=0`)
     return NextResponse.json({ error: 'Limita de scheme depășită' }, { status: 403 })
   }
 
@@ -96,6 +99,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Eroare generare:', error)
+    await logSecurity('generation_failed', user.email ?? user.id, String(error))
     return NextResponse.json({ error: 'Eroare la procesarea imaginii' }, { status: 500 })
   }
 }
