@@ -31,8 +31,8 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-3">1. Cine suntem</h2>
             <p>
               PointArt este un serviciu online care generează scheme pentru lucrări manuale (broderie,
-              goblene, picturi cu diamante) din fotografii. Serviciul este operat de Dodi Svetlana,
-              Republica Moldova. Contact: <a href="mailto:svetlanadodi76@gmail.com" className="text-violet-600 hover:underline">svetlanadodi76@gmail.com</a>
+              goblene, picturi cu diamante) din fotografii. Serviciul este operat de echipa PointArt,
+              Republica Moldova. Contact: <a href="mailto:contact@pointart.md" className="text-violet-600 hover:underline">contact@pointart.md</a>
             </p>
           </section>
 
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
             </ul>
             <p className="mt-3">
               Pentru a exercita aceste drepturi, contactează-ne la{' '}
-              <a href="mailto:svetlanadodi76@gmail.com" className="text-violet-600 hover:underline">svetlanadodi76@gmail.com</a>.
+              <a href="mailto:contact@pointart.md" className="text-violet-600 hover:underline">contact@pointart.md</a>.
               Vom răspunde în maximum 30 de zile.
             </p>
           </section>
@@ -127,8 +127,8 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-3">10. Contact</h2>
             <p>
               Pentru orice întrebări privind confidențialitatea datelor:{' '}
-              <a href="mailto:svetlanadodi76@gmail.com" className="text-violet-600 hover:underline">
-                svetlanadodi76@gmail.com
+              <a href="mailto:contact@pointart.md" className="text-violet-600 hover:underline">
+                contact@pointart.md
               </a>
             </p>
           </section>
