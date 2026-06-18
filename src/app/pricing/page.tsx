@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getAppSettings } from '@/lib/supabase/getAppSettings'
 import Link from 'next/link'
 import { PricingCards } from './PricingCards'
 
@@ -16,11 +17,12 @@ export default async function PricingPage() {
     if (sub?.status === 'active') currentPlan = sub.plan
   }
 
+  const appSettings = await getAppSettings()
   const payment = {
-    iban: process.env.PAYMENT_IBAN ?? '',
-    name: process.env.PAYMENT_NAME ?? '',
-    bank: process.env.PAYMENT_BANK ?? '',
-    contact: process.env.PAYMENT_CONTACT ?? '',
+    iban:    appSettings.payment_iban    || process.env.PAYMENT_IBAN    || '',
+    name:    appSettings.payment_name    || process.env.PAYMENT_NAME    || '',
+    bank:    appSettings.payment_bank    || process.env.PAYMENT_BANK    || '',
+    contact: appSettings.payment_contact || process.env.PAYMENT_CONTACT || '',
   }
 
   return (

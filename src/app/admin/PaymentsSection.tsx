@@ -21,18 +21,16 @@ const PLAN_COLORS: Record<string, string> = {
 
 export function PaymentsSection({ payments, totalEur, totalMdl }: Props) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="font-semibold text-gray-900">Încasări</h2>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-xs text-gray-400">Total EUR</p>
-            <p className="text-xl font-bold text-violet-700">{totalEur.toFixed(2)} €</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-400">Total MDL</p>
-            <p className="text-xl font-bold text-indigo-700">{totalMdl.toFixed(0)} MDL</p>
-          </div>
+    <>
+      {/* Totaluri */}
+      <div className="flex items-center gap-6 mb-5">
+        <div>
+          <p className="text-xs text-gray-400">Total EUR</p>
+          <p className="text-xl font-bold text-violet-700">{totalEur.toFixed(2)} €</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-400">Total MDL</p>
+          <p className="text-xl font-bold text-indigo-700">{totalMdl.toFixed(0)} MDL</p>
         </div>
       </div>
 
@@ -79,6 +77,6 @@ export function PaymentsSection({ payments, totalEur, totalMdl }: Props) {
         </div>
       )}
       <p className="text-xs text-gray-400 mt-3 text-right">{payments.length} tranzacții</p>
-    </div>
+    </>
   )
 }

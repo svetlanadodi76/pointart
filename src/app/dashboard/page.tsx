@@ -98,6 +98,22 @@ export default async function DashboardPage() {
           </div>
         )}
 
+        {/* Banner Starter — scheme epuizate */}
+        {subscription?.plan === 'starter' && subscription?.status === 'active' && (subscription.schemas_remaining ?? 0) <= 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔒</span>
+              <div>
+                <p className="font-semibold text-orange-800">Ai generat toate cele 3 scheme Starter</p>
+                <p className="text-orange-600 text-sm">Treci la Pro pentru scheme nelimitate.</p>
+              </div>
+            </div>
+            <Link href="/pricing" className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+              Upgrade Pro
+            </Link>
+          </div>
+        )}
+
         {/* Banner trial activ — scheme epuizate */}
         {subscription?.plan === 'free_trial' && subscription?.status === 'active' && (subscription.schemas_remaining ?? 0) <= 0 && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between">

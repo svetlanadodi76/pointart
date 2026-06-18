@@ -73,10 +73,10 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
     })
   }
 
-  const handleDeactivate = (userId: string) => {
+  const handleDeactivate = (userId: string, userEmail: string) => {
     if (confirmId !== userId) { setConfirmId(userId); return }
     setConfirmId(null)
-    startTransition(() => deactivateUser(userId))
+    startTransition(() => deactivateUser(userId, userEmail))
   }
 
   return (
@@ -147,7 +147,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                       )}
                       {u.status === 'active' && (
                         <button
-                          onClick={() => handleDeactivate(u.user_id)}
+                          onClick={() => handleDeactivate(u.user_id, u.email)}
                           className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg transition-colors"
                         >
                           {confirmId === u.user_id ? 'Sigur?' : 'Dezactivează'}

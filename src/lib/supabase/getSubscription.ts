@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createAdminClient } from './admin'
 
 export interface Subscription {
   user_id: string
@@ -8,6 +9,26 @@ export interface Subscription {
   trial_ends_at: string | null
   current_period_end: string | null
   created_at: string
+}
+
+async function logExpiry(userId: string, event: 'expired_trial' | 'expired_pro', plan: string) {
+  try {
+    const admin = createAdminClient()
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single()
+
+    await admin.from('subscription_logs').insert({
+      user_id: userId,
+      user_email: profile?.email ?? 'necunoscut',
+      event,
+      plan,
+    })
+  } catch {
+    // logging non-critical, nu blocăm fluxul principal
+  }
 }
 
 export async function getSubscription(
@@ -35,6 +56,7 @@ export async function getSubscription(
       .from('subscriptions')
       .update({ status: 'expired' })
       .eq('user_id', userId)
+    await logExpiry(userId, 'expired_trial', 'free_trial')
     return { ...sub, status: 'expired' }
   }
 
@@ -49,6 +71,7 @@ export async function getSubscription(
       .from('subscriptions')
       .update({ status: 'expired' })
       .eq('user_id', userId)
+    await logExpiry(userId, 'expired_pro', 'pro')
     return { ...sub, status: 'expired' }
   }
 

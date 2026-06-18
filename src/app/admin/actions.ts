@@ -22,6 +22,7 @@ export async function activateStarter(
 ) {
   await checkAdmin()
   const admin = createAdminClient()
+
   await admin.from('subscriptions').update({
     plan: 'starter',
     status: 'active',
@@ -39,6 +40,14 @@ export async function activateStarter(
     note: note ?? null,
   })
 
+  await admin.from('subscription_logs').insert({
+    user_id: userId,
+    user_email: userEmail,
+    event: 'activated_starter',
+    plan: 'starter',
+    note: note ?? null,
+  })
+
   revalidatePath('/admin')
 }
 
@@ -53,6 +62,7 @@ export async function activatePro(
   const admin = createAdminClient()
   const periodEnd = new Date()
   periodEnd.setMonth(periodEnd.getMonth() + 1)
+
   await admin.from('subscriptions').update({
     plan: 'pro',
     status: 'active',
@@ -70,14 +80,32 @@ export async function activatePro(
     note: note ?? null,
   })
 
+  await admin.from('subscription_logs').insert({
+    user_id: userId,
+    user_email: userEmail,
+    event: 'activated_pro',
+    plan: 'pro',
+    note: note ?? null,
+  })
+
   revalidatePath('/admin')
 }
 
-export async function deactivateUser(userId: string) {
+export async function deactivateUser(userId: string, userEmail: string) {
   await checkAdmin()
   const admin = createAdminClient()
+
   await admin.from('subscriptions').update({
     status: 'cancelled',
   }).eq('user_id', userId)
+
+  await admin.from('subscription_logs').insert({
+    user_id: userId,
+    user_email: userEmail,
+    event: 'deactivated',
+    plan: null,
+    note: null,
+  })
+
   revalidatePath('/admin')
 }
