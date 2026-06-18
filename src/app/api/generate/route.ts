@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
     }
 
-    let imageBuffer = Buffer.from(await file.arrayBuffer())
+    let imageBuffer: Buffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer)
 
     // Convertește HEIC/HEIF la JPEG (Sharp 0.35 suportă HEIC dacă libheif e disponibil)
     const fname = (file.name || '').toLowerCase()
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     // Scade o schemă din trial dacă e cazul
     if (subscription.plan === 'free_trial') {
       await supabase.from('subscriptions').update({
-        schemas_remaining: subscription.schemas_remaining - 1
+        schemas_remaining: (subscription.schemas_remaining ?? 0) - 1
       }).eq('user_id', user.id)
     }
 
