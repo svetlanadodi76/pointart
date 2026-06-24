@@ -8,19 +8,19 @@ const PAGE_WIDTH = 595
 const PAGE_HEIGHT = 842
 const MARGIN = 30
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2
-const LEGEND_HEIGHT = 200
+const LEGEND_HEIGHT = 240
 
 const styles = StyleSheet.create({
   page: { backgroundColor: '#fff', padding: MARGIN },
   title: { fontSize: 14, fontWeight: 'bold', marginBottom: 4, color: '#5b21b6' },
   subtitle: { fontSize: 9, color: '#6b7280', marginBottom: 8 },
-  legendTitle: { fontSize: 10, fontWeight: 'bold', marginBottom: 6, marginTop: 10, color: '#374151' },
-  legendRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
-  legendCode: { fontSize: 8, width: 50, color: '#374151', fontFamily: 'Courier' },
-  legendName: { fontSize: 7, flex: 1, color: '#6b7280' },
-  legendQty: { fontSize: 7, width: 60, color: '#374151', textAlign: 'right' },
-  legendSymbol: { width: 14, height: 14, marginRight: 5, alignItems: 'center', justifyContent: 'center' },
-  legendSymbolText: { fontSize: 8, textAlign: 'center' },
+  legendTitle: { fontSize: 11, fontWeight: 'bold', marginBottom: 6, marginTop: 10, color: '#111827' },
+  legendRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  legendCode: { fontSize: 9, width: 50, color: '#111827', fontFamily: 'Courier' },
+  legendName: { fontSize: 9, flex: 1, color: '#1f2937' },
+  legendQty: { fontSize: 9, width: 60, color: '#111827', textAlign: 'right' },
+  legendSymbol: { width: 16, height: 16, marginRight: 5, alignItems: 'center', justifyContent: 'center' },
+  legendSymbolText: { fontSize: 10, textAlign: 'center' },
   pageNum: { fontSize: 7, color: '#9ca3af', textAlign: 'center', marginTop: 6 },
   rulerText: { fontSize: 5, fill: '#9ca3af' },
 })
