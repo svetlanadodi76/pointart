@@ -4,10 +4,14 @@ import { assignSymbols } from '@/lib/dmc/symbols'
 import type { CraftType, CanvasType, GeneratedSchema, ColorUsage } from '@/types'
 
 const CANVAS_CONFIG = {
-  '11CT': { stitchesPerCm: 4.3, strands: 3 },
-  '14CT': { stitchesPerCm: 5.5, strands: 2 },
-  '16CT': { stitchesPerCm: 6.3, strands: 2 },
-  '18CT': { stitchesPerCm: 7.1, strands: 1 },
+  '11CT': { stitchesPerCm: 4.3,   strands: 3 },
+  '14CT': { stitchesPerCm: 5.5,   strands: 2 },
+  '16CT': { stitchesPerCm: 6.3,   strands: 2 },
+  '18CT': { stitchesPerCm: 7.1,   strands: 1 },
+  // Diamante — densitate = 1 / (mm / 10)
+  '2.5mm': { stitchesPerCm: 4.0,  strands: 0 },
+  '2.8mm': { stitchesPerCm: 3.571, strands: 0 },
+  '3.0mm': { stitchesPerCm: 3.333, strands: 0 },
 }
 
 // 1 sculă DMC = 8m = 800cm. Un punct consumă ~1.5cm de ață per fir (diagonala 14CT × 4 brațe + overhead)

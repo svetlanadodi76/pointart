@@ -37,6 +37,16 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [settingsChanged, setSettingsChanged] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Resetează canvasType la valoarea implicită când se schimbă tipul lucrării
+  useEffect(() => {
+    if (craftType === 'diamond') {
+      setCanvasType('2.5mm')
+    } else if (['2.5mm', '2.8mm', '3.0mm'].includes(canvasType)) {
+      setCanvasType('14CT')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [craftType])
+
   const canGenerate = subscription?.status === 'active' &&
     (subscription?.plan !== 'free_trial' || subscription?.schemas_remaining > 0)
 
@@ -105,8 +115,6 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       setLoading(false)
     }
   }
-
-  const threads = canvasType === '11CT' ? 3 : 2
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -194,11 +202,11 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               </div>
             </div>
 
-            {/* Canvas & dimensiuni */}
+            {/* Canvas (broderie/goblene) */}
             {craftType !== 'diamond' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
                 <h2 className="font-semibold text-gray-900 mb-4">3. Canvas</h2>
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="grid grid-cols-2 gap-3">
                   {([
                     { ct: '11CT', strands: '3 fire', desc: '4.3 pt/cm — relaxat' },
                     { ct: '14CT', strands: '2 fire', desc: '5.5 pt/cm — standard' },
@@ -215,6 +223,41 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       <div className="font-bold text-gray-900">{ct}</div>
                       <div className="text-xs text-violet-600">{strands}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mărime diamante */}
+            {craftType === 'diamond' && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 className="font-semibold text-gray-900 mb-1">3. Mărimea diamantelor</h2>
+                <p className="text-xs text-gray-400 mb-4">
+                  Dimensiunea unui diamant determină rezoluția schemei
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { size: '2.5mm', label: '2.5 mm', desc: 'Standard', density: '40/10cm', popular: true },
+                    { size: '2.8mm', label: '2.8 mm', desc: 'Mediu',    density: '36/10cm', popular: false },
+                    { size: '3.0mm', label: '3.0 mm', desc: 'Relaxat',  density: '33/10cm', popular: false },
+                  ] as const).map(({ size, label, desc, density, popular }) => (
+                    <button
+                      key={size}
+                      onClick={() => changeSetting(() => setCanvasType(size))}
+                      className={`p-3 rounded-xl border-2 text-center transition-colors relative ${
+                        canvasType === size ? 'border-violet-500 bg-violet-50' : 'border-gray-200 hover:border-violet-300'
+                      }`}
+                    >
+                      {popular && (
+                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                          popular
+                        </span>
+                      )}
+                      <div className="font-bold text-gray-900 text-lg">💎</div>
+                      <div className="font-bold text-gray-900 text-sm">{label}</div>
+                      <div className="text-xs text-violet-600">{desc}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{density}</div>
                     </button>
                   ))}
                 </div>
@@ -287,8 +330,13 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               </div>
               <p className="text-xs text-gray-400 mt-2">
                 {(() => {
-                  const spc = { '11CT': 4.3, '14CT': 5.5, '16CT': 6.3, '18CT': 7.1 }[canvasType] ?? 5.5
-                  return `→ ${Math.round(widthCm * spc)} × ${Math.round(heightCm * spc)} puncte`
+                  const spc: Record<string, number> = {
+                    '11CT': 4.3, '14CT': 5.5, '16CT': 6.3, '18CT': 7.1,
+                    '2.5mm': 4.0, '2.8mm': 3.571, '3.0mm': 3.333,
+                  }
+                  const density = spc[canvasType] ?? 5.5
+                  const unit = craftType === 'diamond' ? 'diamante' : 'puncte'
+                  return `→ ${Math.round(widthCm * density)} × ${Math.round(heightCm * density)} ${unit}`
                 })()}
               </p>
             </div>

@@ -4,16 +4,16 @@ import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
 // 1 cm = 28.3465 PDF points (standard PDF unit)
 const PT_PER_CM = 28.3465
 
-// Dimensiunea reală a unui punct pe pânză (cm/punct)
+// Dimensiunea reală a unui punct/diamant pe pânză (cm/celulă)
 const STITCH_SIZE_CM: Record<string, number> = {
-  '11CT': 1 / 4.3,  // ~2.33mm
-  '14CT': 1 / 5.5,  // ~1.82mm
-  '16CT': 1 / 6.3,  // ~1.59mm
-  '18CT': 1 / 7.1,  // ~1.41mm
+  '11CT':  1 / 4.3,   // ~2.33mm
+  '14CT':  1 / 5.5,   // ~1.82mm
+  '16CT':  1 / 6.3,   // ~1.59mm
+  '18CT':  1 / 7.1,   // ~1.41mm
+  '2.5mm': 0.25,
+  '2.8mm': 0.28,
+  '3.0mm': 0.30,
 }
-
-// Diamant standard: 2.5mm
-const DIAMOND_SIZE_CM = 0.25
 
 interface FabricPDFProps {
   schema: GeneratedSchema
@@ -31,9 +31,7 @@ export function FabricPDF({
   const { grid, colors, widthStitches, heightStitches, widthCm, heightCm } = schema
 
   // Dimensiunea unei celule în PDF points (= dimensiunea reală 1:1)
-  const cellCm = craftType === 'diamond'
-    ? DIAMOND_SIZE_CM
-    : (STITCH_SIZE_CM[canvasType] ?? 1 / 5.5)
+  const cellCm = STITCH_SIZE_CM[canvasType] ?? 1 / 5.5
   const cellPt = cellCm * PT_PER_CM
 
   // Pagina PDF are exact dimensiunea pânzei
