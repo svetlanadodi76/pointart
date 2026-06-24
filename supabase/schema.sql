@@ -38,7 +38,7 @@ create table if not exists schemas (
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null default 'Schema nouă',
   craft_type text not null check (craft_type in ('cross_stitch', 'goblene', 'diamond')),
-  canvas_type text check (canvas_type in ('11CT', '14CT', '16CT', '18CT')),
+  canvas_type text check (canvas_type in ('11CT', '14CT', '16CT', '18CT', '2.5mm', '2.8mm', '3.0mm')),
   width_stitches integer not null,
   height_stitches integer not null,
   width_cm numeric not null,

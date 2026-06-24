@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(fileName)
 
     // Salvează schema în baza de date
-    const { data: savedSchema } = await supabase.from('schemas').insert({
+    const { data: savedSchema, error: saveError } = await supabase.from('schemas').insert({
       user_id: user.id,
       name: `Schema ${new Date().toLocaleDateString('ro-RO')}`,
       craft_type: craftType,
@@ -87,6 +87,11 @@ export async function POST(request: NextRequest) {
       original_image_url: publicUrl,
       schema_data: schema,
     }).select().single()
+
+    if (saveError) {
+      console.error('Eroare salvare schema:', saveError.message)
+      await logSecurity('generation_failed', user.email ?? user.id, `save_error: ${saveError.message}`)
+    }
 
     // Scade o schemă din trial dacă e cazul
     if (subscription.plan === 'free_trial') {
