@@ -372,14 +372,14 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   <label className="text-xs text-gray-500 block mb-1">Lățime (cm)</label>
                   <input type="number" value={widthCm} min={5} max={200}
                     onChange={e => changeSetting(() => setWidthCm(Number(e.target.value)))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Înălțime (cm)</label>
                   <input type="number" value={heightCm} min={5} max={200}
                     onChange={e => changeSetting(() => setHeightCm(Number(e.target.value)))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                 </div>
               </div>
