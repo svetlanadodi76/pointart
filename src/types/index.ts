@@ -29,6 +29,7 @@ export interface ColorUsage {
   count: number
   skeins: number
   unit: 'skeins' | 'packets' // skeins = ață, packets = diamante
+  alternatives?: DmcColor[]  // top culori similare pentru swap
 }
 
 export interface GeneratedSchema {

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import type { GeneratedSchema } from '@/types'
+import type { GeneratedSchema, DmcColor } from '@/types'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import { LanguageToggle } from '@/components/LanguageToggle'
@@ -499,10 +499,18 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
 function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
+  const [localColors, setLocalColors] = useState(schema.colors)
+  const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(4, Math.min(12, Math.floor(600 / schema.widthStitches)))
 
-  // Randează preview final pe canvas când se schimbă view-ul
+  // Resetează culorile locale când se generează o schemă nouă
+  useEffect(() => {
+    setLocalColors(schema.colors)
+    setEditingIdx(null)
+  }, [schema])
+
+  // Randează preview final cu localColors (include swap-urile utilizatorului)
   useEffect(() => {
     if (view !== 'final' || !canvasRef.current) return
     const canvas = canvasRef.current
@@ -516,11 +524,23 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
         const colorIdx = schema.grid[y][x]
-        ctx.fillStyle = schema.colors[colorIdx].dmcColor.hex
+        ctx.fillStyle = localColors[colorIdx].dmcColor.hex
         ctx.fillRect(x * scale, y * scale, scale, scale)
       }
     }
-  }, [view, schema])
+  }, [view, schema, localColors])
+
+  function swapColor(origIdx: number, newDmc: DmcColor) {
+    setLocalColors(prev => prev.map((c, i) =>
+      i === origIdx ? { ...c, dmcColor: newDmc } : c
+    ))
+    setEditingIdx(null)
+  }
+
+  // Păstrăm indexul original în tabloul colors pentru swap corect
+  const sortedWithOrigIdx = [...localColors]
+    .map((c, i) => ({ ...c, origIdx: i }))
+    .sort((a, b) => b.count - a.count)
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
@@ -576,7 +596,6 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
 
             {/* Riglă stânga + grilă */}
             <div style={{ display: 'flex' }}>
-              {/* Riglă stânga */}
               <div style={{ width: 24, position: 'relative', flexShrink: 0 }}>
                 {Array.from({ length: Math.floor(schema.heightStitches / 10) + 1 }, (_, i) => {
                   const row = i * 10
@@ -599,11 +618,11 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                 })}
               </div>
 
-              {/* Grilă */}
+              {/* Grilă — folosește localColors pentru a reflecta swap-urile */}
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${schema.widthStitches}, ${CELL_SIZE}px)` }}>
                 {schema.grid.map((row, y) =>
                   row.map((colorIdx, x) => {
-                    const color = schema.colors[colorIdx]
+                    const color = localColors[colorIdx]
                     const isRuler = x % 10 === 0 || y % 10 === 0
                     return (
                       <div
@@ -642,32 +661,70 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
         </div>
       )}
 
-      {/* Legendă culori */}
+      {/* Legendă culori cu editare */}
       <div>
-        <h3 className="font-medium text-gray-800 mb-3">Culori folosite ({schema.colors.length})</h3>
-        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-          {[...schema.colors]
-            .sort((a, b) => b.count - a.count)
-            .map((color, i) => (
-              <div key={i} className="flex items-center gap-3 text-sm">
-                <div
-                  className="w-6 h-6 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                  style={{ backgroundColor: color.dmcColor.hex, color: 'rgba(0,0,0,0.6)' }}
-                >
-                  {color.symbol}
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium text-gray-800">Culori folosite ({localColors.length})</h3>
+          <p className="text-xs text-gray-400">Click pe culoare pentru a o schimba</p>
+        </div>
+        <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
+          {sortedWithOrigIdx.map((color) => {
+            const origIdx = color.origIdx
+            const isEditing = editingIdx === origIdx
+            return (
+              <div key={origIdx}>
+                {/* Rândul culorii */}
+                <div className="flex items-center gap-3 text-sm">
+                  <button
+                    onClick={() => setEditingIdx(isEditing ? null : origIdx)}
+                    className={`w-6 h-6 rounded border-2 flex-shrink-0 flex items-center justify-center text-xs font-bold transition-all ${
+                      isEditing
+                        ? 'border-violet-500 ring-2 ring-violet-300 scale-110'
+                        : 'border-gray-300 hover:border-violet-400 hover:scale-110'
+                    }`}
+                    style={{ backgroundColor: color.dmcColor.hex, color: 'rgba(0,0,0,0.6)' }}
+                    title="Click pentru a schimba culoarea"
+                  >
+                    {color.symbol}
+                  </button>
+                  <span className="font-mono text-gray-700 w-14 text-xs">DMC {color.dmcColor.code}</span>
+                  <span className="text-gray-500 flex-1 text-xs truncate">{color.dmcColor.name}</span>
+                  <span className="text-gray-400 text-xs whitespace-nowrap">
+                    {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}
+                  </span>
                 </div>
-                <span className="font-mono text-gray-700 w-14 text-xs">DMC {color.dmcColor.code}</span>
-                <span className="text-gray-500 flex-1 text-xs">{color.dmcColor.name}</span>
-                <span className="text-gray-400 text-xs whitespace-nowrap">
-                  {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}
-                </span>
+
+                {/* Selector alternative — se deschide sub rândul culorii */}
+                {isEditing && color.alternatives && color.alternatives.length > 0 && (
+                  <div className="mt-1.5 mb-2 bg-violet-50 border border-violet-200 rounded-xl p-3">
+                    <p className="text-xs text-violet-700 font-medium mb-2">Înlocuiește cu culoare similară:</p>
+                    <div className="grid grid-cols-8 gap-1.5 mb-2">
+                      {color.alternatives.map(alt => (
+                        <button
+                          key={alt.code}
+                          onClick={() => swapColor(origIdx, alt)}
+                          title={`DMC ${alt.code} — ${alt.name}`}
+                          className="aspect-square rounded border-2 border-transparent hover:border-violet-500 hover:scale-125 transition-all"
+                          style={{ backgroundColor: alt.hex }}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setEditingIdx(null)}
+                      className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      ✕ Anulează
+                    </button>
+                  </div>
+                )}
               </div>
-            ))}
+            )
+          })}
         </div>
       </div>
 
       <div className="text-xs text-gray-400 border-t pt-3">
-        {schema.widthStitches * schema.heightStitches} puncte total • {schema.colors.length} culori DMC
+        {schema.widthStitches * schema.heightStitches} puncte total • {localColors.length} culori DMC
       </div>
     </div>
   )

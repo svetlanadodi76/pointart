@@ -264,6 +264,18 @@ export async function generateSchema(
     }
   })
 
+  // Calculează alternative similare pentru fiecare culoare (top 8, din DMC-urile nefolosite)
+  const usedDmcSet = new Set(colors.map(c => c.dmcColor.code))
+  for (const colorUsage of colors) {
+    const { r, g, b } = colorUsage.dmcColor
+    colorUsage.alternatives = dmcColors
+      .filter(c => !usedDmcSet.has(c.code))
+      .map(c => ({ c, dist: 2*(r-c.r)**2 + 4*(g-c.g)**2 + 3*(b-c.b)**2 }))
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 8)
+      .map(({ c }) => c)
+  }
+
   return {
     grid: finalGrid,
     colors,
