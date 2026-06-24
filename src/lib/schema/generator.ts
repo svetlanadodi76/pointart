@@ -87,10 +87,13 @@ export async function generateSchema(
   const widthStitches = Math.round(settings.widthCm * config.stitchesPerCm)
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
 
-  // Redimensionează cu kernel lanczos3 (calitate maximă) + ușoară saturație
+  // Redimensionează cu kernel lanczos3 (calitate maximă)
+  // normalize() echilibrează histograma — reduce zonele supraexpuse (frunte albă etc.)
+  // brightness 0.94 + saturation 1.2 — culori mai vii, highlights mai puțin arse
   const { data: pixels, info } = await sharp(imageBuffer)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
-    .modulate({ saturation: 1.15 })
+    .normalize()
+    .modulate({ saturation: 1.2, brightness: 0.94 })
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
