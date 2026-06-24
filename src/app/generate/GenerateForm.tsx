@@ -695,27 +695,33 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                 </div>
 
                 {/* Selector alternative — se deschide sub rândul culorii */}
-                {isEditing && color.alternatives && color.alternatives.length > 0 && (
-                  <div className="mt-1.5 mb-2 bg-violet-50 border border-violet-200 rounded-xl p-3">
-                    <p className="text-xs text-violet-700 font-medium mb-2">Înlocuiește cu culoare similară:</p>
-                    <div className="grid grid-cols-8 gap-1.5 mb-2">
-                      {color.alternatives.map(alt => (
-                        <button
-                          key={alt.code}
-                          onClick={() => swapColor(origIdx, alt)}
-                          title={`DMC ${alt.code} — ${alt.name}`}
-                          className="aspect-square rounded border-2 border-transparent hover:border-violet-500 hover:scale-125 transition-all"
-                          style={{ backgroundColor: alt.hex }}
-                        />
-                      ))}
+                {isEditing && (
+                  color.alternatives && color.alternatives.length > 0 ? (
+                    <div className="mt-1.5 mb-2 bg-violet-50 border border-violet-200 rounded-xl p-3">
+                      <p className="text-xs text-violet-700 font-medium mb-2">Înlocuiește cu culoare similară:</p>
+                      <div className="grid grid-cols-8 gap-1.5 mb-2">
+                        {color.alternatives.map(alt => (
+                          <button
+                            key={alt.code}
+                            onClick={() => swapColor(origIdx, alt)}
+                            title={`DMC ${alt.code} — ${alt.name}`}
+                            className="aspect-square rounded border-2 border-transparent hover:border-violet-500 hover:scale-125 transition-all"
+                            style={{ backgroundColor: alt.hex }}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setEditingIdx(null)}
+                        className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        ✕ Anulează
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setEditingIdx(null)}
-                      className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      ✕ Anulează
-                    </button>
-                  </div>
+                  ) : (
+                    <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-1 mb-1">
+                      Regenerați schema (apasă Generează din nou) pentru a vedea alternative
+                    </p>
+                  )
                 )}
               </div>
             )
