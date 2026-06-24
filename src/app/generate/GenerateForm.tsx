@@ -35,6 +35,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [result, setResult] = useState<GeneratedSchema | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [settingsChanged, setSettingsChanged] = useState(false)
+  const [imgBrightness, setImgBrightness] = useState(1.0)
+  const [imgContrast, setImgContrast] = useState(1.0)
+  const [imgSaturation, setImgSaturation] = useState(1.0)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Resetează canvasType la valoarea implicită când se schimbă tipul lucrării
@@ -55,6 +58,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     setResult(null)
     setError(null)
     setSettingsChanged(false)
+    setImgBrightness(1.0)
+    setImgContrast(1.0)
+    setImgSaturation(1.0)
     if (fileRef.current) fileRef.current.value = ''
 
     const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
@@ -102,6 +108,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     fd.append('widthCm', widthCm.toString())
     fd.append('heightCm', heightCm.toString())
     fd.append('maxColors', maxColors.toString())
+    fd.append('imgBrightness', imgBrightness.toString())
+    fd.append('imgContrast', imgContrast.toString())
+    fd.append('imgSaturation', imgSaturation.toString())
 
     try {
       const res = await fetch('/api/generate', { method: 'POST', body: fd })
@@ -154,7 +163,12 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     <p className="text-amber-600 text-xs mt-1">Format iPhone HEIC — previzualizarea nu e disponibilă în browser, dar generarea funcționează</p>
                   </div>
                 ) : preview ? (
-                  <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-contain" />
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="max-h-48 mx-auto rounded-lg object-contain"
+                    style={{ filter: `brightness(${imgBrightness}) contrast(${imgContrast}) saturate(${imgSaturation})` }}
+                  />
                 ) : (
                   <div>
                     <div className="text-4xl mb-3">📷</div>
@@ -176,6 +190,47 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 </button>
               )}
             </div>
+
+            {/* Ajustare imagine — apare doar după upload */}
+            {preview && preview !== '__heic__' && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="font-semibold text-gray-900">✨ Ajustare imagine</h2>
+                    <p className="text-xs text-gray-400">Preview instant — se aplică la generare</p>
+                  </div>
+                  {(imgBrightness !== 1 || imgContrast !== 1 || imgSaturation !== 1) && (
+                    <button
+                      onClick={() => { setImgBrightness(1); setImgContrast(1); setImgSaturation(1) }}
+                      className="text-xs text-gray-400 hover:text-violet-600 transition-colors"
+                    >
+                      ↺ Reset
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  {([
+                    { label: '☀️ Luminozitate', value: imgBrightness, set: setImgBrightness, min: 0.5, max: 1.5 },
+                    { label: '◑ Contrast',      value: imgContrast,   set: setImgContrast,   min: 0.5, max: 1.5 },
+                    { label: '🎨 Saturație',    value: imgSaturation, set: setImgSaturation, min: 0.5, max: 2.0 },
+                  ] as const).map(({ label, value, set, min, max }) => (
+                    <div key={label}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-600">{label}</span>
+                        <span className={`font-semibold ${value !== 1 ? 'text-violet-600' : 'text-gray-400'}`}>
+                          {Math.round(value * 100)}%
+                        </span>
+                      </div>
+                      <input
+                        type="range" min={min} max={max} step={0.05} value={value}
+                        onChange={e => { set(Number(e.target.value)); if (result) setSettingsChanged(true) }}
+                        className="w-full accent-violet-600 h-1.5"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Tip lucrare */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">

@@ -35,6 +35,9 @@ export async function POST(request: NextRequest) {
     const widthCm = parseFloat(formData.get('widthCm') as string)
     const heightCm = parseFloat(formData.get('heightCm') as string)
     const maxColors = parseInt(formData.get('maxColors') as string)
+    const imgBrightness = parseFloat(formData.get('imgBrightness') as string) || 1.0
+    const imgContrast = parseFloat(formData.get('imgContrast') as string) || 1.0
+    const imgSaturation = parseFloat(formData.get('imgSaturation') as string) || 1.0
 
     if (!file || !craftType || !widthCm || !heightCm) {
       return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
@@ -61,6 +64,9 @@ export async function POST(request: NextRequest) {
       widthCm,
       heightCm,
       maxColors: maxColors || 30,
+      imgBrightness,
+      imgContrast,
+      imgSaturation,
     })
 
     // Salvează imaginea originală în Supabase Storage

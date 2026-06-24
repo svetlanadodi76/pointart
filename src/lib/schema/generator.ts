@@ -81,19 +81,25 @@ export async function generateSchema(
     widthCm: number
     heightCm: number
     maxColors: number
+    imgBrightness?: number
+    imgContrast?: number
+    imgSaturation?: number
   }
 ): Promise<GeneratedSchema> {
   const config = CANVAS_CONFIG[settings.canvasType]
   const widthStitches = Math.round(settings.widthCm * config.stitchesPerCm)
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
 
-  // Redimensionează cu kernel lanczos3 (calitate maximă)
-  // normalize() echilibrează histograma — reduce zonele supraexpuse (frunte albă etc.)
-  // brightness 0.94 + saturation 1.2 — culori mai vii, highlights mai puțin arse
+  // Valorile utilizatorului se combină cu corecțiile noastre de bază
+  const brightness = 0.94 * (settings.imgBrightness ?? 1.0)
+  const saturation = 1.2  * (settings.imgSaturation ?? 1.0)
+  const contrast   = settings.imgContrast ?? 1.0
+
   const { data: pixels, info } = await sharp(imageBuffer)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
     .normalize()
-    .modulate({ saturation: 1.2, brightness: 0.94 })
+    .modulate({ saturation, brightness })
+    .linear(contrast, Math.round(128 * (1 - contrast)))
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
