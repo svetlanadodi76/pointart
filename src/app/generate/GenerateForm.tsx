@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import type { GeneratedSchema, DmcColor } from '@/types'
+import type { GeneratedSchema, DmcColor, ColorUsage } from '@/types'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import { LanguageToggle } from '@/components/LanguageToggle'
@@ -570,6 +570,10 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
     setEditingIdx(null)
   }, [schema])
 
+  // Guard sincron: dacă schema s-a schimbat dar useEffect nu s-a executat încă,
+  // localColors poate fi din schema anterioară (altă dimensiune) → folosim schema.colors direct
+  const effectiveColors: ColorUsage[] = localColors.length === schema.colors.length ? localColors : schema.colors
+
   // Randează preview final cu localColors (include swap-urile utilizatorului)
   useEffect(() => {
     if (view !== 'final' || !canvasRef.current) return
@@ -584,11 +588,11 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
         const colorIdx = schema.grid[y][x]
-        ctx.fillStyle = localColors[colorIdx].dmcColor.hex
+        ctx.fillStyle = effectiveColors[colorIdx].dmcColor.hex
         ctx.fillRect(x * scale, y * scale, scale, scale)
       }
     }
-  }, [view, schema, localColors])
+  }, [view, schema, effectiveColors])
 
   function swapColor(origIdx: number, newDmc: DmcColor) {
     setLocalColors(prev => prev.map((c, i) =>
@@ -598,7 +602,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
   }
 
   // Păstrăm indexul original în tabloul colors pentru swap corect
-  const sortedWithOrigIdx = [...localColors]
+  const sortedWithOrigIdx = [...effectiveColors]
     .map((c, i) => ({ ...c, origIdx: i }))
     .sort((a, b) => b.count - a.count)
 
@@ -682,7 +686,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${schema.widthStitches}, ${CELL_SIZE}px)` }}>
                 {schema.grid.map((row, y) =>
                   row.map((colorIdx, x) => {
-                    const color = localColors[colorIdx]
+                    const color = effectiveColors[colorIdx]
                     const isRuler = x % 10 === 0 || y % 10 === 0
                     return (
                       <div
@@ -724,7 +728,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
       {/* Legendă culori cu editare */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium text-gray-800">Culori folosite ({localColors.length})</h3>
+          <h3 className="font-medium text-gray-800">Culori folosite ({effectiveColors.length})</h3>
           <p className="text-xs text-gray-400">Click pe culoare pentru a o schimba</p>
         </div>
         <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
@@ -790,7 +794,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
       </div>
 
       <div className="text-xs text-gray-400 border-t pt-3">
-        {schema.widthStitches * schema.heightStitches} puncte total • {localColors.length} culori DMC
+        {schema.widthStitches * schema.heightStitches} puncte total • {effectiveColors.length} culori DMC
       </div>
     </div>
   )
