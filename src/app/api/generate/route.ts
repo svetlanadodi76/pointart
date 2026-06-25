@@ -73,14 +73,12 @@ export async function POST(request: NextRequest) {
       imgSaturation,
     })
 
-    // Salvează imaginea originală în Supabase Storage
+    // Salvează imaginea originală în Supabase Storage (bucket privat)
     const fileName = `${user.id}/${Date.now()}.jpg`
     await supabase.storage.from('images').upload(fileName, imageBuffer, {
       contentType: 'image/jpeg',
       upsert: true,
     })
-
-    const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(fileName)
 
     // Salvează schema în baza de date
     const { data: savedSchema, error: saveError } = await supabase.from('schemas').insert({
@@ -94,7 +92,7 @@ export async function POST(request: NextRequest) {
       height_cm: schema.heightCm,
       max_colors: maxColors,
       colors_used: schema.colors.length,
-      original_image_url: publicUrl,
+      original_image_url: fileName,
       schema_data: schema,
       image_hash: imageHash,
     }).select().single()
