@@ -54,6 +54,18 @@ export default async function DashboardPage() {
     }
   }
 
+  // Signed URLs batch pentru thumbnail-uri (bucket privat)
+  const imagePaths = schemaList.map(s => s.original_image_url).filter(Boolean) as string[]
+  const signedUrlMap = new Map<string, string>()
+  if (imagePaths.length > 0) {
+    const { data: signedData } = await supabase.storage.from('images').createSignedUrls(imagePaths, 3600)
+    if (signedData) {
+      for (const item of signedData) {
+        if (item.signedUrl && item.path) signedUrlMap.set(item.path, item.signedUrl)
+      }
+    }
+  }
+
   // Extrage folderele existente (unice, fără null)
   const existingFolders: string[] = [...new Set(
     schemaList.map(s => s.folder).filter(Boolean) as string[]
@@ -232,7 +244,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {(grouped.get(folderName) ?? []).map(schema => (
-                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(schema.image_hash) ?? []).filter(v => v.id !== schema.id) : []} />
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(schema.image_hash) ?? []).filter(v => v.id !== schema.id) : []} imageUrl={schema.original_image_url ? signedUrlMap.get(schema.original_image_url) : undefined} />
                   ))}
                 </div>
               </section>
@@ -252,7 +264,7 @@ export default async function DashboardPage() {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {unfoldered.map(schema => (
-                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(schema.image_hash) ?? []).filter(v => v.id !== schema.id) : []} />
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(schema.image_hash) ?? []).filter(v => v.id !== schema.id) : []} imageUrl={schema.original_image_url ? signedUrlMap.get(schema.original_image_url) : undefined} />
                   ))}
                 </div>
               </section>

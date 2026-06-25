@@ -25,9 +25,10 @@ interface SchemaCardProps {
   schema: Schema
   existingFolders: string[]
   variants?: VariantRef[]
+  imageUrl?: string
 }
 
-export function SchemaCard({ schema, existingFolders, variants = [] }: SchemaCardProps) {
+export function SchemaCard({ schema, existingFolders, variants = [], imageUrl }: SchemaCardProps) {
   const [isPending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showFolderInput, setShowFolderInput] = useState(false)
@@ -110,11 +111,23 @@ export function SchemaCard({ schema, existingFolders, variants = [] }: SchemaCar
         )}
       </div>
 
-      {/* Stats */}
-      <div className="text-sm text-gray-500 space-y-1">
-        <p>📐 {schema.width_stitches}×{schema.height_stitches} puncte</p>
-        <p>🎨 {schema.colors_used} culori DMC</p>
-        {schema.canvas_type && <p>🧵 Canvas {schema.canvas_type}</p>}
+      {/* Stats + thumbnail */}
+      <div className="flex items-start gap-3">
+        <div className="text-sm text-gray-500 space-y-1 flex-1">
+          <p>📐 {schema.width_stitches}×{schema.height_stitches} puncte</p>
+          <p>🎨 {schema.colors_used} culori DMC</p>
+          {schema.canvas_type && <p>🧵 Canvas {schema.canvas_type}</p>}
+        </div>
+        {imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt=""
+            width={64}
+            height={64}
+            className="w-16 h-16 object-cover rounded-lg shrink-0 border border-gray-100"
+          />
+        )}
       </div>
 
       {/* Buton deschide */}
