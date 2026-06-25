@@ -45,10 +45,13 @@ export default async function DashboardPage() {
 
   const schemaList: SchemaRow[] = (schemas ?? []) as SchemaRow[]
 
-  // Câte scheme din aceeași poză (după image_hash) — pentru badge "N variante"
-  const hashCount = new Map<string, number>()
+  // Grupare după image_hash — pentru mini-link-uri navigabile între variante
+  const hashGroup = new Map<string, Array<{ id: string; colors_used: number }>>()
   for (const s of schemaList) {
-    if (s.image_hash) hashCount.set(s.image_hash, (hashCount.get(s.image_hash) ?? 0) + 1)
+    if (s.image_hash) {
+      if (!hashGroup.has(s.image_hash)) hashGroup.set(s.image_hash, [])
+      hashGroup.get(s.image_hash)!.push({ id: s.id, colors_used: s.colors_used })
+    }
   }
 
   // Extrage folderele existente (unice, fără null)
@@ -229,7 +232,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {(grouped.get(folderName) ?? []).map(schema => (
-                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variantCount={schema.image_hash ? (hashCount.get(schema.image_hash) ?? 1) : 1} />
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(schema.image_hash) ?? []).filter(v => v.id !== schema.id) : []} />
                   ))}
                 </div>
               </section>
@@ -249,7 +252,7 @@ export default async function DashboardPage() {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {unfoldered.map(schema => (
-                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variantCount={schema.image_hash ? (hashCount.get(schema.image_hash) ?? 1) : 1} />
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(schema.image_hash) ?? []).filter(v => v.id !== schema.id) : []} />
                   ))}
                 </div>
               </section>

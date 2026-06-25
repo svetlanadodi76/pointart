@@ -16,13 +16,18 @@ interface Schema {
   folder: string | null
 }
 
+interface VariantRef {
+  id: string
+  colors_used: number
+}
+
 interface SchemaCardProps {
   schema: Schema
   existingFolders: string[]
-  variantCount?: number
+  variants?: VariantRef[]
 }
 
-export function SchemaCard({ schema, existingFolders, variantCount = 1 }: SchemaCardProps) {
+export function SchemaCard({ schema, existingFolders, variants = [] }: SchemaCardProps) {
   const [isPending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showFolderInput, setShowFolderInput] = useState(false)
@@ -77,11 +82,6 @@ export function SchemaCard({ schema, existingFolders, variantCount = 1 }: Schema
         <span className="text-xs bg-violet-50 text-violet-700 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
           {craftLabel}
         </span>
-        {variantCount > 1 && (
-          <span className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
-            {variantCount} variante
-          </span>
-        )}
         {confirmDelete ? (
           <div className="flex items-center gap-1 shrink-0">
             <button
@@ -126,8 +126,24 @@ export function SchemaCard({ schema, existingFolders, variantCount = 1 }: Schema
           <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
           <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
         </svg>
-        Vizualizează schema
+        {schema.colors_used} culori — Vizualizează
       </Link>
+
+      {/* Variante din aceeași poză */}
+      {variants.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className="text-xs text-gray-400 self-center">Variante:</span>
+          {variants.map(v => (
+            <Link
+              key={v.id}
+              href={`/dashboard/${v.id}`}
+              className="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 px-2 py-1 rounded-full transition-colors"
+            >
+              {v.colors_used} culori
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Footer: dată + folder */}
       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">

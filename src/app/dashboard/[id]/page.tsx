@@ -22,6 +22,19 @@ export default async function SchemaDetailPage({ params }: Props) {
 
   if (!schema) notFound()
 
+  // Alte variante din aceeași poză
+  let variants: Array<{ id: string; colors_used: number }> = []
+  if (schema.image_hash) {
+    const { data: variantRows } = await supabase
+      .from('schemas')
+      .select('id, colors_used')
+      .eq('user_id', user.id)
+      .eq('image_hash', schema.image_hash)
+      .neq('id', id)
+      .order('colors_used', { ascending: true })
+    variants = variantRows ?? []
+  }
+
   // PDF disponibil dacă a plătit vreodată (starter/pro), indiferent de status curent
   const canDownloadPdf = subscription?.plan === 'starter' || subscription?.plan === 'pro'
   const schemaData = schema.schema_data as GeneratedSchema
@@ -72,6 +85,29 @@ export default async function SchemaDetailPage({ params }: Props) {
             {new Date(schema.created_at).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}
           </span>
         </div>
+
+        {/* Alte variante din aceeași poză */}
+        {variants.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-3">
+              Variante din aceeași poză ({variants.length + 1} total)
+            </p>
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm font-semibold text-amber-900 bg-amber-200 px-3 py-1.5 rounded-lg">
+                ✓ {schema.colors_used} culori (curent)
+              </span>
+              {variants.map(v => (
+                <Link
+                  key={v.id}
+                  href={`/dashboard/${v.id}`}
+                  className="text-sm text-amber-700 bg-white border border-amber-300 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {v.colors_used} culori
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Vizualizare */}
         <SchemaViewer
