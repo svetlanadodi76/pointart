@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { getAppSettings } from '@/lib/supabase/getAppSettings'
 import Link from 'next/link'
 import { PricingCards } from './PricingCards'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -21,16 +20,11 @@ export default async function PricingPage() {
     if (sub?.status === 'active') currentPlan = sub.plan
   }
 
-  const [appSettings, lang] = await Promise.all([
-    getAppSettings(),
-    getLang(),
-  ])
+  const lang = await getLang()
 
   const payment = {
-    iban:    process.env.PAYMENT_IBAN    || '',
-    name:    process.env.PAYMENT_NAME    || '',
-    bank:    process.env.PAYMENT_BANK    || '',
     contact: process.env.PAYMENT_CONTACT || '',
+    email:   process.env.CONTACT_EMAIL   || 'contact@pointart.art',
   }
 
   return (
