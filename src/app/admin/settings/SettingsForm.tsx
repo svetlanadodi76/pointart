@@ -34,16 +34,11 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
   return (
     <div className="space-y-8">
 
-      {/* Date bancare */}
+      {/* Comunicare */}
       <section className="bg-white rounded-2xl border border-gray-200 p-6">
-        <h2 className="font-semibold text-gray-900 mb-5">Date bancare & plată</h2>
+        <h2 className="font-semibold text-gray-900 mb-1">Comunicare</h2>
+        <p className="text-xs text-gray-400 mb-5">Datele bancare (IBAN, beneficiar, bancă, contact) sunt configurate în variabilele de mediu ale serverului.</p>
         <form onSubmit={handleSave(savePaymentSettings, 'payment')} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="IBAN" name="payment_iban" defaultValue={settings.payment_iban} />
-            <Field label="Beneficiar" name="payment_name" defaultValue={settings.payment_name} />
-            <Field label="Bancă" name="payment_bank" defaultValue={settings.payment_bank} />
-            <Field label="Contact WhatsApp" name="payment_contact" defaultValue={settings.payment_contact} />
-          </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Mesaj WhatsApp</label>
             <textarea

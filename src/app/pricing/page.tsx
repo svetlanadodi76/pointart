@@ -27,10 +27,10 @@ export default async function PricingPage() {
   ])
 
   const payment = {
-    iban:    appSettings.payment_iban    || process.env.PAYMENT_IBAN    || '',
-    name:    appSettings.payment_name    || process.env.PAYMENT_NAME    || '',
-    bank:    appSettings.payment_bank    || process.env.PAYMENT_BANK    || '',
-    contact: appSettings.payment_contact || process.env.PAYMENT_CONTACT || '',
+    iban:    process.env.PAYMENT_IBAN    || '',
+    name:    process.env.PAYMENT_NAME    || '',
+    bank:    process.env.PAYMENT_BANK    || '',
+    contact: process.env.PAYMENT_CONTACT || '',
   }
 
   return (

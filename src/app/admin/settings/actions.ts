@@ -20,13 +20,7 @@ async function upsertSetting(key: string, value: string) {
 
 export async function savePaymentSettings(formData: FormData) {
   await checkAdmin()
-  await Promise.all([
-    upsertSetting('payment_iban',    formData.get('payment_iban') as string),
-    upsertSetting('payment_name',    formData.get('payment_name') as string),
-    upsertSetting('payment_bank',    formData.get('payment_bank') as string),
-    upsertSetting('payment_contact', formData.get('payment_contact') as string),
-    upsertSetting('whatsapp_message', formData.get('whatsapp_message') as string),
-  ])
+  await upsertSetting('whatsapp_message', formData.get('whatsapp_message') as string)
   revalidatePath('/admin/settings')
   revalidatePath('/pricing')
 }
