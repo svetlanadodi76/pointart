@@ -80,9 +80,27 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-2 sm:gap-4">
             <LanguageToggle lang={lang} />
             <span className="text-gray-500 text-sm hidden sm:block">{user.email}</span>
-            <Link href="/pricing" className="text-violet-600 hover:text-violet-800 text-sm font-medium transition-colors">
-              {t(lang, 'nav.pricing')}
-            </Link>
+
+            {/* Badge plan actual */}
+            {subscription && (
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full hidden sm:inline-flex items-center gap-1 ${
+                subscription.plan === 'pro'
+                  ? 'bg-violet-100 text-violet-700'
+                  : subscription.plan === 'starter'
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                {subscription.plan === 'pro' ? '⭐ Pro' : subscription.plan === 'starter' ? '✦ Starter' : '○ Trial'}
+              </span>
+            )}
+
+            {/* Upgrade dacă nu e Pro */}
+            {subscription?.plan !== 'pro' && (
+              <Link href="/pricing" className="bg-violet-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors whitespace-nowrap">
+                ↑ Upgrade
+              </Link>
+            )}
+
             <form action={logout}>
               <button type="submit" className="text-gray-500 hover:text-gray-700 text-sm font-medium">
                 {t(lang, 'nav.logout')}
