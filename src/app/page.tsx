@@ -141,7 +141,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/auth/register" className="block text-center bg-violet-100 text-violet-700 py-3 rounded-xl font-medium hover:bg-violet-200 transition-colors">
+              <Link href="/pricing" className="block text-center bg-violet-100 text-violet-700 py-3 rounded-xl font-medium hover:bg-violet-200 transition-colors">
                 {lang === 'ru' ? 'Купить' : 'Cumpără'}
               </Link>
             </div>
@@ -163,7 +163,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/auth/register" className="block text-center bg-white text-violet-700 py-3 rounded-xl font-semibold hover:bg-violet-50 transition-colors">
+              <Link href="/pricing" className="block text-center bg-white text-violet-700 py-3 rounded-xl font-semibold hover:bg-violet-50 transition-colors">
                 {lang === 'ru' ? 'Подписаться' : 'Abonează-te'}
               </Link>
             </div>
