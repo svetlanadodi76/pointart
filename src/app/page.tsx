@@ -3,9 +3,11 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { getLang } from '@/lib/i18n/getLang'
 import { t } from '@/lib/i18n/translations'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function HomePage() {
-  const lang = await getLang()
+  const [lang, supabase] = await Promise.all([getLang(), createClient()])
+  const { data: { user } } = await supabase.auth.getUser()
 
   return (
     <main className="min-h-screen bg-white flex flex-col">
@@ -18,12 +20,20 @@ export default async function HomePage() {
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <LanguageToggle lang={lang} />
-            <Link href="/auth/login" className="text-sm sm:text-base text-gray-600 hover:text-violet-700 font-medium transition-colors">
-              {t(lang, 'nav.login')}
-            </Link>
-            <Link href="/auth/register" className="bg-violet-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-violet-800 transition-colors">
-              {t(lang, 'nav.try_free')}
-            </Link>
+            {user ? (
+              <Link href="/dashboard" className="bg-violet-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-violet-800 transition-colors">
+                {t(lang, 'nav.dashboard')}
+              </Link>
+            ) : (
+              <>
+                <Link href="/auth/login" className="text-sm sm:text-base text-gray-600 hover:text-violet-700 font-medium transition-colors">
+                  {t(lang, 'nav.login')}
+                </Link>
+                <Link href="/auth/register" className="bg-violet-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-violet-800 transition-colors">
+                  {t(lang, 'nav.try_free')}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -42,8 +52,8 @@ export default async function HomePage() {
           {t(lang, 'home.tagline')}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
-          <Link href="/auth/register" className="bg-violet-700 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors">
-            {t(lang, 'home.cta_start')}
+          <Link href={user ? '/dashboard' : '/auth/register'} className="bg-violet-700 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors">
+            {user ? t(lang, 'nav.dashboard') : t(lang, 'home.cta_start')}
           </Link>
           <Link href="#cum-functioneaza" className="text-gray-600 hover:text-violet-700 font-medium transition-colors">
             {t(lang, 'home.cta_how')}
@@ -122,8 +132,8 @@ export default async function HomePage() {
                   <span>✗</span>{lang === 'ru' ? 'Скачать PDF' : 'Descărcare PDF'}
                 </li>
               </ul>
-              <Link href="/auth/register" className="block text-center bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors">
-                {t(lang, 'home.cta_start')}
+              <Link href={user ? '/dashboard' : '/auth/register'} className="block text-center bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                {user ? t(lang, 'nav.dashboard') : t(lang, 'home.cta_start')}
               </Link>
             </div>
 
