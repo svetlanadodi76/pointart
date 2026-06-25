@@ -19,9 +19,10 @@ interface Schema {
 interface SchemaCardProps {
   schema: Schema
   existingFolders: string[]
+  variantCount?: number
 }
 
-export function SchemaCard({ schema, existingFolders }: SchemaCardProps) {
+export function SchemaCard({ schema, existingFolders, variantCount = 1 }: SchemaCardProps) {
   const [isPending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showFolderInput, setShowFolderInput] = useState(false)
@@ -76,6 +77,11 @@ export function SchemaCard({ schema, existingFolders }: SchemaCardProps) {
         <span className="text-xs bg-violet-50 text-violet-700 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
           {craftLabel}
         </span>
+        {variantCount > 1 && (
+          <span className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
+            {variantCount} variante
+          </span>
+        )}
         {confirmDelete ? (
           <div className="flex items-center gap-1 shrink-0">
             <button

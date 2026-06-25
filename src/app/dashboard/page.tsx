@@ -45,6 +45,12 @@ export default async function DashboardPage() {
 
   const schemaList: SchemaRow[] = (schemas ?? []) as SchemaRow[]
 
+  // Câte scheme din aceeași poză (după image_hash) — pentru badge "N variante"
+  const hashCount = new Map<string, number>()
+  for (const s of schemaList) {
+    if (s.image_hash) hashCount.set(s.image_hash, (hashCount.get(s.image_hash) ?? 0) + 1)
+  }
+
   // Extrage folderele existente (unice, fără null)
   const existingFolders: string[] = [...new Set(
     schemaList.map(s => s.folder).filter(Boolean) as string[]
@@ -205,7 +211,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {(grouped.get(folderName) ?? []).map(schema => (
-                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} />
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variantCount={schema.image_hash ? (hashCount.get(schema.image_hash) ?? 1) : 1} />
                   ))}
                 </div>
               </section>
@@ -225,7 +231,7 @@ export default async function DashboardPage() {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {unfoldered.map(schema => (
-                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} />
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variantCount={schema.image_hash ? (hashCount.get(schema.image_hash) ?? 1) : 1} />
                   ))}
                 </div>
               </section>

@@ -38,6 +38,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [imgBrightness, setImgBrightness] = useState(1.0)
   const [imgContrast, setImgContrast] = useState(1.0)
   const [imgSaturation, setImgSaturation] = useState(1.0)
+  const [variants, setVariants] = useState<Array<{ schema: GeneratedSchema; nColors: number }> | null>(null)
+  const [activeVariant, setActiveVariant] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Resetează canvasType la valoarea implicită când se schimbă tipul lucrării
@@ -56,6 +58,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   function handleImage(file: File) {
     setImage(file)
     setResult(null)
+    setVariants(null)
     setError(null)
     setSettingsChanged(false)
     setImgBrightness(1.0)
@@ -96,27 +99,58 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     if (result) setSettingsChanged(true)
   }
 
-  async function handleGenerate() {
-    if (!image || !canGenerate) return
-    setLoading(true)
-    setError(null)
-
+  function buildFd(nColors: number) {
     const fd = new FormData()
-    fd.append('image', image)
+    fd.append('image', image!)
     fd.append('craftType', craftType)
     fd.append('canvasType', canvasType)
     fd.append('widthCm', widthCm.toString())
     fd.append('heightCm', heightCm.toString())
-    fd.append('maxColors', maxColors.toString())
+    fd.append('maxColors', nColors.toString())
     fd.append('imgBrightness', imgBrightness.toString())
     fd.append('imgContrast', imgContrast.toString())
     fd.append('imgSaturation', imgSaturation.toString())
+    return fd
+  }
+
+  async function handleGenerate() {
+    if (!image || !canGenerate) return
+    setLoading(true)
+    setError(null)
+    setVariants(null)
 
     try {
-      const res = await fetch('/api/generate', { method: 'POST', body: fd })
+      const res = await fetch('/api/generate', { method: 'POST', body: buildFd(maxColors) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Eroare necunoscută')
       setResult(data.schema)
+      setSettingsChanged(false)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleGenerateVariants() {
+    if (!image || !canGenerate) return
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    setVariants(null)
+
+    try {
+      const results = await Promise.all(
+        [20, 35, 50].map(async (nColors) => {
+          const res = await fetch('/api/generate', { method: 'POST', body: buildFd(nColors) })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || 'Eroare necunoscută')
+          return { schema: data.schema as GeneratedSchema, nColors }
+        })
+      )
+      setVariants(results)
+      setActiveVariant(1)
+      setResult(results[1].schema)
       setSettingsChanged(false)
     } catch (e: any) {
       setError(e.message)
@@ -426,13 +460,22 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               </div>
             )}
 
-            <button
-              onClick={handleGenerate}
-              disabled={!image || loading || !canGenerate}
-              className="w-full bg-violet-700 text-white py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? '⏳ Generez schema...' : settingsChanged ? '🔄 Regenerează schema' : '✨ Generează schema'}
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={handleGenerate}
+                disabled={!image || loading || !canGenerate}
+                className="w-full bg-violet-700 text-white py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? '⏳ Generez schema...' : settingsChanged ? '🔄 Regenerează schema' : '✨ Generează schema'}
+              </button>
+              <button
+                onClick={handleGenerateVariants}
+                disabled={!image || loading || !canGenerate}
+                className="w-full bg-white border-2 border-violet-700 text-violet-700 py-3 rounded-xl font-semibold hover:bg-violet-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                ⚡ 3 variante simultan (20 / 35 / 50 culori)
+              </button>
+            </div>
 
             {!canGenerate && (
               <p className="text-center text-sm text-red-500">
@@ -479,6 +522,23 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 <Link href="/pricing" className="text-violet-700 text-sm font-medium hover:underline mt-1 block">
                   Vezi planurile →
                 </Link>
+              </div>
+            )}
+            {variants && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-1.5 flex gap-1">
+                {variants.map((v, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setActiveVariant(i); setResult(v.schema) }}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                      activeVariant === i
+                        ? 'bg-violet-700 text-white shadow-sm'
+                        : 'text-gray-500 hover:text-violet-700 hover:bg-violet-50'
+                    }`}
+                  >
+                    {v.nColors} culori
+                  </button>
+                ))}
               </div>
             )}
             {result ? (

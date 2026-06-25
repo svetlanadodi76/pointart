@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { getSubscription } from '@/lib/supabase/getSubscription'
 import { generateSchema } from '@/lib/schema/generator'
@@ -44,6 +45,9 @@ export async function POST(request: NextRequest) {
     }
 
     let imageBuffer: Buffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer)
+
+    // Hash primii 8KB din imagine — identificator unic pentru a grupa versiunile aceleiași poze
+    const imageHash = crypto.createHash('sha256').update(imageBuffer.slice(0, 8192)).digest('hex').slice(0, 16)
 
     // Convertește HEIC/HEIF la JPEG (Sharp 0.35 suportă HEIC dacă libheif e disponibil)
     const fname = (file.name || '').toLowerCase()
@@ -92,6 +96,7 @@ export async function POST(request: NextRequest) {
       colors_used: schema.colors.length,
       original_image_url: publicUrl,
       schema_data: schema,
+      image_hash: imageHash,
     }).select().single()
 
     if (saveError) {
