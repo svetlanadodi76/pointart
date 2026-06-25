@@ -21,16 +21,16 @@ export default async function HomePage() {
           <div className="flex items-center gap-2 sm:gap-4">
             <LanguageToggle lang={lang} />
             {user ? (
-              <Link href="/dashboard" className="bg-violet-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-violet-800 transition-colors">
-                {t(lang, 'nav.dashboard')}
+              <Link href="/dashboard" className="bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors">
+                {lang === 'ru' ? 'Мой кабинет' : 'Contul meu'}
               </Link>
             ) : (
               <>
-                <Link href="/auth/login" className="text-sm sm:text-base text-gray-600 hover:text-violet-700 font-medium transition-colors">
-                  {t(lang, 'nav.login')}
+                <Link href="/auth/register" className="text-sm text-gray-600 hover:text-violet-700 font-medium transition-colors hidden sm:block">
+                  {lang === 'ru' ? 'Регистрация' : 'Înregistrare'}
                 </Link>
-                <Link href="/auth/register" className="bg-violet-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-violet-800 transition-colors">
-                  {t(lang, 'nav.try_free')}
+                <Link href="/auth/login" className="bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors">
+                  {lang === 'ru' ? 'Войти' : 'Intră în cont'}
                 </Link>
               </>
             )}
@@ -53,7 +53,7 @@ export default async function HomePage() {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link href={user ? '/dashboard' : '/auth/register'} className="bg-violet-700 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors">
-            {user ? t(lang, 'nav.dashboard') : t(lang, 'home.cta_start')}
+            {user ? (lang === 'ru' ? 'Мой кабинет' : 'Contul meu') : t(lang, 'home.cta_start')}
           </Link>
           <Link href="#cum-functioneaza" className="text-gray-600 hover:text-violet-700 font-medium transition-colors">
             {t(lang, 'home.cta_how')}
