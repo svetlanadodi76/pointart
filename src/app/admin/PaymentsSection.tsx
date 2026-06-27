@@ -23,8 +23,11 @@ export function PaymentsSection({ payments }: { payments: PaymentRow[] }) {
   const [selectedYear, setSelectedYear]   = useState('all')
   const [selectedMonth, setSelectedMonth] = useState('all')
 
-  // Ani disponibili descrescător
-  const years = [...new Set(payments.map(p => new Date(p.created_at).getFullYear()))].sort((a, b) => b - a)
+  // Ani disponibili: de la 2025 până la curent + orice an din tranzacții
+  const currentYear = new Date().getFullYear()
+  const yearSet = new Set(payments.map(p => new Date(p.created_at).getFullYear()))
+  for (let y = 2025; y <= currentYear; y++) yearSet.add(y)
+  const years = [...yearSet].sort((a, b) => b - a)
 
   // Filtrare
   const filtered = payments.filter(p => {
