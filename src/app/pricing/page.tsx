@@ -22,11 +22,6 @@ export default async function PricingPage() {
 
   const lang = await getLang()
 
-  const payment = {
-    contact: process.env.PAYMENT_CONTACT || '',
-    email:   process.env.CONTACT_EMAIL   || 'contact@pointart.art',
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -64,7 +59,6 @@ export default async function PricingPage() {
         <PricingCards
           currentPlan={currentPlan}
           userEmail={user?.email ?? null}
-          payment={payment}
         />
 
         {/* FAQ */}

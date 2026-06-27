@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { savePaymentSettings, savePlanSettings, changePin } from './actions'
+import { savePlanSettings, changePin } from './actions'
 import type { AppSettings } from '@/lib/supabase/getAppSettings'
 
 export function SettingsForm({ settings }: { settings: AppSettings }) {
@@ -33,25 +33,6 @@ export function SettingsForm({ settings }: { settings: AppSettings }) {
 
   return (
     <div className="space-y-8">
-
-      {/* Comunicare */}
-      <section className="bg-white rounded-2xl border border-gray-200 p-6">
-        <h2 className="font-semibold text-gray-900 mb-1">Comunicare</h2>
-        <p className="text-xs text-gray-400 mb-5">Datele bancare (IBAN, beneficiar, bancă, contact) sunt configurate în variabilele de mediu ale serverului.</p>
-        <form onSubmit={handleSave(savePaymentSettings, 'payment')} className="space-y-4">
-          <div>
-            <label className="text-xs text-gray-500 mb-1 block">Mesaj WhatsApp</label>
-            <textarea
-              name="whatsapp_message"
-              defaultValue={settings.whatsapp_message}
-              rows={3}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-300 resize-none"
-            />
-            <p className="text-xs text-gray-400 mt-1">Variabile: {'{plan}'} {'{eur}'} {'{mdl}'} {'{email}'}</p>
-          </div>
-          <SaveButton isPending={isPending} saved={saved === 'payment'} />
-        </form>
-      </section>
 
       {/* Limite planuri */}
       <section className="bg-white rounded-2xl border border-gray-200 p-6">

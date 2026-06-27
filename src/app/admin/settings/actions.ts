@@ -18,13 +18,6 @@ async function upsertSetting(key: string, value: string) {
     .upsert({ key, value, updated_at: new Date().toISOString() })
 }
 
-export async function savePaymentSettings(formData: FormData) {
-  await checkAdmin()
-  await upsertSetting('whatsapp_message', formData.get('whatsapp_message') as string)
-  revalidatePath('/admin/settings')
-  revalidatePath('/pricing')
-}
-
 export async function savePlanSettings(formData: FormData) {
   await checkAdmin()
   await Promise.all([
