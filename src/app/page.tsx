@@ -19,7 +19,7 @@ export default async function HomePage() {
             <Image src="/logo.jpg" alt="PointArt" width={40} height={40} className="rounded-full" />
             <div>
               <span className="text-xl font-bold text-violet-700 block leading-tight">PointArt</span>
-              <span className="text-xs text-gray-400 italic hidden sm:block">Păstrăm amintirile prin artă</span>
+              <span className="text-xs text-gray-600 italic hidden sm:block">Păstrăm amintirile prin artă</span>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">

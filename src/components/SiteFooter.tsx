@@ -14,7 +14,7 @@ export async function SiteFooter() {
           <Image src="/logo.jpg" alt="PointArt" width={36} height={36} className="rounded-full" />
           <div>
             <span className="font-semibold text-gray-700 block leading-tight">PointArt</span>
-            <span className="text-xs text-gray-400 italic">Păstrăm amintirile prin artă</span>
+            <span className="text-xs text-gray-600 italic">Păstrăm amintirile prin artă</span>
           </div>
         </div>
 
