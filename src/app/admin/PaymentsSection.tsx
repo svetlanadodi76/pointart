@@ -1,3 +1,7 @@
+'use client'
+
+import { useState } from 'react'
+
 interface PaymentRow {
   id: string
   user_email: string
@@ -8,20 +12,65 @@ interface PaymentRow {
   created_at: string
 }
 
-interface Props {
-  payments: PaymentRow[]
-  totalEur: number
-  totalMdl: number
-}
+const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 
 const PLAN_COLORS: Record<string, string> = {
   starter: 'bg-violet-100 text-violet-700',
   pro: 'bg-indigo-100 text-indigo-700',
 }
 
-export function PaymentsSection({ payments, totalEur, totalMdl }: Props) {
+export function PaymentsSection({ payments }: { payments: PaymentRow[] }) {
+  const [selectedYear, setSelectedYear]   = useState('all')
+  const [selectedMonth, setSelectedMonth] = useState('all')
+
+  // Ani disponibili descrescător
+  const years = [...new Set(payments.map(p => new Date(p.created_at).getFullYear()))].sort((a, b) => b - a)
+
+  // Filtrare
+  const filtered = payments.filter(p => {
+    const d = new Date(p.created_at)
+    if (selectedYear  !== 'all' && d.getFullYear() !== Number(selectedYear))  return false
+    if (selectedMonth !== 'all' && d.getMonth() + 1 !== Number(selectedMonth)) return false
+    return true
+  })
+
+  const totalEur = filtered.reduce((s, p) => s + (p.amount_eur ?? 0), 0)
+  const totalMdl = filtered.reduce((s, p) => s + (p.amount_mdl ?? 0), 0)
+
   return (
     <>
+      {/* Filtre */}
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <select
+          value={selectedYear}
+          onChange={e => { setSelectedYear(e.target.value); setSelectedMonth('all') }}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white"
+        >
+          <option value="all">Toți anii</option>
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+
+        <select
+          value={selectedMonth}
+          onChange={e => setSelectedMonth(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white"
+        >
+          <option value="all">Toate lunile</option>
+          {MONTHS.map((name, i) => (
+            <option key={i + 1} value={i + 1}>{name}</option>
+          ))}
+        </select>
+
+        {(selectedYear !== 'all' || selectedMonth !== 'all') && (
+          <button
+            onClick={() => { setSelectedYear('all'); setSelectedMonth('all') }}
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >
+            Resetează
+          </button>
+        )}
+      </div>
+
       {/* Totaluri */}
       <div className="flex flex-wrap items-center gap-6 mb-5">
         <div>
@@ -32,10 +81,16 @@ export function PaymentsSection({ payments, totalEur, totalMdl }: Props) {
           <p className="text-xs text-gray-400">Total MDL</p>
           <p className="text-xl font-bold text-indigo-700">{totalMdl.toFixed(0)} MDL</p>
         </div>
+        <div className="ml-auto">
+          <p className="text-xs text-gray-400">Tranzacții</p>
+          <p className="text-xl font-bold text-gray-700">{filtered.length}</p>
+        </div>
       </div>
 
-      {payments.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-8">Nicio încasare înregistrată</p>
+      {filtered.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-8">
+          {payments.length === 0 ? 'Nicio încasare înregistrată' : 'Nicio încasare în perioada selectată'}
+        </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200">
           <table className="w-full text-sm">
@@ -50,7 +105,7 @@ export function PaymentsSection({ payments, totalEur, totalMdl }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {payments.map(p => (
+              {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                     {new Date(p.created_at).toLocaleDateString('ro-RO', {
@@ -76,7 +131,6 @@ export function PaymentsSection({ payments, totalEur, totalMdl }: Props) {
           </table>
         </div>
       )}
-      <p className="text-xs text-gray-400 mt-3 text-right">{payments.length} tranzacții</p>
     </>
   )
 }

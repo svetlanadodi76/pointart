@@ -55,8 +55,6 @@ export default async function AdminPage() {
   const payments = paymentsRaw ?? []
   const logs = logsRaw ?? []
   const securityLogs = securityRaw ?? []
-  const totalEur = payments.reduce((sum: number, p: { amount_eur: number | null }) => sum + (p.amount_eur ?? 0), 0)
-  const totalMdl = payments.reduce((sum: number, p: { amount_mdl: number | null }) => sum + (p.amount_mdl ?? 0), 0)
 
   const emailMap = new Map((profiles ?? []).map((p: { id: string; email: string }) => [p.id, p.email]))
 
@@ -153,7 +151,7 @@ export default async function AdminPage() {
 
         {/* Încasări */}
         <CollapsibleSection title="Încasări" badge={payments.length}>
-          <PaymentsSection payments={payments} totalEur={totalEur} totalMdl={totalMdl} />
+          <PaymentsSection payments={payments} />
         </CollapsibleSection>
 
         {/* Jurnal activitate */}
