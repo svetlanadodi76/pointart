@@ -3,6 +3,7 @@ import { getSubscription } from '@/lib/supabase/getSubscription'
 import { redirect } from 'next/navigation'
 import { logout } from '../auth/actions'
 import Link from 'next/link'
+import Image from 'next/image'
 import { SchemaCard } from './SchemaCard'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { getLang } from '@/lib/i18n/getLang'
@@ -88,8 +89,8 @@ export default async function DashboardPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🧵</span>
+          <div className="flex items-center gap-2.5">
+            <Image src="/logo.jpg" alt="PointArt" width={36} height={36} className="rounded-full" />
             <span className="text-xl font-bold text-violet-700">PointArt</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">

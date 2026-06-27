@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { SiteFooter } from '@/components/SiteFooter'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { getLang } from '@/lib/i18n/getLang'
@@ -14,9 +15,12 @@ export default async function HomePage() {
       {/* Header */}
       <header className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🧵</span>
-            <span className="text-xl font-bold text-violet-700">PointArt</span>
+          <div className="flex items-center gap-2.5">
+            <Image src="/logo.jpg" alt="PointArt" width={40} height={40} className="rounded-full" />
+            <div>
+              <span className="text-xl font-bold text-violet-700 block leading-tight">PointArt</span>
+              <span className="text-xs text-gray-400 italic hidden sm:block">Păstrăm amintirile prin artă</span>
+            </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <LanguageToggle lang={lang} />

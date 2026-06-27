@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image'
 import { PricingCards } from './PricingCards'
 import { SiteFooter } from '@/components/SiteFooter'
 import { LanguageToggle } from '@/components/LanguageToggle'
@@ -27,8 +28,8 @@ export default async function PricingPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">🧵</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/logo.jpg" alt="PointArt" width={36} height={36} className="rounded-full" />
             <span className="text-xl font-bold text-violet-700">PointArt</span>
           </Link>
           <div className="flex items-center gap-3">
