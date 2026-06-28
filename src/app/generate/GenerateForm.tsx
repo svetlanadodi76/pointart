@@ -732,13 +732,14 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
           <p className="text-xs text-gray-400">Click pe culoare pentru a o schimba</p>
         </div>
         <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
-          {sortedWithOrigIdx.map((color) => {
+          {sortedWithOrigIdx.map((color, i) => {
             const origIdx = color.origIdx
             const isEditing = editingIdx === origIdx
             return (
               <div key={origIdx}>
                 {/* Rândul culorii */}
                 <div className="flex items-center gap-3 text-sm">
+                  <span className="text-xs font-bold text-gray-400 w-4 text-right shrink-0">{i + 1}</span>
                   <button
                     onClick={() => setEditingIdx(isEditing ? null : origIdx)}
                     className={`w-6 h-6 rounded border-2 flex-shrink-0 flex items-center justify-center text-xs font-bold transition-all ${

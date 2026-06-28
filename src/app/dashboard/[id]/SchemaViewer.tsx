@@ -194,21 +194,37 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
         <h3 className="font-semibold text-gray-800 mb-4">
           Culori folosite ({schema.colors.length})
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {/* Header tabel */}
+        <div className="grid grid-cols-[28px_28px_1fr_auto] gap-x-3 pb-1.5 mb-1 border-b border-gray-200">
+          <span className="text-[10px] font-semibold text-gray-400 text-center">#</span>
+          <span className="text-[10px] font-semibold text-gray-400 text-center">Simbol</span>
+          <span className="text-[10px] font-semibold text-gray-400">Culoare DMC</span>
+          <span className="text-[10px] font-semibold text-gray-400 text-right">Cantitate</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
           {[...schema.colors]
             .sort((a, b) => b.count - a.count)
             .map((color, i) => (
-              <div key={i} className="flex items-center gap-3 py-1.5 border-b border-gray-50">
+              <div key={i} className="grid grid-cols-[28px_28px_1fr_auto] items-center gap-x-3 py-1.5 border-b border-gray-50">
+                {/* Număr ordine */}
+                <span className="text-xs font-bold text-gray-400 text-center">{i + 1}</span>
+
+                {/* Simbol pe fundal colorat */}
                 <div
                   className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold"
                   style={{ backgroundColor: color.dmcColor.hex, color: 'rgba(0,0,0,0.6)' }}
                 >
                   {color.symbol}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-mono text-gray-700">DMC {color.dmcColor.code}</p>
+
+                {/* DMC cod + nume */}
+                <div className="min-w-0">
+                  <p className="text-xs font-mono font-semibold text-gray-700">DMC {color.dmcColor.code}</p>
                   <p className="text-xs text-gray-400 truncate">{color.dmcColor.name}</p>
                 </div>
+
+                {/* Cantitate */}
                 <div className="text-right shrink-0">
                   <p className="text-xs font-semibold text-gray-700">
                     {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}
