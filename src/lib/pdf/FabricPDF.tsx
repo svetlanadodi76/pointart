@@ -1,6 +1,13 @@
 import { Document, Page, Svg, Rect, Line, G, Text } from '@react-pdf/renderer'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
 
+function contrastColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
+}
+
 // 1 cm = 28.3465 PDF points (standard PDF unit)
 const PT_PER_CM = 28.3465
 
@@ -65,7 +72,7 @@ export function FabricPDF({
                   />
                   {showSymbol && (
                     <Text
-                      style={{ fontSize, fill: '#000000aa', textAnchor: 'middle' }}
+                      style={{ fontSize, fill: contrastColor(color.dmcColor.hex), textAnchor: 'middle' }}
                       x={cx + cellPt / 2}
                       y={cy + cellPt * 0.75}
                     >
