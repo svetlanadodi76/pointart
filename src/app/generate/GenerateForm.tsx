@@ -562,7 +562,7 @@ function contrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
-  return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)'
+  return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
 }
 
 function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
@@ -755,7 +755,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                         ? 'border-violet-500 ring-2 ring-violet-300 scale-110'
                         : 'border-gray-300 hover:border-violet-400 hover:scale-110'
                     }`}
-                    style={{ backgroundColor: color.dmcColor.hex, color: 'rgba(0,0,0,0.6)' }}
+                    style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}
                     title="Click pentru a schimba culoarea"
                   >
                     {color.symbol}

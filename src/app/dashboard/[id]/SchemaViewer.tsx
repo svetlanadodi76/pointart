@@ -24,7 +24,7 @@ function contrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
-  return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)'
+  return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
 }
 
 export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasType }: Props) {
@@ -224,7 +224,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                 {/* Simbol pe fundal colorat */}
                 <div
                   className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                  style={{ backgroundColor: color.dmcColor.hex, color: 'rgba(0,0,0,0.6)' }}
+                  style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}
                 >
                   {color.symbol}
                 </div>
