@@ -4,8 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { GeneratedSchema, DmcColor, ColorUsage, CraftType } from '@/types'
-import { SYMBOLS } from '@/lib/dmc/symbols'
-import { getCategoricalColor } from '@/lib/dmc/categoricalColors'
+import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import { LanguageToggle } from '@/components/LanguageToggle'
@@ -569,18 +568,21 @@ function contrastColor(hex: string): string {
 }
 
 function buildColors(colors: GeneratedSchema['colors']) {
-  const n = SYMBOLS.length
   const withIdx = colors.map((c, i) => ({ ...c, _idx: i }))
   const sorted = [...withIdx].sort((a, b) => b.count - a.count)
-  const byRank = new Map<number, { symbol: string; catColor: string }>()
+  const byRank = new Map<number, { symbol: string; catColor: string; isSolid: boolean }>()
   sorted.forEach((c, rank) => byRank.set(c._idx, {
-    symbol: SYMBOLS[rank % n],
+    symbol: rank >= SOLID_THRESHOLD
+      ? (SIMPLE_SYMBOLS[rank - SOLID_THRESHOLD] ?? '?')
+      : '',
     catColor: getCategoricalColor(rank),
+    isSolid: rank < SOLID_THRESHOLD,
   }))
   return withIdx.map(c => ({
     ...c,
-    symbol: byRank.get(c._idx)?.symbol ?? '?',
+    symbol: byRank.get(c._idx)?.symbol ?? '',
     catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
+    isSolid: byRank.get(c._idx)?.isSolid ?? false,
   }))
 }
 
@@ -722,15 +724,18 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                         title={`${color.dmcColor.code} ${color.symbol}`}
                         style={{
                           width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex,
+                          backgroundColor: isCrossStitch
+                            ? (color.isSolid ? color.catColor : '#ffffff')
+                            : color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.35)' : '0.5px solid rgba(0,0,0,0.15)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: Math.max(CELL_SIZE * 0.82, 10), fontWeight: 'bold',
                           fontFamily: 'monospace',
-                          color: isCrossStitch ? (color.catColor ?? color.dmcColor.hex) : contrastColor(color.dmcColor.hex), lineHeight: 1,
+                          color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex),
+                          lineHeight: 1,
                         }}
                       >
-                        {color.symbol}
+                        {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
                       </div>
                     )
                   })
@@ -777,12 +782,14 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                         : 'border-gray-300 hover:border-violet-400 hover:scale-110'
                     }`}
                     style={{
-                      backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex,
-                      color: isCrossStitch ? (color.catColor ?? color.dmcColor.hex) : contrastColor(color.dmcColor.hex),
+                      backgroundColor: isCrossStitch
+                        ? (color.isSolid ? color.catColor : '#ffffff')
+                        : color.dmcColor.hex,
+                      color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex),
                     }}
                     title="Click pentru a schimba culoarea"
                   >
-                    {color.symbol}
+                    {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
                   </button>
                   {isCrossStitch && (
                     <div

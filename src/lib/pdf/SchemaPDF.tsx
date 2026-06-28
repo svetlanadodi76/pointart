@@ -3,7 +3,7 @@ import {
   StyleSheet, Font
 } from '@react-pdf/renderer'
 import type { GeneratedSchema, CraftType } from '@/types'
-import { getCategoricalColor } from '@/lib/dmc/categoricalColors'
+import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
 
 function contrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -48,9 +48,18 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
   // Atribuie culori categorice după rang (cel mai popular → rank 0)
   const colors = (() => {
     const sorted = [...schema.colors.entries()].sort((a, b) => b[1].count - a[1].count)
-    const rankMap = new Map<number, string>()
-    sorted.forEach(([origIdx], rank) => rankMap.set(origIdx, getCategoricalColor(rank)))
-    return schema.colors.map((c, i) => ({ ...c, catColor: rankMap.get(i) ?? '#cccccc' }))
+    const rankMap = new Map<number, { catColor: string; symbol: string; isSolid: boolean }>()
+    sorted.forEach(([origIdx], rank) => rankMap.set(origIdx, {
+      catColor: getCategoricalColor(rank),
+      symbol: rank >= SOLID_THRESHOLD ? (SIMPLE_SYMBOLS[rank - SOLID_THRESHOLD] ?? '?') : '',
+      isSolid: rank < SOLID_THRESHOLD,
+    }))
+    return schema.colors.map((c, i) => ({
+      ...c,
+      catColor: rankMap.get(i)?.catColor ?? '#cccccc',
+      symbol: rankMap.get(i)?.symbol ?? '',
+      isSolid: rankMap.get(i)?.isSolid ?? false,
+    }))
   })()
 
   // Celulă fixă de 6px — suficient pentru simboluri vizibile, schema se împarte în pagini
@@ -147,7 +156,9 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                   const isRulerH = (section.startRow + rowIdx) % 10 === 0
                   const isRulerV = (section.startCol + colIdx) % 10 === 0
 
-                  const cellBg = isCrossStitch ? '#ffffff' : color.dmcColor.hex
+                  const cellBg = isCrossStitch
+                    ? (color.isSolid ? color.catColor : '#ffffff')
+                    : color.dmcColor.hex
                   const symbolColor = isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex)
                   return (
                     <G key={`${rowIdx}-${colIdx}`}>
@@ -158,7 +169,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                         stroke={isCrossStitch ? '#cccccc' : '#000000'}
                         strokeWidth={isCrossStitch ? 0.5 : 0.35}
                       />
-                      {cellSize >= 5 && (
+                      {cellSize >= 5 && (!isCrossStitch || !color.isSolid) && !!color.symbol && (
                         <Text
                           style={{ fontSize, fill: symbolColor, textAnchor: 'middle' }}
                           x={x + cellSize / 2}
@@ -201,10 +212,15 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                   {sortedColors.map((color, i) => (
                     <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
                       <Text style={styles.legendNum}>{i + 1}</Text>
-                      {/* Pătrat cu simbol colorat pe fundal alb (cum apare în schemă) */}
-                      <View style={[styles.legendSymbol, { backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
-                        <Text style={[styles.legendSymbolText, { color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
-                      </View>
+                      {isCrossStitch && color.isSolid ? (
+                        /* Culoare plină — fără simbol */
+                        <View style={[styles.legendSymbol, { backgroundColor: color.catColor, borderWidth: 0.5, borderColor: '#ccc' }]} />
+                      ) : (
+                        /* Celulă albă cu simbol colorat (sau DMC pentru diamante) */
+                        <View style={[styles.legendSymbol, { backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
+                          <Text style={[styles.legendSymbolText, { color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
+                        </View>
+                      )}
                       {/* Pătrat mic cu culoarea reală DMC (doar pentru cross-stitch) */}
                       {isCrossStitch && (
                         <View style={{ width: 8, height: 16, backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc', marginRight: 3 }} />

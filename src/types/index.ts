@@ -31,6 +31,7 @@ export interface ColorUsage {
   unit: 'skeins' | 'packets' // skeins = ață, packets = diamante
   alternatives?: DmcColor[]  // top culori similare pentru swap
   catColor?: string           // culoare categorică pentru schema cross-stitch
+  isSolid?: boolean           // top 20 culori → culoare plină (fără simbol)
 }
 
 export interface GeneratedSchema {

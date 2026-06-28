@@ -5,8 +5,7 @@ import dynamic from 'next/dynamic'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
-import { SYMBOLS } from '@/lib/dmc/symbols'
-import { getCategoricalColor } from '@/lib/dmc/categoricalColors'
+import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
 
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
@@ -34,22 +33,23 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
-  // Asignăm simboluri după rangul de popularitate: culoarea #1 → SYMBOLS[0]='■', #2 → 'H', etc.
-  // (indexul original din schema.colors nu corespunde cu rangul vizibil în legendă)
   const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
   const colors = (() => {
-    const n = SYMBOLS.length
     const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
     const sorted = [...withIdx].sort((a, b) => b.count - a.count)
-    const byRank = new Map<number, { symbol: string; catColor: string }>()
+    const byRank = new Map<number, { symbol: string; catColor: string; isSolid: boolean}>()
     sorted.forEach((c, rank) => byRank.set(c._idx, {
-      symbol: SYMBOLS[rank % n],
+      symbol: rank >= SOLID_THRESHOLD
+        ? (SIMPLE_SYMBOLS[rank - SOLID_THRESHOLD] ?? '?')
+        : '',
       catColor: getCategoricalColor(rank),
+      isSolid: rank < SOLID_THRESHOLD,
     }))
     return withIdx.map(c => ({
       ...c,
-      symbol: byRank.get(c._idx)?.symbol ?? '?',
+      symbol: byRank.get(c._idx)?.symbol ?? '',
       catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
+      isSolid: byRank.get(c._idx)?.isSolid ?? false,
     }))
   })()
 
@@ -187,15 +187,18 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                         title={`(${x},${y}) ${color.dmcColor.code} ${color.symbol}`}
                         style={{
                           width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex,
+                          backgroundColor: isCrossStitch
+                            ? (color.isSolid ? color.catColor : '#ffffff')
+                            : color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.35)' : '0.5px solid rgba(0,0,0,0.15)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: Math.max(CELL_SIZE * 0.82, 10), fontWeight: 'bold',
                           fontFamily: 'monospace',
-                          color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex), lineHeight: 1,
+                          color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex),
+                          lineHeight: 1,
                         }}
                       >
-                        {color.symbol}
+                        {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
                       </div>
                     )
                   })
@@ -243,13 +246,21 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                 {/* Simbol + culoare */}
                 {isCrossStitch ? (
                   <div className="flex items-center gap-1">
-                    {/* Simbol colorat pe fundal alb (cum apare în schemă) */}
-                    <div
-                      className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono bg-white"
-                      style={{ color: color.catColor }}
-                    >
-                      {color.symbol}
-                    </div>
+                    {color.isSolid ? (
+                      /* Culoare plină — fără simbol */
+                      <div
+                        className="w-7 h-7 rounded border border-gray-300 flex-shrink-0"
+                        style={{ backgroundColor: color.catColor }}
+                      />
+                    ) : (
+                      /* Celulă albă cu simbol colorat simplu */
+                      <div
+                        className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-sm font-bold font-mono bg-white"
+                        style={{ color: color.catColor }}
+                      >
+                        {color.symbol}
+                      </div>
+                    )}
                     {/* Culoarea reală DMC (pentru alegerea aței) */}
                     <div
                       className="w-4 h-7 rounded border border-gray-300 flex-shrink-0"

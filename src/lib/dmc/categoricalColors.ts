@@ -49,3 +49,13 @@ export const CATEGORICAL_COLORS = [
 export function getCategoricalColor(rank: number): string {
   return CATEGORICAL_COLORS[rank % CATEGORICAL_COLORS.length]
 }
+
+// Top N culori după frecvență primesc culoare plină (fără simbol)
+export const SOLID_THRESHOLD = 20
+
+// Simboluri simple pentru celule albe — fără litere sau semne complexe
+export const SIMPLE_SYMBOLS = [
+  '+', 'X', '*', '-', '=', '^', '|', '~',
+  '1', '5', '6', '9', 'T', 'Y', 'L', 'I',
+  'J', 'V', 'G', 'K',
+]
