@@ -31,9 +31,16 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(10, Math.min(18, Math.floor(700 / schema.widthStitches)))
-  // Suprascriem simbolurile cu cele curente (fix scheme vechi din DB cu simboluri Unicode invizibile)
-  const n = SYMBOLS.length
-  const colors = schema.colors.map((c, i) => ({ ...c, symbol: SYMBOLS[i < n ? i : i % n] }))
+  // Asignăm simboluri după rangul de popularitate: culoarea #1 → SYMBOLS[0]='■', #2 → 'H', etc.
+  // (indexul original din schema.colors nu corespunde cu rangul vizibil în legendă)
+  const colors = (() => {
+    const n = SYMBOLS.length
+    const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
+    const byRank = new Map<number, string>()
+    ;[...withIdx].sort((a, b) => b.count - a.count)
+      .forEach((c, rank) => byRank.set(c._idx, SYMBOLS[rank % n]))
+    return withIdx.map(c => ({ ...c, symbol: byRank.get(c._idx) ?? '?' }))
+  })()
 
   useEffect(() => {
     if (view !== 'final' || !canvasRef.current) return

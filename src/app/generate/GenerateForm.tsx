@@ -567,14 +567,28 @@ function contrastColor(hex: string): string {
 
 function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
-  const [localColors, setLocalColors] = useState(schema.colors.map((c, i) => { const n = SYMBOLS.length; return { ...c, symbol: SYMBOLS[i < n ? i : i % n] } }))
+  const [localColors, setLocalColors] = useState((() => {
+      const n = SYMBOLS.length
+      const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
+      const byRank = new Map<number, string>()
+      ;[...withIdx].sort((a, b) => b.count - a.count)
+        .forEach((c, rank) => byRank.set(c._idx, SYMBOLS[rank % n]))
+      return withIdx.map(c => ({ ...c, symbol: byRank.get(c._idx) ?? '?' }))
+    })())
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(10, Math.min(18, Math.floor(700 / schema.widthStitches)))
 
   // Resetează culorile locale când se generează o schemă nouă
   useEffect(() => {
-    setLocalColors(schema.colors.map((c, i) => { const n = SYMBOLS.length; return { ...c, symbol: SYMBOLS[i < n ? i : i % n] } }))
+    setLocalColors((() => {
+      const n = SYMBOLS.length
+      const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
+      const byRank = new Map<number, string>()
+      ;[...withIdx].sort((a, b) => b.count - a.count)
+        .forEach((c, rank) => byRank.set(c._idx, SYMBOLS[rank % n]))
+      return withIdx.map(c => ({ ...c, symbol: byRank.get(c._idx) ?? '?' }))
+    })())
     setEditingIdx(null)
   }, [schema])
 
