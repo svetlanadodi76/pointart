@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
+import { SYMBOLS } from '@/lib/dmc/symbols'
 
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
@@ -30,6 +31,8 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(10, Math.min(18, Math.floor(700 / schema.widthStitches)))
+  // Suprascriem simbolurile cu cele curente (fix scheme vechi din DB cu simboluri Unicode invizibile)
+  const colors = schema.colors.map((c, i) => ({ ...c, symbol: SYMBOLS[i] ?? c.symbol ?? '?' }))
 
   useEffect(() => {
     if (view !== 'final' || !canvasRef.current) return
@@ -42,7 +45,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
         const colorIdx = schema.grid[y][x]
-        ctx.fillStyle = schema.colors[colorIdx].dmcColor.hex
+        ctx.fillStyle = colors[colorIdx].dmcColor.hex
         ctx.fillRect(x * scale, y * scale, scale, scale)
       }
     }
@@ -157,7 +160,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${schema.widthStitches}, ${CELL_SIZE}px)` }}>
                 {schema.grid.map((row, y) =>
                   row.map((colorIdx, x) => {
-                    const color = schema.colors[colorIdx]
+                    const color = colors[colorIdx]
                     const isRuler = x % 10 === 0 || y % 10 === 0
                     return (
                       <div
@@ -199,7 +202,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
       {/* Legendă culori */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h3 className="font-semibold text-gray-800 mb-4">
-          Culori folosite ({schema.colors.length})
+          Culori folosite ({colors.length})
         </h3>
         {/* Header tabel */}
         <div className="grid grid-cols-[28px_28px_1fr_auto] gap-x-3 pb-1.5 mb-1 border-b border-gray-200">
@@ -210,7 +213,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
-          {[...schema.colors]
+          {[...colors]
             .sort((a, b) => b.count - a.count)
             .map((color, i) => (
               <div key={i} className="grid grid-cols-[28px_28px_1fr_auto] items-center gap-x-3 py-1.5 border-b border-gray-50">
@@ -242,7 +245,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
             ))}
         </div>
         <p className="text-xs text-gray-400 mt-4 pt-3 border-t border-gray-100">
-          Total: {schema.widthStitches * schema.heightStitches} puncte • {schema.colors.length} culori DMC
+          Total: {schema.widthStitches * schema.heightStitches} puncte • {colors.length} culori DMC
         </p>
       </div>
     </div>

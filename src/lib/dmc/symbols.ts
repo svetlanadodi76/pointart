@@ -1,26 +1,24 @@
-// Doar simboluri universal suportate de fonturi comune (ASCII + Latin-1 + forme geometrice de bază).
-// Caracterele Unicode complexe (⊕ ∩ ⋆ ∞ etc.) nu sunt randate de multe fonturi și apar invizibile.
+// Doar simboluri GARANTAT VIZIBILE la 7-10px pe orice fundal colorat.
+// Exclus: ^ ~ | / < > ( ) [ ] și orice caracter subtil la dimensiuni mici.
 //
-// Ordinea: round-robin pe grupe vizuale — simbolurile consecutive sunt din familii complet diferite.
-// Dacă schema are 5 culori similare (ex: 5 nuanțe de maro), primesc: ■ H + 2 ○ — imposibil de confundat.
+// Ordine round-robin pe grupe vizuale: simbolurile consecutive sunt din familii complet diferite.
+// Culorile similare (ex: 5 nuanțe maro) primesc: ■ H + 2 ○ V = * — imposibil de confundat.
 
 const SHAPE_GROUPS: string[][] = [
-  // G0: forme pline geometrice — cele mai vizibile și distincte
+  // G0: forme pline geometrice — maxim vizibile și distinctive
   ['■', '●', '◆', '★', '▲', '▼', '◀', '▶'],
-  // G1: litere mari cu unghiuri foarte distinctive
+  // G1: litere mari cu unghiuri distinctive
   ['H', 'Z', 'M', 'W', 'N', 'K', 'Y', 'T'],
-  // G2: simboluri ASCII speciale (100% suportate)
-  ['+', '#', '&', '@', '!', '%', '~', '^'],
-  // G3: cifre (100% suportate, distincte de litere)
+  // G2: simboluri ASCII clare și groase (fără / | ^ ~ < > care sunt invizibile la 7px)
+  ['+', '#', '&', '@', '!', '%', '$', '?'],
+  // G3: cifre (clare la orice dimensiune)
   ['2', '3', '4', '7', '8', '9', '6'],
-  // G4: forme goale/contururi
+  // G4: forme goale — contururi clare
   ['○', '□', '△', '◇', '☆', '▽', '▷', '◁'],
-  // G5: litere mai simple (ASCII)
+  // G5: litere simple (fără I/O/S care se confundă cu 1/0/5)
   ['V', 'L', 'E', 'F', 'A', 'B', 'D', 'G', 'J', 'P', 'Q', 'R', 'U'],
-  // G6: simboluri Latin-1 și ASCII sigure
-  ['=', '*', '$', '?', '×', '÷', '§', '¶'],
-  // G7: simboluri ASCII suplimentare
-  ['/', '|', '<', '>', '(', ')', '[', ']'],
+  // G6: simboluri Latin-1 vizibile (universale, în orice font)
+  ['=', '*', '×', '÷', '§', '¶'],
 ]
 
 function buildSymbolList(): string[] {
@@ -34,9 +32,8 @@ function buildSymbolList(): string[] {
   return result
 }
 
-// Ordine rezultată (primele 24):
-// ■ H + 2 ○ V = / | ● Z # 3 □ L * ? / ◆ M & 4 △ E $ ? ...
-// Fiecare bloc de 8 simboluri consecutive = 8 familii vizuale complet diferite
+// 58 simboluri total — toți garantat vizibili la 7px+ pe fundal colorat
+// Ordinea: ■ H + 2 ○ V = | ● Z # 3 □ L * | ◆ M & 4 △ E × | ...
 export const SYMBOLS = buildSymbolList()
 
 export function assignSymbols(count: number): string[] {

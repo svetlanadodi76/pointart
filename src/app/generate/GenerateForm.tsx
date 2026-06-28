@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { GeneratedSchema, DmcColor, ColorUsage } from '@/types'
+import { SYMBOLS } from '@/lib/dmc/symbols'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import { LanguageToggle } from '@/components/LanguageToggle'
@@ -566,14 +567,14 @@ function contrastColor(hex: string): string {
 
 function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
-  const [localColors, setLocalColors] = useState(schema.colors)
+  const [localColors, setLocalColors] = useState(schema.colors.map((c, i) => ({ ...c, symbol: SYMBOLS[i] ?? c.symbol ?? '?' })))
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(10, Math.min(18, Math.floor(700 / schema.widthStitches)))
 
   // Resetează culorile locale când se generează o schemă nouă
   useEffect(() => {
-    setLocalColors(schema.colors)
+    setLocalColors(schema.colors.map((c, i) => ({ ...c, symbol: SYMBOLS[i] ?? c.symbol ?? '?' })))
     setEditingIdx(null)
   }, [schema])
 
