@@ -722,12 +722,12 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                         title={`${color.dmcColor.code} ${color.symbol}`}
                         style={{
                           width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: isCrossStitch ? (color.catColor ?? color.dmcColor.hex) : color.dmcColor.hex,
-                          border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
+                          backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex,
+                          border: isRuler ? '0.5px solid rgba(0,0,0,0.35)' : '0.5px solid rgba(0,0,0,0.15)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: Math.max(CELL_SIZE * 0.72, 9), fontWeight: 'bold',
+                          fontSize: Math.max(CELL_SIZE * 0.82, 10), fontWeight: 'bold',
                           fontFamily: 'monospace',
-                          color: isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex), lineHeight: 1,
+                          color: isCrossStitch ? (color.catColor ?? color.dmcColor.hex) : contrastColor(color.dmcColor.hex), lineHeight: 1,
                         }}
                       >
                         {color.symbol}
@@ -777,8 +777,8 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                         : 'border-gray-300 hover:border-violet-400 hover:scale-110'
                     }`}
                     style={{
-                      backgroundColor: isCrossStitch ? (color.catColor ?? color.dmcColor.hex) : color.dmcColor.hex,
-                      color: isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex),
+                      backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex,
+                      color: isCrossStitch ? (color.catColor ?? color.dmcColor.hex) : contrastColor(color.dmcColor.hex),
                     }}
                     title="Click pentru a schimba culoarea"
                   >

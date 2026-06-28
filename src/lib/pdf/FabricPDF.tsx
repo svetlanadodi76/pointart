@@ -57,7 +57,7 @@ export function FabricPDF({
 
   // Simboluri vizibile doar la celule mai mari (11CT și diamante)
   const showSymbol = cellPt >= 5.8
-  const fontSize = cellPt * 0.62
+  const fontSize = cellPt * (isCrossStitch ? 0.72 : 0.62)
 
   return (
     <Document title={`${name} — Tipărire pânză`} author="PointArt">
@@ -73,8 +73,8 @@ export function FabricPDF({
               const color = colors[colorIdx]
               const cx = x * cellPt
               const cy = y * cellPt
-              const cellBg = isCrossStitch ? catColors[colorIdx] : color.dmcColor.hex
-              const symbolFill = isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex)
+              const cellBg = color.dmcColor.hex
+              const symbolFill = isCrossStitch ? catColors[colorIdx] : contrastColor(color.dmcColor.hex)
               return (
                 <G key={`${y}-${x}`}>
                   <Rect

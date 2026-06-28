@@ -57,7 +57,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
   const availableWidth = CONTENT_WIDTH - 20
   const availableHeight = PAGE_HEIGHT - MARGIN * 2 - 60 - LEGEND_HEIGHT
   const cellSize = 6
-  const fontSize = cellSize * 0.7
+  const fontSize = cellSize * (isCrossStitch ? 0.82 : 0.7)
 
   // Câte rânduri/coloane încap pe o pagină la 6px/celulă
   const rowsPerPage = Math.floor(availableHeight / cellSize)
@@ -147,16 +147,16 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                   const isRulerH = (section.startRow + rowIdx) % 10 === 0
                   const isRulerV = (section.startCol + colIdx) % 10 === 0
 
-                  const cellBg = isCrossStitch ? color.catColor : color.dmcColor.hex
-                  const symbolColor = isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex)
+                  const cellBg = isCrossStitch ? '#ffffff' : color.dmcColor.hex
+                  const symbolColor = isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex)
                   return (
                     <G key={`${rowIdx}-${colIdx}`}>
                       <Rect
                         x={x} y={y}
                         width={cellSize} height={cellSize}
                         fill={cellBg}
-                        stroke="#000000"
-                        strokeWidth={0.35}
+                        stroke={isCrossStitch ? '#cccccc' : '#000000'}
+                        strokeWidth={isCrossStitch ? 0.5 : 0.35}
                       />
                       {cellSize >= 5 && (
                         <Text
@@ -201,9 +201,9 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                   {sortedColors.map((color, i) => (
                     <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
                       <Text style={styles.legendNum}>{i + 1}</Text>
-                      {/* Pătrat cu culoarea categorică + simbol (cum apare în schemă) */}
-                      <View style={[styles.legendSymbol, { backgroundColor: isCrossStitch ? color.catColor : color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
-                        <Text style={[styles.legendSymbolText, { color: isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
+                      {/* Pătrat cu simbol colorat pe fundal alb (cum apare în schemă) */}
+                      <View style={[styles.legendSymbol, { backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
+                        <Text style={[styles.legendSymbolText, { color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
                       </View>
                       {/* Pătrat mic cu culoarea reală DMC (doar pentru cross-stitch) */}
                       {isCrossStitch && (

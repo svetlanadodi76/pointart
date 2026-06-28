@@ -187,12 +187,12 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                         title={`(${x},${y}) ${color.dmcColor.code} ${color.symbol}`}
                         style={{
                           width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: isCrossStitch ? color.catColor : color.dmcColor.hex,
-                          border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
+                          backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex,
+                          border: isRuler ? '0.5px solid rgba(0,0,0,0.35)' : '0.5px solid rgba(0,0,0,0.15)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: Math.max(CELL_SIZE * 0.72, 9), fontWeight: 'bold',
+                          fontSize: Math.max(CELL_SIZE * 0.82, 10), fontWeight: 'bold',
                           fontFamily: 'monospace',
-                          color: isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex), lineHeight: 1,
+                          color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex), lineHeight: 1,
                         }}
                       >
                         {color.symbol}
@@ -243,10 +243,10 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                 {/* Simbol + culoare */}
                 {isCrossStitch ? (
                   <div className="flex items-center gap-1">
-                    {/* Culoare categorică cu simbol (cum apare în schemă) */}
+                    {/* Simbol colorat pe fundal alb (cum apare în schemă) */}
                     <div
-                      className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono"
-                      style={{ backgroundColor: color.catColor, color: '#000000' }}
+                      className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono bg-white"
+                      style={{ color: color.catColor }}
                     >
                       {color.symbol}
                     </div>
