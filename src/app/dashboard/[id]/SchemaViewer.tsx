@@ -29,7 +29,7 @@ function contrastColor(hex: string): string {
 export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasType }: Props) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const CELL_SIZE = Math.max(4, Math.min(12, Math.floor(700 / schema.widthStitches)))
+  const CELL_SIZE = Math.max(6, Math.min(14, Math.floor(700 / schema.widthStitches)))
 
   useEffect(() => {
     if (view !== 'final' || !canvasRef.current) return
@@ -168,11 +168,11 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                           backgroundColor: color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: CELL_SIZE > 8 ? CELL_SIZE * 0.6 : 0,
+                          fontSize: CELL_SIZE * 0.65,
                           color: contrastColor(color.dmcColor.hex), lineHeight: 1,
                         }}
                       >
-                        {CELL_SIZE > 8 ? color.symbol : ''}
+                        {color.symbol}
                       </div>
                     )
                   })
