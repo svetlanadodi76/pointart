@@ -234,31 +234,73 @@ export async function generateSchema(
     for (const idx of row) stitchCounts[idx]++
   }
 
-  // Asignează simboluri
-  const symbols = assignSymbols(colorGroups.length)
+  // Elimină culorile sub prag: 0 puncte sau < 0.3% din total (min 2 puncte)
+  const totalStitches = widthStitches * heightStitches
+  const minStitches = Math.max(2, Math.floor(totalStitches * 0.003))
+  const validMask = stitchCounts.map((c: number) => c >= minStitches)
 
-  const colors: ColorUsage[] = colorGroups.map((group, i) => {
+  // Lucrăm pe copii mutabile ale array-urilor
+  let activeGroups = [...colorGroups]
+  let activeCounts = [...stitchCounts]
+
+  if (validMask.some((v: boolean) => !v)) {
+    // Mapare: index vechi → index nou în lista validelor
+    const oldToNew = new Array(activeGroups.length).fill(-1)
+    let ni = 0
+    for (let i = 0; i < activeGroups.length; i++) if (validMask[i]) oldToNew[i] = ni++
+
+    // Culorile invalide → nearest valid
+    for (let i = 0; i < activeGroups.length; i++) {
+      if (validMask[i]) continue
+      const bad = activeGroups[i].dmc
+      let minDist = Infinity, bestNew = 0
+      for (let j = 0; j < activeGroups.length; j++) {
+        if (!validMask[j]) continue
+        const d = activeGroups[j].dmc
+        const dist = 2*(bad.r-d.r)**2 + 4*(bad.g-d.g)**2 + 3*(bad.b-d.b)**2
+        if (dist < minDist) { minDist = dist; bestNew = oldToNew[j] }
+      }
+      oldToNew[i] = bestNew
+    }
+
+    // Reindexează grid cu noile valori
+    for (let y = 0; y < finalGrid.length; y++)
+      for (let x = 0; x < finalGrid[y].length; x++)
+        finalGrid[y][x] = oldToNew[finalGrid[y][x]]
+
+    // Recalculează count-uri după remap
+    const validCount = validMask.filter(Boolean).length
+    const newCounts = new Array(validCount).fill(0)
+    for (const row of finalGrid) for (const idx of row) newCounts[idx]++
+
+    // Filtrează la culorile valide
+    activeGroups = activeGroups.filter((_, i) => validMask[i])
+    activeCounts = newCounts
+  }
+
+  // Asignează simboluri
+  const symbols = assignSymbols(activeGroups.length)
+
+  const colors: ColorUsage[] = activeGroups.map((group, i) => {
+    const count = activeCounts[i]
     let quantity: number
     let unit: 'skeins' | 'packets'
 
     if (settings.craftType === 'diamond') {
-      // Diamante: 1 pachet ≈ 200 pietre, fiecare punct = 1 piatră
-      quantity = Math.max(1, Math.ceil(stitchCounts[i] / 200))
+      quantity = Math.max(1, Math.ceil(count / 200))
       unit = 'packets'
     } else if (settings.craftType === 'goblene') {
-      // Goblene: lână mai groasă, 1 skein ≈ 40m, ~6cm/punct, 1 fir
-      quantity = Math.max(1, Math.ceil((stitchCounts[i] * 6) / 4000))
+      quantity = Math.max(1, Math.ceil((count * 6) / 4000))
       unit = 'skeins'
     } else {
-      // Broderie: DMC standard, 1 skein = 8m = 800cm
-      quantity = Math.max(1, Math.ceil((stitchCounts[i] * config.strands * CM_PER_STITCH) / METERS_PER_SKEIN))
+      quantity = Math.max(1, Math.ceil((count * config.strands * CM_PER_STITCH) / METERS_PER_SKEIN))
       unit = 'skeins'
     }
 
     return {
       dmcColor: group.dmc,
       symbol: symbols[i],
-      count: stitchCounts[i],
+      count,
       skeins: quantity,
       unit,
     }
