@@ -559,9 +559,11 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 }
 
 function contrastColor(hex: string): string {
+  if (!hex || !hex.startsWith('#') || hex.length < 7) return '#000000'
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return '#000000'
   return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
 }
 
@@ -577,7 +579,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
     })())
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const CELL_SIZE = Math.max(10, Math.min(18, Math.floor(700 / schema.widthStitches)))
+  const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
 
   // Resetează culorile locale când se generează o schemă nouă
   useEffect(() => {
@@ -719,7 +721,8 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                           backgroundColor: color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: Math.max(CELL_SIZE * 0.7, 7),
+                          fontSize: Math.max(CELL_SIZE * 0.72, 9), fontWeight: 'bold',
+                          fontFamily: 'monospace',
                           color: contrastColor(color.dmcColor.hex), lineHeight: 1,
                         }}
                       >
