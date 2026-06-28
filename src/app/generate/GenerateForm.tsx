@@ -569,7 +569,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
   const [localColors, setLocalColors] = useState(schema.colors)
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const CELL_SIZE = Math.max(6, Math.min(14, Math.floor(700 / schema.widthStitches)))
+  const CELL_SIZE = Math.max(10, Math.min(18, Math.floor(700 / schema.widthStitches)))
 
   // Resetează culorile locale când se generează o schemă nouă
   useEffect(() => {
@@ -704,7 +704,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                           backgroundColor: color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: CELL_SIZE * 0.65,
+                          fontSize: Math.max(CELL_SIZE * 0.7, 7),
                           color: contrastColor(color.dmcColor.hex), lineHeight: 1,
                         }}
                       >
