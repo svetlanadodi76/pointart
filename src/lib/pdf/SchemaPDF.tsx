@@ -16,9 +16,11 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 9, color: '#6b7280', marginBottom: 8 },
   legendTitle: { fontSize: 11, fontWeight: 'bold', marginBottom: 6, marginTop: 10, color: '#111827' },
   legendRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  legendCode: { fontSize: 9, width: 50, color: '#111827', fontFamily: 'Courier' },
+  legendNum: { fontSize: 8, width: 16, color: '#9ca3af', textAlign: 'right', marginRight: 4 },
+  legendCode: { fontSize: 9, width: 46, color: '#111827', fontFamily: 'Courier' },
   legendName: { fontSize: 9, flex: 1, color: '#1f2937' },
-  legendQty: { fontSize: 9, width: 60, color: '#111827', textAlign: 'right' },
+  legendQty: { fontSize: 9, width: 34, color: '#374151' },
+  legendPct: { fontSize: 8, width: 30, color: '#6b7280', textAlign: 'right' },
   legendSymbol: { width: 16, height: 16, marginRight: 5, alignItems: 'center', justifyContent: 'center' },
   legendSymbolText: { fontSize: 10, textAlign: 'center' },
   pageNum: { fontSize: 7, color: '#9ca3af', textAlign: 'center', marginTop: 6 },
@@ -178,13 +180,15 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                   {sortedColors.map((color, i) => (
                     <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
+                      <Text style={styles.legendNum}>{i + 1}</Text>
                       <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
                         <Text style={styles.legendSymbolText}>{color.symbol}</Text>
                       </View>
-                      <Text style={[styles.legendCode, { width: 42 }]}>DMC {color.dmcColor.code}</Text>
-                      <Text style={[styles.legendQty, { width: 38, textAlign: 'left' }]}>
+                      <Text style={styles.legendCode}>DMC {color.dmcColor.code}</Text>
+                      <Text style={styles.legendQty}>
                         {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}
                       </Text>
+                      <Text style={styles.legendPct}>{color.count} pct.</Text>
                       <Text style={styles.legendName}>{color.dmcColor.name}</Text>
                     </View>
                   ))}
