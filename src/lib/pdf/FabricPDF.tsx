@@ -1,5 +1,6 @@
 import { Document, Page, Svg, Rect, Line, G, Text } from '@react-pdf/renderer'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
+import { getCategoricalColor } from '@/lib/dmc/categoricalColors'
 
 function contrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -36,6 +37,15 @@ export function FabricPDF({
   canvasType = '14CT',
 }: FabricPDFProps) {
   const { grid, colors, widthStitches, heightStitches, widthCm, heightCm } = schema
+  const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
+
+  // Atribuie culori categorice după rang (identic cu SchemaPDF și SchemaViewer)
+  const catColors = (() => {
+    const sorted = [...colors.entries()].sort((a, b) => b[1].count - a[1].count)
+    const rankMap = new Map<number, string>()
+    sorted.forEach(([origIdx], rank) => rankMap.set(origIdx, getCategoricalColor(rank)))
+    return colors.map((_, i) => rankMap.get(i) ?? '#cccccc')
+  })()
 
   // Dimensiunea unei celule în PDF points (= dimensiunea reală 1:1)
   const cellCm = STITCH_SIZE_CM[canvasType] ?? 1 / 5.5
@@ -63,16 +73,18 @@ export function FabricPDF({
               const color = colors[colorIdx]
               const cx = x * cellPt
               const cy = y * cellPt
+              const cellBg = isCrossStitch ? catColors[colorIdx] : color.dmcColor.hex
+              const symbolFill = isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex)
               return (
                 <G key={`${y}-${x}`}>
                   <Rect
                     x={cx} y={cy}
                     width={cellPt} height={cellPt}
-                    fill={color.dmcColor.hex}
+                    fill={cellBg}
                   />
                   {showSymbol && (
                     <Text
-                      style={{ fontSize, fill: contrastColor(color.dmcColor.hex), textAnchor: 'middle' }}
+                      style={{ fontSize, fill: symbolFill, textAnchor: 'middle' }}
                       x={cx + cellPt / 2}
                       y={cy + cellPt * 0.75}
                     >
