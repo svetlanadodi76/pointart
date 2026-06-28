@@ -32,7 +32,8 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(10, Math.min(18, Math.floor(700 / schema.widthStitches)))
   // Suprascriem simbolurile cu cele curente (fix scheme vechi din DB cu simboluri Unicode invizibile)
-  const colors = schema.colors.map((c, i) => ({ ...c, symbol: SYMBOLS[i] ?? c.symbol ?? '?' }))
+  const n = SYMBOLS.length
+  const colors = schema.colors.map((c, i) => ({ ...c, symbol: SYMBOLS[i < n ? i : i % n] }))
 
   useEffect(() => {
     if (view !== 'final' || !canvasRef.current) return
