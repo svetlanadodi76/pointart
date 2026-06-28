@@ -4,6 +4,13 @@ import {
 } from '@react-pdf/renderer'
 import type { GeneratedSchema } from '@/types'
 
+function contrastColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
+}
+
 const PAGE_WIDTH = 595
 const PAGE_HEIGHT = 842
 const MARGIN = 30
@@ -140,7 +147,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                       />
                       {cellSize >= 5 && (
                         <Text
-                          style={{ fontSize, fill: '#000000cc', textAnchor: 'middle' }}
+                          style={{ fontSize, fill: contrastColor(color.dmcColor.hex), textAnchor: 'middle' }}
                           x={x + cellSize / 2}
                           y={y + cellSize * 0.75}
                         >

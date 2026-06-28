@@ -557,6 +557,13 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   )
 }
 
+function contrastColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)'
+}
+
 function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const [localColors, setLocalColors] = useState(schema.colors)
@@ -698,7 +705,7 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: CELL_SIZE > 8 ? CELL_SIZE * 0.6 : 0,
-                          color: 'rgba(0,0,0,0.5)', lineHeight: 1,
+                          color: contrastColor(color.dmcColor.hex), lineHeight: 1,
                         }}
                       >
                         {CELL_SIZE > 8 ? color.symbol : ''}
