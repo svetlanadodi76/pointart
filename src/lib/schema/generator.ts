@@ -14,9 +14,10 @@ const CANVAS_CONFIG = {
   '3.0mm': { stitchesPerCm: 3.333, strands: 0 },
 }
 
-// 1 sculă DMC = 8m = 800cm. Un punct consumă ~1.5cm de ață per fir (diagonala 14CT × 4 brațe + overhead)
+// 1 sculă DMC = 8m = 800cm cu 6 fire. La 14CT folosești 2 fire → 24m utilizabili/sculă.
+// Un punct consumă ~1.5cm per fir (diagonala celulei × 4 brațe + overhead spate + nod)
 const CM_PER_STITCH = 1.5
-const METERS_PER_SKEIN = 800
+const CM_PER_SKEIN = 800 * 6  // 4800cm fir simplu per sculă (6 fire × 8m)
 
 function quantizeColor(r: number, g: number, b: number, factor = 24): [number, number, number] {
   return [
@@ -293,7 +294,7 @@ export async function generateSchema(
       quantity = Math.max(1, Math.ceil((count * 6) / 4000))
       unit = 'skeins'
     } else {
-      quantity = Math.max(1, Math.ceil((count * config.strands * CM_PER_STITCH) / METERS_PER_SKEIN))
+      quantity = Math.max(1, Math.ceil((count * config.strands * CM_PER_STITCH) / CM_PER_SKEIN))
       unit = 'skeins'
     }
 

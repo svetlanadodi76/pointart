@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import type { GeneratedSchema, DmcColor, ColorUsage } from '@/types'
+import type { GeneratedSchema, DmcColor, ColorUsage, CraftType } from '@/types'
 import { SYMBOLS } from '@/lib/dmc/symbols'
+import { getCategoricalColor } from '@/lib/dmc/categoricalColors'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import { LanguageToggle } from '@/components/LanguageToggle'
@@ -490,7 +491,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {result && subscription?.plan !== 'free_trial' && (
               <div className="flex flex-col gap-2">
                 <PDFDownloadLink
-                  document={<SchemaPDF schema={result} name="Schema PointArt" />}
+                  document={<SchemaPDF schema={result} name="Schema PointArt" craftType={craftType as CraftType} />}
                   fileName="pointart-schema.pdf"
                 >
                   {({ loading: pdfLoading }: { loading: boolean }) => (
@@ -543,7 +544,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               </div>
             )}
             {result ? (
-              <SchemaPreview schema={result} />
+              <SchemaPreview schema={result} craftType={craftType} />
             ) : (
               <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-16 text-center h-full flex flex-col items-center justify-center">
                 <div className="text-5xl mb-4">🖼️</div>
@@ -567,30 +568,33 @@ function contrastColor(hex: string): string {
   return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
 }
 
-function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
+function buildColors(colors: GeneratedSchema['colors']) {
+  const n = SYMBOLS.length
+  const withIdx = colors.map((c, i) => ({ ...c, _idx: i }))
+  const sorted = [...withIdx].sort((a, b) => b.count - a.count)
+  const byRank = new Map<number, { symbol: string; catColor: string }>()
+  sorted.forEach((c, rank) => byRank.set(c._idx, {
+    symbol: SYMBOLS[rank % n],
+    catColor: getCategoricalColor(rank),
+  }))
+  return withIdx.map(c => ({
+    ...c,
+    symbol: byRank.get(c._idx)?.symbol ?? '?',
+    catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
+  }))
+}
+
+function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftType: string }) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
-  const [localColors, setLocalColors] = useState((() => {
-      const n = SYMBOLS.length
-      const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
-      const byRank = new Map<number, string>()
-      ;[...withIdx].sort((a, b) => b.count - a.count)
-        .forEach((c, rank) => byRank.set(c._idx, SYMBOLS[rank % n]))
-      return withIdx.map(c => ({ ...c, symbol: byRank.get(c._idx) ?? '?' }))
-    })())
+  const [localColors, setLocalColors] = useState(() => buildColors(schema.colors))
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
+  const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
 
   // Resetează culorile locale când se generează o schemă nouă
   useEffect(() => {
-    setLocalColors((() => {
-      const n = SYMBOLS.length
-      const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
-      const byRank = new Map<number, string>()
-      ;[...withIdx].sort((a, b) => b.count - a.count)
-        .forEach((c, rank) => byRank.set(c._idx, SYMBOLS[rank % n]))
-      return withIdx.map(c => ({ ...c, symbol: byRank.get(c._idx) ?? '?' }))
-    })())
+    setLocalColors(buildColors(schema.colors))
     setEditingIdx(null)
   }, [schema])
 
@@ -718,12 +722,12 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                         title={`${color.dmcColor.code} ${color.symbol}`}
                         style={{
                           width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: color.dmcColor.hex,
+                          backgroundColor: isCrossStitch ? (color.catColor ?? color.dmcColor.hex) : color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: Math.max(CELL_SIZE * 0.72, 9), fontWeight: 'bold',
                           fontFamily: 'monospace',
-                          color: contrastColor(color.dmcColor.hex), lineHeight: 1,
+                          color: isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex), lineHeight: 1,
                         }}
                       >
                         {color.symbol}
@@ -772,11 +776,21 @@ function SchemaPreview({ schema }: { schema: GeneratedSchema }) {
                         ? 'border-violet-500 ring-2 ring-violet-300 scale-110'
                         : 'border-gray-300 hover:border-violet-400 hover:scale-110'
                     }`}
-                    style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}
+                    style={{
+                      backgroundColor: isCrossStitch ? (color.catColor ?? color.dmcColor.hex) : color.dmcColor.hex,
+                      color: isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex),
+                    }}
                     title="Click pentru a schimba culoarea"
                   >
                     {color.symbol}
                   </button>
+                  {isCrossStitch && (
+                    <div
+                      className="w-3 h-6 rounded border border-gray-300 flex-shrink-0"
+                      style={{ backgroundColor: color.dmcColor.hex }}
+                      title={`Culoare reală DMC: ${color.dmcColor.name}`}
+                    />
+                  )}
                   <span className="font-mono text-gray-700 w-14 text-xs">DMC {color.dmcColor.code}</span>
                   <span className="text-gray-500 flex-1 text-xs truncate">{color.dmcColor.name}</span>
                   <span className="text-gray-400 text-xs whitespace-nowrap text-right">

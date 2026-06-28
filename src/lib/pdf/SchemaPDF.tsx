@@ -2,7 +2,8 @@ import {
   Document, Page, View, Text, Svg, Rect, Line, G,
   StyleSheet, Font
 } from '@react-pdf/renderer'
-import type { GeneratedSchema } from '@/types'
+import type { GeneratedSchema, CraftType } from '@/types'
+import { getCategoricalColor } from '@/lib/dmc/categoricalColors'
 
 function contrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -37,10 +38,20 @@ const styles = StyleSheet.create({
 interface SchemaPDFProps {
   schema: GeneratedSchema
   name?: string
+  craftType?: CraftType
 }
 
-export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) {
-  const { grid, colors, widthStitches, heightStitches, widthCm, heightCm } = schema
+export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross_stitch' }: SchemaPDFProps) {
+  const { grid, widthStitches, heightStitches, widthCm, heightCm } = schema
+  const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
+
+  // Atribuie culori categorice după rang (cel mai popular → rank 0)
+  const colors = (() => {
+    const sorted = [...schema.colors.entries()].sort((a, b) => b[1].count - a[1].count)
+    const rankMap = new Map<number, string>()
+    sorted.forEach(([origIdx], rank) => rankMap.set(origIdx, getCategoricalColor(rank)))
+    return schema.colors.map((c, i) => ({ ...c, catColor: rankMap.get(i) ?? '#cccccc' }))
+  })()
 
   // Celulă fixă de 6px — suficient pentru simboluri vizibile, schema se împarte în pagini
   const availableWidth = CONTENT_WIDTH - 20
@@ -136,18 +147,20 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                   const isRulerH = (section.startRow + rowIdx) % 10 === 0
                   const isRulerV = (section.startCol + colIdx) % 10 === 0
 
+                  const cellBg = isCrossStitch ? color.catColor : color.dmcColor.hex
+                  const symbolColor = isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex)
                   return (
                     <G key={`${rowIdx}-${colIdx}`}>
                       <Rect
                         x={x} y={y}
                         width={cellSize} height={cellSize}
-                        fill={color.dmcColor.hex}
+                        fill={cellBg}
                         stroke="#000000"
                         strokeWidth={0.35}
                       />
                       {cellSize >= 5 && (
                         <Text
-                          style={{ fontSize, fill: contrastColor(color.dmcColor.hex), textAnchor: 'middle' }}
+                          style={{ fontSize, fill: symbolColor, textAnchor: 'middle' }}
                           x={x + cellSize / 2}
                           y={y + cellSize * 0.75}
                         >
@@ -188,9 +201,14 @@ export function SchemaPDF({ schema, name = 'Schema PointArt' }: SchemaPDFProps) 
                   {sortedColors.map((color, i) => (
                     <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
                       <Text style={styles.legendNum}>{i + 1}</Text>
-                      <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
-                        <Text style={[styles.legendSymbolText, { color: contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
+                      {/* Pătrat cu culoarea categorică + simbol (cum apare în schemă) */}
+                      <View style={[styles.legendSymbol, { backgroundColor: isCrossStitch ? color.catColor : color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
+                        <Text style={[styles.legendSymbolText, { color: isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
                       </View>
+                      {/* Pătrat mic cu culoarea reală DMC (doar pentru cross-stitch) */}
+                      {isCrossStitch && (
+                        <View style={{ width: 8, height: 16, backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc', marginRight: 3 }} />
+                      )}
                       <Text style={styles.legendCode}>DMC {color.dmcColor.code}</Text>
                       <Text style={styles.legendQty}>
                         {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}

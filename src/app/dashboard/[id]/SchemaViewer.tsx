@@ -6,6 +6,7 @@ import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
 import { SYMBOLS } from '@/lib/dmc/symbols'
+import { getCategoricalColor } from '@/lib/dmc/categoricalColors'
 
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
@@ -35,13 +36,21 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
   const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
   // Asignăm simboluri după rangul de popularitate: culoarea #1 → SYMBOLS[0]='■', #2 → 'H', etc.
   // (indexul original din schema.colors nu corespunde cu rangul vizibil în legendă)
+  const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
   const colors = (() => {
     const n = SYMBOLS.length
     const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
-    const byRank = new Map<number, string>()
-    ;[...withIdx].sort((a, b) => b.count - a.count)
-      .forEach((c, rank) => byRank.set(c._idx, SYMBOLS[rank % n]))
-    return withIdx.map(c => ({ ...c, symbol: byRank.get(c._idx) ?? '?' }))
+    const sorted = [...withIdx].sort((a, b) => b.count - a.count)
+    const byRank = new Map<number, { symbol: string; catColor: string }>()
+    sorted.forEach((c, rank) => byRank.set(c._idx, {
+      symbol: SYMBOLS[rank % n],
+      catColor: getCategoricalColor(rank),
+    }))
+    return withIdx.map(c => ({
+      ...c,
+      symbol: byRank.get(c._idx)?.symbol ?? '?',
+      catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
+    }))
   })()
 
   useEffect(() => {
@@ -87,7 +96,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
         {canDownloadPdf ? (
           <div className="flex flex-wrap gap-2">
             <PDFDownloadLink
-              document={<SchemaPDF schema={schema} name={name} />}
+              document={<SchemaPDF schema={schema} name={name} craftType={craftType} />}
               fileName={`${name.replace(/\s+/g, '-')}.pdf`}
             >
               {({ loading: pdfLoading }: { loading: boolean }) => (
@@ -178,12 +187,12 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                         title={`(${x},${y}) ${color.dmcColor.code} ${color.symbol}`}
                         style={{
                           width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: color.dmcColor.hex,
+                          backgroundColor: isCrossStitch ? color.catColor : color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.3)' : '0.5px solid rgba(0,0,0,0.1)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: Math.max(CELL_SIZE * 0.72, 9), fontWeight: 'bold',
                           fontFamily: 'monospace',
-                          color: contrastColor(color.dmcColor.hex), lineHeight: 1,
+                          color: isCrossStitch ? '#000000' : contrastColor(color.dmcColor.hex), lineHeight: 1,
                         }}
                       >
                         {color.symbol}
@@ -216,7 +225,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
           Culori folosite ({colors.length})
         </h3>
         {/* Header tabel */}
-        <div className="grid grid-cols-[28px_28px_1fr_auto] gap-x-3 pb-1.5 mb-1 border-b border-gray-200">
+        <div className={`grid ${isCrossStitch ? 'grid-cols-[28px_52px_1fr_auto]' : 'grid-cols-[28px_28px_1fr_auto]'} gap-x-3 pb-1.5 mb-1 border-b border-gray-200`}>
           <span className="text-[10px] font-semibold text-gray-400 text-center">#</span>
           <span className="text-[10px] font-semibold text-gray-400 text-center">Simbol</span>
           <span className="text-[10px] font-semibold text-gray-400">Culoare DMC</span>
@@ -227,17 +236,35 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
           {[...colors]
             .sort((a, b) => b.count - a.count)
             .map((color, i) => (
-              <div key={i} className="grid grid-cols-[28px_28px_1fr_auto] items-center gap-x-3 py-1.5 border-b border-gray-50">
+              <div key={i} className={`grid ${isCrossStitch ? 'grid-cols-[28px_52px_1fr_auto]' : 'grid-cols-[28px_28px_1fr_auto]'} items-center gap-x-3 py-1.5 border-b border-gray-50`}>
                 {/* Număr ordine */}
                 <span className="text-xs font-bold text-gray-400 text-center">{i + 1}</span>
 
-                {/* Simbol pe fundal colorat */}
-                <div
-                  className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                  style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}
-                >
-                  {color.symbol}
-                </div>
+                {/* Simbol + culoare */}
+                {isCrossStitch ? (
+                  <div className="flex items-center gap-1">
+                    {/* Culoare categorică cu simbol (cum apare în schemă) */}
+                    <div
+                      className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono"
+                      style={{ backgroundColor: color.catColor, color: '#000000' }}
+                    >
+                      {color.symbol}
+                    </div>
+                    {/* Culoarea reală DMC (pentru alegerea aței) */}
+                    <div
+                      className="w-4 h-7 rounded border border-gray-300 flex-shrink-0"
+                      style={{ backgroundColor: color.dmcColor.hex }}
+                      title={`Culoare reală: ${color.dmcColor.name}`}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono"
+                    style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}
+                  >
+                    {color.symbol}
+                  </div>
+                )}
 
                 {/* DMC cod + nume */}
                 <div className="min-w-0">
