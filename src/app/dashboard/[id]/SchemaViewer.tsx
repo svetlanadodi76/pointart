@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
-import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
+import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS, GEOMETRIC_SYMBOLS } from '@/lib/dmc/categoricalColors'
 
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
@@ -27,6 +27,41 @@ function contrastColor(hex: string): string {
   const b = parseInt(hex.slice(5, 7), 16)
   if (isNaN(r) || isNaN(g) || isNaN(b)) return '#000000'
   return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
+}
+
+function renderShapeSvg(symbol: string, color: string, size: number) {
+  const p = Math.max(size * 0.13, 1)
+  const cx = size / 2
+  const cy = size / 2
+  const r = Math.max(size / 2 - p, 1)
+  const sw = Math.max(size * 0.08, 0.6)
+
+  let shape: ReactNode = null
+  switch (symbol) {
+    case '▲': shape = <polygon points={`${p},${size-p} ${size-p},${size-p} ${cx},${p}`} fill={color} />; break
+    case '▼': shape = <polygon points={`${p},${p} ${size-p},${p} ${cx},${size-p}`} fill={color} />; break
+    case '◀': shape = <polygon points={`${size-p},${p} ${size-p},${size-p} ${p},${cy}`} fill={color} />; break
+    case '▶': shape = <polygon points={`${p},${p} ${p},${size-p} ${size-p},${cy}`} fill={color} />; break
+    case '●': shape = <circle cx={cx} cy={cy} r={r} fill={color} />; break
+    case '○': shape = <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={sw} />; break
+    case '■': shape = <rect x={p} y={p} width={size-p*2} height={size-p*2} fill={color} />; break
+    case '□': shape = <rect x={p} y={p} width={size-p*2} height={size-p*2} fill="none" stroke={color} strokeWidth={sw} />; break
+    case '◆': shape = <polygon points={`${cx},${p} ${size-p},${cy} ${cx},${size-p} ${p},${cy}`} fill={color} />; break
+    case '◇': shape = <polygon points={`${cx},${p} ${size-p},${cy} ${cx},${size-p} ${p},${cy}`} fill="none" stroke={color} strokeWidth={sw} />; break
+    case '◐': shape = <path d={`M ${cx} ${cy-r} A ${r} ${r} 0 0 0 ${cx} ${cy+r} Z`} fill={color} />; break
+    case '◑': shape = <path d={`M ${cx} ${cy-r} A ${r} ${r} 0 0 1 ${cx} ${cy+r} Z`} fill={color} />; break
+    case '◒': shape = <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 0 ${cx+r} ${cy} Z`} fill={color} />; break
+    case '◓': shape = <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy} Z`} fill={color} />; break
+    case '▣': shape = <g><rect x={p} y={p} width={size-p*2} height={size-p*2} fill="none" stroke={color} strokeWidth={sw} /><rect x={p+sw+0.5} y={p+sw+0.5} width={size-p*2-sw*2-1} height={size-p*2-sw*2-1} fill={color} /></g>; break
+    case '▤': shape = <g>
+      <rect x={p} y={p} width={size-p*2} height={size-p*2} fill="none" stroke={color} strokeWidth={sw} />
+      {[0.3, 0.5, 0.7].map((t, i) => (
+        <line key={i} x1={p} y1={p+(size-p*2)*t} x2={size-p} y2={p+(size-p*2)*t} stroke={color} strokeWidth={sw*0.7} />
+      ))}
+    </g>; break
+  }
+  if (!shape) return null
+  return <svg width={size} height={size} style={{ display: 'block', overflow: 'visible' }}>{shape}</svg>
 }
 
 export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasType }: Props) {
@@ -192,13 +227,19 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                             : color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.35)' : '0.5px solid rgba(0,0,0,0.15)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: Math.max(CELL_SIZE * 0.82, 10), fontWeight: 'bold',
+                          fontSize: Math.max(CELL_SIZE * 0.88, 11), fontWeight: 'bold',
                           fontFamily: 'monospace',
                           color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex),
                           lineHeight: 1,
                         }}
                       >
-                        {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
+                        {isCrossStitch
+                          ? (color.isSolid ? '' : (
+                              GEOMETRIC_SYMBOLS.has(color.symbol)
+                                ? renderShapeSvg(color.symbol, color.catColor, CELL_SIZE - 2)
+                                : color.symbol
+                            ))
+                          : color.symbol}
                       </div>
                     )
                   })
@@ -253,12 +294,14 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                         style={{ backgroundColor: color.catColor }}
                       />
                     ) : (
-                      /* Celulă albă cu simbol colorat simplu */
+                      /* Celulă albă cu simbol colorat simplu sau formă geometrică */
                       <div
                         className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-sm font-bold font-mono bg-white"
                         style={{ color: color.catColor }}
                       >
-                        {color.symbol}
+                        {GEOMETRIC_SYMBOLS.has(color.symbol)
+                          ? renderShapeSvg(color.symbol, color.catColor, 20)
+                          : color.symbol}
                       </div>
                     )}
                     {/* Culoarea reală DMC (pentru alegerea aței) */}

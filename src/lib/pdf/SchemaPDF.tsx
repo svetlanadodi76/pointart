@@ -1,15 +1,55 @@
 import {
-  Document, Page, View, Text, Svg, Rect, Line, G,
+  Document, Page, View, Text, Svg, Rect, Line, G, Circle, Polygon, Path,
   StyleSheet, Font
 } from '@react-pdf/renderer'
 import type { GeneratedSchema, CraftType } from '@/types'
-import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
+import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS, GEOMETRIC_SYMBOLS } from '@/lib/dmc/categoricalColors'
 
 function contrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
   return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
+}
+
+function renderGeometricShape(symbol: string, x: number, y: number, cs: number, color: string) {
+  const cx = x + cs / 2
+  const cy = y + cs / 2
+  const r = Math.max(cs / 2 - 0.8, 1)
+  const p = Math.max(cs * 0.15, 0.7)
+  const sw = Math.max(cs * 0.12, 0.5)
+
+  switch (symbol) {
+    case '▲': return <Polygon points={`${x+p},${y+cs-p} ${x+cs-p},${y+cs-p} ${cx},${y+p}`} fill={color} />
+    case '▼': return <Polygon points={`${x+p},${y+p} ${x+cs-p},${y+p} ${cx},${y+cs-p}`} fill={color} />
+    case '◀': return <Polygon points={`${x+cs-p},${y+p} ${x+cs-p},${y+cs-p} ${x+p},${cy}`} fill={color} />
+    case '▶': return <Polygon points={`${x+p},${y+p} ${x+p},${y+cs-p} ${x+cs-p},${cy}`} fill={color} />
+    case '●': return <Circle cx={cx} cy={cy} r={r} fill={color} />
+    case '○': return <Circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={sw} />
+    case '■': return <Rect x={x+p} y={y+p} width={cs-p*2} height={cs-p*2} fill={color} />
+    case '□': return <Rect x={x+p} y={y+p} width={cs-p*2} height={cs-p*2} fill="none" stroke={color} strokeWidth={sw} />
+    case '◆': return <Polygon points={`${cx},${y+p} ${x+cs-p},${cy} ${cx},${y+cs-p} ${x+p},${cy}`} fill={color} />
+    case '◇': return <Polygon points={`${cx},${y+p} ${x+cs-p},${cy} ${cx},${y+cs-p} ${x+p},${cy}`} fill="none" stroke={color} strokeWidth={sw} />
+    case '◐': return <Path d={`M ${cx} ${cy-r} A ${r} ${r} 0 0 0 ${cx} ${cy+r} Z`} fill={color} />
+    case '◑': return <Path d={`M ${cx} ${cy-r} A ${r} ${r} 0 0 1 ${cx} ${cy+r} Z`} fill={color} />
+    case '◒': return <Path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 0 ${cx+r} ${cy} Z`} fill={color} />
+    case '◓': return <Path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy} Z`} fill={color} />
+    case '▣': return (
+      <G>
+        <Rect x={x+p} y={y+p} width={cs-p*2} height={cs-p*2} fill="none" stroke={color} strokeWidth={sw} />
+        <Rect x={x+p+sw+0.5} y={y+p+sw+0.5} width={cs-p*2-sw*2-1} height={cs-p*2-sw*2-1} fill={color} />
+      </G>
+    )
+    case '▤': return (
+      <G>
+        <Rect x={x+p} y={y+p} width={cs-p*2} height={cs-p*2} fill="none" stroke={color} strokeWidth={sw} />
+        {[0.3, 0.5, 0.7].map((t, i) => (
+          <Line key={i} x1={x+p} y1={y+p+(cs-p*2)*t} x2={x+cs-p} y2={y+p+(cs-p*2)*t} stroke={color} strokeWidth={sw*0.8} />
+        ))}
+      </G>
+    )
+    default: return null
+  }
 }
 
 const PAGE_WIDTH = 595
@@ -66,7 +106,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
   const availableWidth = CONTENT_WIDTH - 20
   const availableHeight = PAGE_HEIGHT - MARGIN * 2 - 60 - LEGEND_HEIGHT
   const cellSize = 6
-  const fontSize = cellSize * (isCrossStitch ? 0.82 : 0.7)
+  const fontSize = cellSize * (isCrossStitch ? 0.88 : 0.7)
 
   // Câte rânduri/coloane încap pe o pagină la 6px/celulă
   const rowsPerPage = Math.floor(availableHeight / cellSize)
@@ -170,13 +210,17 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                         strokeWidth={isCrossStitch ? 0.5 : 0.35}
                       />
                       {cellSize >= 5 && (!isCrossStitch || !color.isSolid) && !!color.symbol && (
-                        <Text
-                          style={{ fontSize, fill: symbolColor, textAnchor: 'middle' }}
-                          x={x + cellSize / 2}
-                          y={y + cellSize * 0.75}
-                        >
-                          {color.symbol}
-                        </Text>
+                        GEOMETRIC_SYMBOLS.has(color.symbol)
+                          ? renderGeometricShape(color.symbol, x, y, cellSize, symbolColor)
+                          : (
+                            <Text
+                              style={{ fontSize, fill: symbolColor, textAnchor: 'middle' }}
+                              x={x + cellSize / 2}
+                              y={y + cellSize * 0.75}
+                            >
+                              {color.symbol}
+                            </Text>
+                          )
                       )}
                     </G>
                   )
@@ -215,8 +259,15 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                       {isCrossStitch && color.isSolid ? (
                         /* Culoare plină — fără simbol */
                         <View style={[styles.legendSymbol, { backgroundColor: color.catColor, borderWidth: 0.5, borderColor: '#ccc' }]} />
+                      ) : isCrossStitch && GEOMETRIC_SYMBOLS.has(color.symbol) ? (
+                        /* Formă geometrică — SVG în legendă */
+                        <View style={[styles.legendSymbol, { backgroundColor: '#ffffff', borderWidth: 0.5, borderColor: '#ccc' }]}>
+                          <Svg width={16} height={16} viewBox="0 0 16 16">
+                            {renderGeometricShape(color.symbol, 0, 0, 16, color.catColor)}
+                          </Svg>
+                        </View>
                       ) : (
-                        /* Celulă albă cu simbol colorat (sau DMC pentru diamante) */
+                        /* Simbol text (sau DMC pentru diamante) */
                         <View style={[styles.legendSymbol, { backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
                           <Text style={[styles.legendSymbolText, { color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
                         </View>
