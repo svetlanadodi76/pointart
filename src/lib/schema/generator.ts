@@ -1,5 +1,6 @@
 import sharp from 'sharp'
-import { findNearestDmc, loadDmcColors, type DmcColor } from '@/lib/dmc/matching'
+import { findNearestDmc, loadDmcColors, addLabToColors, findNearestByLab, type DmcColor, type DmcColorWithLab } from '@/lib/dmc/matching'
+import { rgbToLab, ciede2000 } from '@/lib/dmc/colorSpace'
 import { assignSymbols } from '@/lib/dmc/symbols'
 import type { CraftType, CanvasType, GeneratedSchema, ColorUsage } from '@/types'
 
@@ -96,7 +97,7 @@ export async function generateSchema(
   const saturation = 1.2  * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
-  const { data: pixels, info } = await sharp(imageBuffer)
+  const { data: pixels } = await sharp(imageBuffer)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
     .normalize()
     .modulate({ saturation, brightness })
@@ -106,6 +107,8 @@ export async function generateSchema(
     .toBuffer({ resolveWithObject: true })
 
   const dmcColors = await loadDmcColors()
+  // Precomputăm LAB o singură dată pentru toată paleta DMC (~500 culori)
+  const dmcWithLab = addLabToColors(dmcColors)
 
   // Construiește harta de frecvențe a culorilor (cuantizate)
   const colorFreq = new Map<string, { count: number; pixels: [number, number, number][] }>()
@@ -130,11 +133,11 @@ export async function generateSchema(
 
   for (const [key, { count, pixels: groupPixels }] of sortedColors) {
     const [avgR, avgG, avgB] = averageColors(groupPixels)
-    let dmc = findNearestDmc(avgR, avgG, avgB, dmcColors)
+    let dmc = findNearestDmc(avgR, avgG, avgB, dmcWithLab)
 
     // Evită duplicate de DMC
     if (usedDmcCodes.has(dmc.code)) {
-      const remaining = dmcColors.filter(c => !usedDmcCodes.has(c.code))
+      const remaining = dmcWithLab.filter(c => !usedDmcCodes.has(c.code))
       if (remaining.length > 0) {
         dmc = findNearestDmc(avgR, avgG, avgB, remaining)
       }
@@ -149,6 +152,11 @@ export async function generateSchema(
   for (let i = 0; i < colorGroups.length; i++) {
     colorToIndex.set(colorGroups[i].qKey, i)
   }
+
+  // Precomputăm LAB pentru grupurile de culori active (subset din dmcWithLab)
+  const groupsWithLab: DmcColorWithLab[] = colorGroups.map(g =>
+    dmcWithLab.find(d => d.code === g.dmc.code) ?? { ...g.dmc, lab: rgbToLab(g.dmc.r, g.dmc.g, g.dmc.b) }
+  )
 
   const minDim = Math.min(widthStitches, heightStitches)
 
@@ -169,15 +177,9 @@ export async function generateSchema(
         const g = Math.max(0, Math.min(255, buf[idx + 1]))
         const b = Math.max(0, Math.min(255, buf[idx + 2]))
 
-        // Cel mai apropiat DMC din paletă (distanță perceptuală)
-        let minDist = Infinity
-        let bestIdx = 0
-        for (let i = 0; i < colorGroups.length; i++) {
-          const dmc = colorGroups[i].dmc
-          const dr = r - dmc.r, dg = g - dmc.g, db = b - dmc.b
-          const dist = 2*dr*dr + 4*dg*dg + 3*db*db
-          if (dist < minDist) { minDist = dist; bestIdx = i }
-        }
+        // CIEDE2000 — distanță perceptuală reală față de paleta DMC
+        const [pL, pa, pb] = rgbToLab(r, g, b)
+        const { idx: bestIdx } = findNearestByLab(pL, pa, pb, groupsWithLab)
 
         finalGrid[y][x] = bestIdx
         const chosen = colorGroups[bestIdx].dmc
@@ -214,12 +216,8 @@ export async function generateSchema(
         const key = `${qr},${qg},${qb}`
         let colorIdx = colorToIndex.get(key)
         if (colorIdx === undefined) {
-          let minD = Infinity; colorIdx = 0
-          for (let i = 0; i < colorGroups.length; i++) {
-            const dmc = colorGroups[i].dmc
-            const d = Math.abs(qr - dmc.r) + Math.abs(qg - dmc.g) + Math.abs(qb - dmc.b)
-            if (d < minD) { minD = d; colorIdx = i }
-          }
+          const [qL, qa, qb2] = rgbToLab(qr, qg, qb)
+          colorIdx = findNearestByLab(qL, qa, qb2, groupsWithLab).idx
         }
         row.push(colorIdx)
       }
@@ -242,6 +240,7 @@ export async function generateSchema(
 
   // Lucrăm pe copii mutabile ale array-urilor
   let activeGroups = [...colorGroups]
+  let activeGroupsWithLab = [...groupsWithLab]
   let activeCounts = [...stitchCounts]
 
   if (validMask.some((v: boolean) => !v)) {
@@ -250,18 +249,12 @@ export async function generateSchema(
     let ni = 0
     for (let i = 0; i < activeGroups.length; i++) if (validMask[i]) oldToNew[i] = ni++
 
-    // Culorile invalide → nearest valid
+    // Culorile invalide → nearest valid (CIEDE2000)
+    const validWithLab = activeGroupsWithLab.filter((_, i) => validMask[i])
     for (let i = 0; i < activeGroups.length; i++) {
       if (validMask[i]) continue
-      const bad = activeGroups[i].dmc
-      let minDist = Infinity, bestNew = 0
-      for (let j = 0; j < activeGroups.length; j++) {
-        if (!validMask[j]) continue
-        const d = activeGroups[j].dmc
-        const dist = 2*(bad.r-d.r)**2 + 4*(bad.g-d.g)**2 + 3*(bad.b-d.b)**2
-        if (dist < minDist) { minDist = dist; bestNew = oldToNew[j] }
-      }
-      oldToNew[i] = bestNew
+      const [bL, ba, bb] = activeGroupsWithLab[i].lab
+      oldToNew[i] = findNearestByLab(bL, ba, bb, validWithLab).idx
     }
 
     // Reindexează grid cu noile valori
@@ -276,6 +269,7 @@ export async function generateSchema(
 
     // Filtrează la culorile valide
     activeGroups = activeGroups.filter((_, i) => validMask[i])
+    activeGroupsWithLab = activeGroupsWithLab.filter((_, i) => validMask[i])
     activeCounts = newCounts
   }
 
@@ -308,12 +302,17 @@ export async function generateSchema(
   })
 
   // Calculează alternative similare pentru fiecare culoare (top 8, din DMC-urile nefolosite)
+  // dmcWithLab are LAB precomputat → fără overhead suplimentar
   const usedDmcSet = new Set(colors.map(c => c.dmcColor.code))
+  const unusedDmc = dmcWithLab.filter(c => !usedDmcSet.has(c.code))
+
   for (const colorUsage of colors) {
-    const { r, g, b } = colorUsage.dmcColor
-    colorUsage.alternatives = dmcColors
-      .filter(c => !usedDmcSet.has(c.code))
-      .map(c => ({ c, dist: 2*(r-c.r)**2 + 4*(g-c.g)**2 + 3*(b-c.b)**2 }))
+    const [rL, ra, rb] = rgbToLab(colorUsage.dmcColor.r, colorUsage.dmcColor.g, colorUsage.dmcColor.b)
+    colorUsage.alternatives = unusedDmc
+      .map(c => {
+        const [cL, ca, cb] = c.lab
+        return { c, dist: ciede2000(rL, ra, rb, cL, ca, cb) }
+      })
       .sort((a, b) => a.dist - b.dist)
       .slice(0, 8)
       .map(({ c }) => c)

@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { getSubscription } from '@/lib/supabase/getSubscription'
 import { generateSchema } from '@/lib/schema/generator'
+import { aiPreprocess } from '@/lib/schema/aiPreprocess'
 import { logSecurity } from '@/lib/supabase/logSecurity'
 import type { CraftType, CanvasType } from '@/types'
 
@@ -22,8 +23,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Abonament inactiv sau expirat' }, { status: 403 })
   }
 
-  // Verifică limita de scheme (trial și starter)
-  if (subscription.plan !== 'pro' && (subscription.schemas_remaining ?? 0) <= 0) {
+  // Verifică limita de scheme (trial și starter; pro și premium = nelimitat)
+  if (subscription.plan !== 'pro' && subscription.plan !== 'premium' && (subscription.schemas_remaining ?? 0) <= 0) {
     await logSecurity('generation_blocked', user.email ?? user.id, `plan=${subscription.plan} schemas_remaining=0`)
     return NextResponse.json({ error: 'Limita de scheme depășită' }, { status: 403 })
   }
@@ -60,6 +61,14 @@ export async function POST(request: NextRequest) {
           error: 'Formatul HEIC nu este suportat. Te rugăm să convertești poza în JPG sau PNG înainte de upload (iPhone: Setări → Poze → Format → Cel mai compatibil).'
         }, { status: 400 })
       }
+    }
+
+    // AI preprocessing pentru utilizatorii Premium
+    let aiSteps = null
+    if (subscription.plan === 'premium') {
+      const result = await aiPreprocess(imageBuffer)
+      imageBuffer = result.buffer
+      aiSteps = result.steps
     }
 
     const schema = await generateSchema(imageBuffer, {
@@ -102,14 +111,14 @@ export async function POST(request: NextRequest) {
       await logSecurity('generation_failed', user.email ?? user.id, `save_error: ${saveError.message}`)
     }
 
-    // Scade o schemă din trial dacă e cazul
-    if (subscription.plan === 'free_trial') {
+    // Scade o schemă din planurile cu limită
+    if (subscription.plan === 'free_trial' || subscription.plan === 'starter') {
       await supabase.from('subscriptions').update({
-        schemas_remaining: (subscription.schemas_remaining ?? 0) - 1
+        schemas_remaining: Math.max(0, (subscription.schemas_remaining ?? 0) - 1)
       }).eq('user_id', user.id)
     }
 
-    return NextResponse.json({ schema, schemaId: savedSchema?.id })
+    return NextResponse.json({ schema, schemaId: savedSchema?.id, aiSteps })
 
   } catch (error) {
     console.error('Eroare generare:', error)

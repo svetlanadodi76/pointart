@@ -11,7 +11,7 @@ export interface Subscription {
   created_at: string
 }
 
-async function logExpiry(userId: string, event: 'expired_trial' | 'expired_pro', plan: string) {
+async function logExpiry(userId: string, event: 'expired_trial' | 'expired_pro' | 'expired_premium', plan: string) {
   try {
     const admin = createAdminClient()
     const { data: profile } = await admin
@@ -72,6 +72,21 @@ export async function getSubscription(
       .update({ status: 'expired' })
       .eq('user_id', userId)
     await logExpiry(userId, 'expired_pro', 'pro')
+    return { ...sub, status: 'expired' }
+  }
+
+  // Auto-expiră Premium
+  if (
+    sub.plan === 'premium' &&
+    sub.status === 'active' &&
+    sub.current_period_end &&
+    new Date(sub.current_period_end) < now
+  ) {
+    await supabase
+      .from('subscriptions')
+      .update({ status: 'expired' })
+      .eq('user_id', userId)
+    await logExpiry(userId, 'expired_premium', 'premium')
     return { ...sub, status: 'expired' }
   }
 

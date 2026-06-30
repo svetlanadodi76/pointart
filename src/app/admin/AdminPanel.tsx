@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { activateStarter, activatePro, deactivateUser } from './actions'
+import { activateStarter, activatePro, activatePremium, deactivateUser } from './actions'
 
 interface UserRow {
   user_id: string
@@ -17,13 +17,14 @@ interface UserRow {
 interface PaymentModal {
   userId: string
   userEmail: string
-  plan: 'starter' | 'pro'
+  plan: 'starter' | 'pro' | 'premium'
 }
 
 const PLAN_LABELS: Record<string, string> = {
   free_trial: 'Trial',
   starter: 'Starter',
   pro: 'Pro',
+  premium: 'Premium AI',
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -45,10 +46,10 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
     u.email.toLowerCase().includes(search.toLowerCase())
   )
 
-  const openModal = (userId: string, userEmail: string, plan: 'starter' | 'pro') => {
+  const openModal = (userId: string, userEmail: string, plan: 'starter' | 'pro' | 'premium') => {
     setModal({ userId, userEmail, plan })
     setCurrency('EUR')
-    setAmount(plan === 'starter' ? '5' : '10')
+    setAmount(plan === 'starter' ? '5' : plan === 'pro' ? '10' : '25')
     setNote('')
   }
 
@@ -66,8 +67,10 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
     startTransition(async () => {
       if (modal.plan === 'starter') {
         await activateStarter(modal.userId, modal.userEmail, eur, mdl, note || undefined)
-      } else {
+      } else if (modal.plan === 'pro') {
         await activatePro(modal.userId, modal.userEmail, eur, mdl, note || undefined)
+      } else {
+        await activatePremium(modal.userId, modal.userEmail, eur, mdl, note || undefined)
       }
       closeModal()
     })
@@ -118,7 +121,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {u.plan === 'pro' ? '∞' : (u.schemas_remaining ?? '—')}
+                    {u.plan === 'pro' || u.plan === 'premium' ? '∞' : (u.schemas_remaining ?? '—')}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {u.current_period_end
@@ -143,6 +146,14 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                           className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2 py-1 rounded-lg font-medium transition-colors"
                         >
                           → Pro
+                        </button>
+                      )}
+                      {u.plan !== 'premium' && (
+                        <button
+                          onClick={() => openModal(u.user_id, u.email, 'premium')}
+                          className="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 px-2 py-1 rounded-lg font-medium transition-colors"
+                        >
+                          → Premium AI
                         </button>
                       )}
                       {u.status === 'active' && (
@@ -180,7 +191,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-1">
-              Activare {modal.plan === 'starter' ? 'Starter' : 'Pro'}
+              Activare {modal.plan === 'starter' ? 'Starter' : modal.plan === 'pro' ? 'Pro' : 'Premium AI'}
             </h2>
             <p className="text-sm text-gray-500 mb-5">{modal.userEmail}</p>
 
@@ -196,8 +207,8 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                         setCurrency(c)
                         setAmount(modal
                           ? c === 'EUR'
-                            ? (modal.plan === 'starter' ? '5' : '10')
-                            : (modal.plan === 'starter' ? '99' : '199')
+                            ? (modal.plan === 'starter' ? '5' : modal.plan === 'pro' ? '10' : '25')
+                            : (modal.plan === 'starter' ? '99' : modal.plan === 'pro' ? '199' : '499')
                           : '')
                       }}
                       className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
@@ -218,7 +229,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-300"
-                  placeholder={currency === 'EUR' ? '5' : '99'}
+                  placeholder={currency === 'EUR' ? (modal.plan === 'starter' ? '5' : modal.plan === 'pro' ? '10' : '25') : (modal.plan === 'starter' ? '99' : modal.plan === 'pro' ? '199' : '499')}
                 />
               </div>
               <div>

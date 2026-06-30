@@ -1,4 +1,4 @@
-export type PlanType = 'free_trial' | 'starter' | 'pro'
+export type PlanType = 'free_trial' | 'starter' | 'pro' | 'premium'
 
 export type CraftType = 'cross_stitch' | 'goblene' | 'diamond'
 

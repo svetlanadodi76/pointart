@@ -100,18 +100,20 @@ export default async function DashboardPage() {
             {/* Badge plan actual */}
             {subscription && (
               <span className={`text-xs font-semibold px-2.5 py-1 rounded-full hidden sm:inline-flex items-center gap-1 ${
-                subscription.plan === 'pro'
+                subscription.plan === 'premium'
+                  ? 'bg-amber-100 text-amber-700'
+                  : subscription.plan === 'pro'
                   ? 'bg-violet-100 text-violet-700'
                   : subscription.plan === 'starter'
                   ? 'bg-blue-50 text-blue-700'
                   : 'bg-gray-100 text-gray-600'
               }`}>
-                {subscription.plan === 'pro' ? '⭐ Pro' : subscription.plan === 'starter' ? '✦ Starter' : '○ Trial'}
+                {subscription.plan === 'premium' ? '★ Premium AI' : subscription.plan === 'pro' ? '⭐ Pro' : subscription.plan === 'starter' ? '✦ Starter' : '○ Trial'}
               </span>
             )}
 
-            {/* Upgrade dacă nu e Pro */}
-            {subscription?.plan !== 'pro' && (
+            {/* Upgrade dacă nu e Pro sau Premium */}
+            {subscription?.plan !== 'pro' && subscription?.plan !== 'premium' && (
               <Link href="/pricing" className="bg-violet-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors whitespace-nowrap">
                 ↑ Upgrade
               </Link>
@@ -195,6 +197,29 @@ export default async function DashboardPage() {
               {t(lang, 'banner.upgrade')}
             </Link>
           </div>
+        )}
+
+        {/* Banner Premium expiră în curând (3 zile) */}
+        {subscription?.plan === 'premium' && subscription?.status === 'active' && subscription.current_period_end && (
+          (() => {
+            const daysLeft = Math.ceil((new Date(subscription.current_period_end).getTime() - Date.now()) / 86400000)
+            return daysLeft <= 3 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <div>
+                    <p className="font-semibold text-amber-800">
+                      Abonamentul Premium AI expiră în {daysLeft} {daysLeft === 1 ? 'zi' : 'zile'}
+                    </p>
+                    <p className="text-amber-600 text-sm">Reînnoiește pentru a păstra accesul la funcțiile AI</p>
+                  </div>
+                </div>
+                <Link href="/pricing" className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
+                  Reînnoiește
+                </Link>
+              </div>
+            ) : null
+          })()
         )}
 
         {/* Banner Pro expiră în curând (3 zile) */}

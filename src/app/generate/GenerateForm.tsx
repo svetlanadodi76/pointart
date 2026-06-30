@@ -41,6 +41,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [imgSaturation, setImgSaturation] = useState(1.0)
   const [variants, setVariants] = useState<Array<{ schema: GeneratedSchema; nColors: number }> | null>(null)
   const [activeVariant, setActiveVariant] = useState(0)
+  const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; bgSimplified: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Resetează canvasType la valoarea implicită când se schimbă tipul lucrării
@@ -55,6 +56,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
   const canGenerate = subscription?.status === 'active' &&
     (subscription?.plan !== 'free_trial' || subscription?.schemas_remaining > 0)
+  const isPremium = subscription?.plan === 'premium'
 
   function handleImage(file: File) {
     setImage(file)
@@ -62,6 +64,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     setVariants(null)
     setError(null)
     setSettingsChanged(false)
+    setAiSteps(null)
     setImgBrightness(1.0)
     setImgContrast(1.0)
     setImgSaturation(1.0)
@@ -125,6 +128,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Eroare necunoscută')
       setResult(data.schema)
+      setAiSteps(data.aiSteps ?? null)
       setSettingsChanged(false)
     } catch (e: any) {
       setError(e.message)
@@ -462,13 +466,24 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             )}
 
             <div className="space-y-3">
+              {isPremium && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                  <span>★</span>
+                  <span>Premium AI activ — imaginea va fi procesată cu AI înainte de generare</span>
+                </div>
+              )}
               <button
                 onClick={handleGenerate}
                 disabled={!image || loading || !canGenerate}
                 className="w-full bg-violet-700 text-white py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? '⏳ Generez schema...' : settingsChanged ? '🔄 Regenerează schema' : '✨ Generează schema'}
+                {loading
+                  ? isPremium ? '🤖 Procesare AI imagine... (30-60 sec)' : '⏳ Generez schema...'
+                  : settingsChanged ? '🔄 Regenerează schema' : '✨ Generează schema'}
               </button>
+              {loading && isPremium && (
+                <p className="text-xs text-center text-amber-600">Fundal simplificat, imagine mărită, portret îmbunătățit...</p>
+              )}
               <button
                 onClick={handleGenerateVariants}
                 disabled={!image || loading || !canGenerate}
@@ -487,6 +502,15 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
           {/* Coloana dreapta — preview rezultat */}
           <div className="space-y-4">
+            {result && aiSteps && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 flex flex-wrap gap-2 text-xs text-amber-700 font-medium">
+                <span>★ AI Premium</span>
+                {aiSteps.upscaled && <span>· imagine mărită 4×</span>}
+                {aiSteps.bgSimplified && <span>· fundal simplificat</span>}
+                {aiSteps.faceEnhanced && <span>· portret îmbunătățit</span>}
+                {aiSteps.sharpened && <span>· claritate optimizată</span>}
+              </div>
+            )}
             {result && subscription?.plan !== 'free_trial' && (
               <div className="flex flex-col gap-2">
                 <PDFDownloadLink

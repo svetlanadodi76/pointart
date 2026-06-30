@@ -54,6 +54,18 @@ const PLANS = [
     cta: 'Cumpără Pro',
     badge: 'Recomandat',
   },
+  {
+    id: 'premium',
+    name: 'Premium AI',
+    price: '25€',
+    priceMdl: '499 MDL',
+    period: 'pe lună',
+    amountEur: 25,
+    amountMdl: 499,
+    features: ['Scheme nelimitate', 'Export PDF schemă', 'Tipărire pânză 1:1', 'Foldere organizare', 'Mărire imagine AI (4×)', 'Fundal simplificat automat', 'Îmbunătățire portret AI', 'Culori perceptuale CIEDE2000'],
+    cta: 'Cumpără Premium AI',
+    badge: 'AI ✨',
+  },
 ]
 
 export function PricingCards({ currentPlan, userEmail }: Props) {
@@ -95,7 +107,7 @@ export function PricingCards({ currentPlan, userEmail }: Props) {
   return (
     <>
       {/* Carduri planuri */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
         {PLANS.map(plan => {
           const isCurrent = currentPlan === plan.id
           const isPaid = plan.id !== 'free_trial'
@@ -104,12 +116,16 @@ export function PricingCards({ currentPlan, userEmail }: Props) {
             <div
               key={plan.id}
               className={`relative bg-white rounded-2xl border-2 p-6 flex flex-col ${
-                plan.badge ? 'border-indigo-500 shadow-lg shadow-indigo-100' : 'border-gray-200'
+                plan.id === 'premium'
+                  ? 'border-amber-400 shadow-lg shadow-amber-100'
+                  : plan.badge
+                  ? 'border-indigo-500 shadow-lg shadow-indigo-100'
+                  : 'border-gray-200'
               } ${isCurrent ? 'ring-2 ring-violet-400' : ''}`}
             >
               {plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  <span className={`text-white text-xs font-semibold px-3 py-1 rounded-full ${plan.id === 'premium' ? 'bg-amber-500' : 'bg-indigo-600'}`}>
                     {plan.badge}
                   </span>
                 </div>
@@ -153,7 +169,9 @@ export function PricingCards({ currentPlan, userEmail }: Props) {
                   <button
                     onClick={() => { setEmailSent(false); setError(null); setSelectedPlan(plan as PaidPlan) }}
                     className={`w-full py-3 rounded-xl font-semibold transition-colors ${
-                      plan.badge
+                      plan.id === 'premium'
+                        ? 'bg-amber-500 text-white hover:bg-amber-600'
+                        : plan.badge
                         ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                         : 'bg-violet-700 text-white hover:bg-violet-800'
                     }`}
@@ -162,7 +180,9 @@ export function PricingCards({ currentPlan, userEmail }: Props) {
                   </button>
                 ) : (
                   <Link href="/auth/login" className={`w-full py-3 rounded-xl font-semibold text-center transition-colors block ${
-                    plan.badge
+                    plan.id === 'premium'
+                      ? 'bg-amber-500 text-white hover:bg-amber-600'
+                      : plan.badge
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                       : 'bg-violet-700 text-white hover:bg-violet-800'
                   }`}>
@@ -216,9 +236,9 @@ export function PricingCards({ currentPlan, userEmail }: Props) {
             ) : (
               <>
                 {/* Suma */}
-                <div className="bg-violet-50 rounded-xl p-4 mb-5 text-center">
-                  <p className="text-xs text-violet-500 uppercase tracking-wide mb-1">Suma de plată</p>
-                  <p className="text-4xl font-bold text-violet-700">{selectedPlan.amountEur}€</p>
+                <div className={`rounded-xl p-4 mb-5 text-center ${selectedPlan.id === 'premium' ? 'bg-amber-50' : 'bg-violet-50'}`}>
+                  <p className={`text-xs uppercase tracking-wide mb-1 ${selectedPlan.id === 'premium' ? 'text-amber-500' : 'text-violet-500'}`}>Suma de plată</p>
+                  <p className={`text-4xl font-bold ${selectedPlan.id === 'premium' ? 'text-amber-600' : 'text-violet-700'}`}>{selectedPlan.amountEur}€</p>
                   <p className="text-gray-400 text-sm mt-1">sau {selectedPlan.amountMdl} MDL</p>
                 </div>
 

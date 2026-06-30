@@ -77,6 +77,7 @@ export default async function AdminPage() {
     activeTrial: users.filter(u => u.plan === 'free_trial' && u.status === 'active').length,
     activeStarter: users.filter(u => u.plan === 'starter' && u.status === 'active').length,
     activePro: users.filter(u => u.plan === 'pro' && u.status === 'active').length,
+    activePremium: users.filter(u => u.plan === 'premium' && u.status === 'active').length,
     // Inactivi
     inactiveTotal: users.filter(u => u.status !== 'active').length,
     expired: users.filter(u => u.status === 'expired').length,
@@ -112,12 +113,13 @@ export default async function AdminPage() {
         {/* Statistici — Activi */}
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Abonamente active</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: 'Total activi', value: stats.activeTotal, color: 'text-gray-900' },
-              { label: 'Trial',        value: stats.activeTrial,   color: 'text-blue-600' },
-              { label: 'Starter',      value: stats.activeStarter, color: 'text-violet-600' },
-              { label: 'Pro',          value: stats.activePro,     color: 'text-indigo-600' },
+              { label: 'Total activi',  value: stats.activeTotal,   color: 'text-gray-900' },
+              { label: 'Trial',         value: stats.activeTrial,   color: 'text-blue-600' },
+              { label: 'Starter',       value: stats.activeStarter, color: 'text-violet-600' },
+              { label: 'Pro',           value: stats.activePro,     color: 'text-indigo-600' },
+              { label: 'Premium AI',    value: stats.activePremium, color: 'text-amber-600' },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <p className={`text-3xl font-bold ${color}`}>{value}</p>

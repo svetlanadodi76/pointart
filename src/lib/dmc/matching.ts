@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { rgbToLab, ciede2000 } from './colorSpace'
 
 export interface DmcColor {
   id: number
@@ -8,6 +9,10 @@ export interface DmcColor {
   r: number
   g: number
   b: number
+}
+
+export interface DmcColorWithLab extends DmcColor {
+  lab: [number, number, number]
 }
 
 let dmcCache: DmcColor[] | null = null
@@ -27,20 +32,41 @@ export async function loadDmcColors(): Promise<DmcColor[]> {
   return dmcCache
 }
 
-function colorDistance(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number): number {
-  // Distanță perceptuală ponderată (mai aproape de cum vede ochiul uman)
-  const dr = r1 - r2
-  const dg = g1 - g2
-  const db = b1 - b2
-  return Math.sqrt(2 * dr * dr + 4 * dg * dg + 3 * db * db)
+export function addLabToColors(colors: DmcColor[]): DmcColorWithLab[] {
+  return colors.map(c => ({ ...c, lab: rgbToLab(c.r, c.g, c.b) }))
 }
 
+// Căutare CIEDE2000 cu LAB precomputat — pentru bucle performante (dithering)
+export function findNearestByLab(
+  L: number, a: number, b: number,
+  colors: DmcColorWithLab[],
+): { color: DmcColorWithLab; idx: number } {
+  let nearest = colors[0]
+  let nearestIdx = 0
+  let minDist = Infinity
+
+  for (let i = 0; i < colors.length; i++) {
+    const [cL, ca, cb] = colors[i].lab
+    const dist = ciede2000(L, a, b, cL, ca, cb)
+    if (dist < minDist) {
+      minDist = dist
+      nearest = colors[i]
+      nearestIdx = i
+    }
+  }
+
+  return { color: nearest, idx: nearestIdx }
+}
+
+// Căutare standard — pentru operații rare (matching inițial, alternative)
 export function findNearestDmc(r: number, g: number, b: number, dmcColors: DmcColor[]): DmcColor {
+  const [L, a, bLab] = rgbToLab(r, g, b)
   let nearest = dmcColors[0]
   let minDist = Infinity
 
   for (const color of dmcColors) {
-    const dist = colorDistance(r, g, b, color.r, color.g, color.b)
+    const [cL, ca, cb] = rgbToLab(color.r, color.g, color.b)
+    const dist = ciede2000(L, a, bLab, cL, ca, cb)
     if (dist < minDist) {
       minDist = dist
       nearest = color
