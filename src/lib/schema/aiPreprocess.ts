@@ -4,17 +4,15 @@ export interface PreprocessResult {
   buffer: Buffer
   steps: {
     upscaled: boolean
-    bgSimplified: boolean
     faceEnhanced: boolean
     sharpened: boolean
   }
 }
 
 export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResult> {
-  const steps = { upscaled: false, bgSimplified: false, faceEnhanced: false, sharpened: false }
+  const steps = { upscaled: false, faceEnhanced: false, sharpened: false }
 
   if (!process.env.REPLICATE_API_TOKEN) {
-    // Fără token → procesare Sharp locală (fără AI extern)
     const enhanced = await sharp(imageBuffer)
       .sharpen({ sigma: 1.2 })
       .modulate({ saturation: 1.15 })
@@ -43,36 +41,11 @@ export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResul
       buf = Buffer.from(await res.arrayBuffer())
       steps.upscaled = true
     }
-  } catch {
-    // fallback — continuă cu bufferul anterior
+  } catch (e) {
+    console.error('[AI] upscale error:', e)
   }
 
-  // Step 2: Background simplification — RMBG (fundal blur + reducere saturație, nu eliminare)
-  try {
-    const Replicate = (await import('replicate')).default
-    const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN })
-    const base64 = buf.toString('base64')
-    const output = await Promise.race([
-      replicate.run('lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1', {
-        input: { image: `data:image/jpeg;base64,${base64}` },
-      }),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 60000)),
-    ]) as unknown as string
-
-    // Descarcă masca, compozite pe fundal culoare pânză broderie
-    const maskRes = await fetch(output)
-    const maskBuf = Buffer.from(await maskRes.arrayBuffer())
-    buf = await sharp(buf)
-      .composite([{ input: maskBuf, blend: 'dest-in' }])
-      .flatten({ background: '#F0EDE8' })
-      .jpeg({ quality: 92 })
-      .toBuffer()
-    steps.bgSimplified = true
-  } catch {
-    // fallback
-  }
-
-  // Step 3: Face enhancement — GFPGAN (doar portrete: înălțime > lățime)
+  // Step 2: Face enhancement — GFPGAN (doar portrete: înălțime > lățime)
   try {
     const meta = await sharp(buf).metadata()
     if ((meta.height ?? 0) > (meta.width ?? 0)) {
@@ -89,11 +62,11 @@ export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResul
       buf = Buffer.from(await res.arrayBuffer())
       steps.faceEnhanced = true
     }
-  } catch {
-    // fallback
+  } catch (e) {
+    console.error('[AI] face enhancement error:', e)
   }
 
-  // Step 4: Sharp postprocessing final
+  // Step 3: Sharp postprocessing final
   try {
     buf = await sharp(buf)
       .sharpen({ sigma: 1.2 })

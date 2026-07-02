@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { GeneratedSchema, DmcColor, ColorUsage, CraftType } from '@/types'
+import type { AnalysisResult } from '@/lib/schema/analyzeImage'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
@@ -41,7 +42,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [imgSaturation, setImgSaturation] = useState(1.0)
   const [variants, setVariants] = useState<Array<{ schema: GeneratedSchema; nColors: number }> | null>(null)
   const [activeVariant, setActiveVariant] = useState(0)
-  const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; bgSimplified: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
+  const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
+  const [analyzing, setAnalyzing] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Resetează canvasType la valoarea implicită când se schimbă tipul lucrării
@@ -65,6 +68,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     setError(null)
     setSettingsChanged(false)
     setAiSteps(null)
+    setAnalysis(null)
     setImgBrightness(1.0)
     setImgContrast(1.0)
     setImgSaturation(1.0)
@@ -115,6 +119,36 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     fd.append('imgContrast', imgContrast.toString())
     fd.append('imgSaturation', imgSaturation.toString())
     return fd
+  }
+
+  async function handleAnalyze() {
+    if (!image) return
+    setAnalyzing(true)
+    setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('image', image)
+      const res = await fetch('/api/analyze', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Eroare analiză')
+      setAnalysis(data)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  function applyRecommendation(rec: AnalysisResult['recommendations'][0]) {
+    const isDiamond = rec.isDiamond
+    setCraftType(isDiamond ? 'diamond' : 'cross_stitch')
+    setCanvasType(rec.canvasType)
+    setWidthCm(rec.minWidthCm)
+    setHeightCm(rec.minHeightCm)
+    setMaxColors(rec.optimalColors)
+    const isPortrait = rec.minHeightCm > rec.minWidthCm
+    setOrientation(isPortrait ? 'portrait' : 'landscape')
+    if (result) setSettingsChanged(true)
   }
 
   async function handleGenerate() {
@@ -271,9 +305,84 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               </div>
             )}
 
+            {/* Analiză imagine */}
+            {image && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="font-semibold text-gray-900">2. Analiză imagine</h2>
+                    <p className="text-xs text-gray-400">Recomandări automate de dimensiuni și culori</p>
+                  </div>
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={analyzing}
+                    className="flex items-center gap-2 bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-violet-800 transition-colors disabled:opacity-60"
+                  >
+                    {analyzing ? (
+                      <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg> Analizez...</>
+                    ) : '🔍 Analizează imaginea'}
+                  </button>
+                </div>
+
+                {analysis && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm text-gray-600">Complexitate:</span>
+                      <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                        analysis.complexityScore >= 8 ? 'bg-red-100 text-red-700' :
+                        analysis.complexityScore >= 6 ? 'bg-orange-100 text-orange-700' :
+                        analysis.complexityScore >= 4 ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>{analysis.complexityLabel} ({analysis.complexityScore}/10)</span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-xl border border-gray-200">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                          <tr>
+                            <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Pânză</th>
+                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Culori</th>
+                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Dimensiuni min.</th>
+                            <th className="px-3 py-2"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {analysis.recommendations.map(rec => {
+                            const isSuggested = rec.canvasType === analysis.suggestedCanvas
+                            return (
+                              <tr
+                                key={rec.canvasType}
+                                className={`transition-colors ${isSuggested ? 'bg-violet-50' : 'hover:bg-gray-50'}`}
+                              >
+                                <td className="px-3 py-2 font-medium text-gray-800">
+                                  {rec.isDiamond ? '💎 ' : ''}{rec.canvasType}
+                                  {isSuggested && <span className="ml-1 text-xs text-violet-500">★</span>}
+                                </td>
+                                <td className="px-3 py-2 text-center text-gray-700">{rec.optimalColors}</td>
+                                <td className="px-3 py-2 text-center text-gray-700">{rec.minWidthCm}×{rec.minHeightCm} cm</td>
+                                <td className="px-3 py-2 text-right">
+                                  <button
+                                    onClick={() => applyRecommendation(rec)}
+                                    className="text-xs bg-violet-100 text-violet-700 hover:bg-violet-200 px-2 py-1 rounded-lg font-medium transition-colors"
+                                  >
+                                    Aplică
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">★ Recomandat · Click <strong>Aplică</strong> pentru a completa automat setările</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Tip lucrare */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="font-semibold text-gray-900 mb-4">2. Tip de lucrare</h2>
+              <h2 className="font-semibold text-gray-900 mb-4">{image ? '3.' : '2.'} Tip de lucrare</h2>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { value: 'cross_stitch', label: 'Broderie', icon: '✂️' },
@@ -506,7 +615,6 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 flex flex-wrap gap-2 text-xs text-amber-700 font-medium">
                 <span>★ AI Premium</span>
                 {aiSteps.upscaled && <span>· imagine mărită 4×</span>}
-                {aiSteps.bgSimplified && <span>· fundal simplificat</span>}
                 {aiSteps.faceEnhanced && <span>· portret îmbunătățit</span>}
                 {aiSteps.sharpened && <span>· claritate optimizată</span>}
               </div>
