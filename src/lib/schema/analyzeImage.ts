@@ -89,15 +89,22 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
     complexityScore >= 4 ? 'Medie' :
     complexityScore >= 2 ? 'Redusă' : 'Simplă'
 
-  // Număr minim de puncte pe latura scurtă în funcție de complexitate
-  const minStitchesShort =
-    complexityScore >= 8 ? 300 :
-    complexityScore >= 6 ? 220 :
-    complexityScore >= 4 ? 150 :
-    complexityScore >= 2 ? 100 : 70
+  // Boost pentru portrete: pielea e uniformă (scor mic) dar fața are nevoie
+  // de minim 200 puncte pentru recunoaștere facială corectă
+  const isPortrait = aspectRatio < 1
+  const portraitBoost = isPortrait ? 80 : 0
 
-  // Culori optimale: 20 + scor × 6 (interval 20–80)
-  const baseColors = Math.round(20 + complexityScore * 6)
+  // Număr minim de puncte pe latura scurtă în funcție de complexitate
+  const minStitchesShortBase =
+    complexityScore >= 8 ? 320 :
+    complexityScore >= 6 ? 250 :
+    complexityScore >= 4 ? 190 :
+    complexityScore >= 2 ? 150 : 110
+
+  const minStitchesShort = minStitchesShortBase + portraitBoost
+
+  // Culori optimale: 25 + scor × 5 (interval 25–75)
+  const baseColors = Math.round(25 + complexityScore * 5)
 
   const recommendations: CanvasRecommendation[] = CANVAS_CONFIG.map(cfg => {
     const shortCm  = Math.ceil(minStitchesShort / cfg.stitchesPerCm)
