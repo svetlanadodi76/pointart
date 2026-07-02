@@ -36,7 +36,7 @@ export default async function SchemaDetailPage({ params }: Props) {
   }
 
   // PDF disponibil dacă a plătit vreodată (starter/pro), indiferent de status curent
-  const canDownloadPdf = subscription?.plan === 'starter' || subscription?.plan === 'pro'
+  const canDownloadPdf = subscription?.plan === 'starter' || subscription?.plan === 'pro' || subscription?.plan === 'premium'
   const schemaData = schema.schema_data as GeneratedSchema
 
   const craftLabel =

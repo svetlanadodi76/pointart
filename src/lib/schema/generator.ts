@@ -93,7 +93,7 @@ export async function generateSchema(
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
 
   // Valorile utilizatorului se combină cu corecțiile noastre de bază
-  const brightness = 0.94 * (settings.imgBrightness ?? 1.0)
+  const brightness = 1.0  * (settings.imgBrightness ?? 1.0)
   const saturation = 1.2  * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
@@ -102,6 +102,7 @@ export async function generateSchema(
     .normalize()
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
+    .linear(1.0, 10)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
