@@ -40,7 +40,7 @@ export default async function SchemaDetailPage({ params }: Props) {
   const schemaData = schema.schema_data as GeneratedSchema
 
   const craftLabel =
-    schema.craft_type === 'cross_stitch' ? 'Broderie'
+    schema.craft_type === 'cross_stitch' ? 'Cross Stitch'
     : schema.craft_type === 'goblene' ? 'Goblene'
     : 'Diamante'
 

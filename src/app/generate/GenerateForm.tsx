@@ -358,7 +358,12 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                                 className={`transition-colors ${isSuggested ? 'bg-violet-50' : 'hover:bg-gray-50'}`}
                               >
                                 <td className="px-3 py-2 font-medium text-gray-800">
-                                  {rec.isDiamond ? '💎 ' : rec.isGoblene ? '🧵 ' : ''}{rec.canvasType}
+                                  {rec.isDiamond
+                                    ? <span className="mr-1">💎</span>
+                                    : rec.isGoblene
+                                    ? <span className="mr-1">🧵</span>
+                                    : <span className="mr-1 text-rose-500 font-bold">✕</span>
+                                  }{rec.canvasType}
                                   {isSuggested && <span className="ml-1 text-xs text-violet-500">★</span>}
                                 </td>
                                 <td className="px-3 py-2 text-center text-gray-700">{rec.optimalColors}</td>
@@ -377,7 +382,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         </tbody>
                       </table>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">★ Recomandat · 💎 Diamante · 🧵 Goblen · Click <strong>Aplică</strong> pentru a completa automat setările</p>
+                    <p className="text-xs text-gray-400 mt-2">★ Recomandat · <span className="text-rose-500 font-semibold">✕</span> Cross Stitch · 💎 Diamante · 🧵 Goblen · Click <strong>Aplică</strong> pentru a completa automat setările</p>
                   </div>
                 )}
               </div>
@@ -388,9 +393,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               <h2 className="font-semibold text-gray-900 mb-4">{image ? '3.' : '2.'} Tip de lucrare</h2>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { value: 'cross_stitch', label: 'Broderie', icon: '✂️' },
-                  { value: 'goblene', label: 'Goblene', icon: '🎨' },
-                  { value: 'diamond', label: 'Diamante', icon: '💎' },
+                  { value: 'cross_stitch', label: 'Cross Stitch', icon: '✕', iconClass: 'text-rose-500 font-bold' },
+                  { value: 'goblene',      label: 'Goblene',      icon: '🧵', iconClass: '' },
+                  { value: 'diamond',      label: 'Diamante',     icon: '💎', iconClass: '' },
                 ].map(t => (
                   <button
                     key={t.value}
@@ -401,7 +406,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         : 'border-gray-200 hover:border-violet-300'
                     }`}
                   >
-                    <div className="text-2xl mb-1">{t.icon}</div>
+                    <div className={`text-2xl mb-1 ${t.iconClass}`}>{t.icon}</div>
                     <div className="text-sm font-medium text-gray-700">{t.label}</div>
                   </button>
                 ))}

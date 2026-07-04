@@ -148,7 +148,7 @@ const t_ro = {
   'generate.step3': '3. Numărul de culori',
   'generate.step4': '4. Dimensiunea lucrării',
   'generate.step5': '5. Fotografia',
-  'generate.craft_cross': 'Broderie în cruciulițe',
+  'generate.craft_cross': 'Cross Stitch',
   'generate.craft_goblen': 'Goblene (goblen)',
   'generate.craft_diamond': 'Pictură cu diamante',
   'generate.orientation_h': 'Orizontal',
