@@ -83,7 +83,8 @@ interface SchemaPDFProps {
 
 export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross_stitch' }: SchemaPDFProps) {
   const { grid, widthStitches, heightStitches, widthCm, heightCm } = schema
-  const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
+  const isCrossStitch = craftType === 'cross_stitch'
+  const isGoblene = craftType === 'goblene'
 
   // Atribuie culori categorice după rang (cel mai popular → rank 0)
   const colors = (() => {
@@ -196,7 +197,9 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                   const isRulerH = (section.startRow + rowIdx) % 10 === 0
                   const isRulerV = (section.startCol + colIdx) % 10 === 0
 
-                  const cellBg = isCrossStitch
+                  const cellBg = isGoblene
+                    ? color.dmcColor.hex
+                    : isCrossStitch
                     ? (color.isSolid ? color.catColor : '#ffffff')
                     : color.dmcColor.hex
                   const symbolColor = isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex)
@@ -206,10 +209,10 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                         x={x} y={y}
                         width={cellSize} height={cellSize}
                         fill={cellBg}
-                        stroke={isCrossStitch ? '#cccccc' : '#000000'}
+                        stroke={isCrossStitch ? '#cccccc' : '#555555'}
                         strokeWidth={isCrossStitch ? 0.5 : 0.35}
                       />
-                      {cellSize >= 5 && (!isCrossStitch || !color.isSolid) && !!color.symbol && (
+                      {!isGoblene && cellSize >= 5 && (!isCrossStitch || !color.isSolid) && !!color.symbol && (
                         GEOMETRIC_SYMBOLS.has(color.symbol)
                           ? renderGeometricShape(color.symbol, x, y, cellSize, symbolColor)
                           : (
@@ -256,7 +259,10 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                   {sortedColors.map((color, i) => (
                     <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
                       <Text style={styles.legendNum}>{i + 1}</Text>
-                      {isCrossStitch && color.isSolid ? (
+                      {isGoblene ? (
+                        /* Goblen — pătrat colorat plin, fără simbol */
+                        <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]} />
+                      ) : isCrossStitch && color.isSolid ? (
                         /* Culoare plină — fără simbol */
                         <View style={[styles.legendSymbol, { backgroundColor: color.catColor, borderWidth: 0.5, borderColor: '#ccc' }]} />
                       ) : isCrossStitch && GEOMETRIC_SYMBOLS.has(color.symbol) ? (

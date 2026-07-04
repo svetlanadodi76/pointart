@@ -68,7 +68,8 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
-  const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
+  const isCrossStitch = craftType === 'cross_stitch'
+  const isGoblene = craftType === 'goblene'
   const colors = (() => {
     const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
     const sorted = [...withIdx].sort((a, b) => b.count - a.count)
@@ -116,7 +117,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
               view === 'schema' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            📐 Schema (cu simboluri)
+            📐 {isGoblene ? 'Schema (culori + grilă)' : 'Schema (cu simboluri)'}
           </button>
           <button
             onClick={() => setView('final')}
@@ -233,7 +234,9 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                           lineHeight: 1,
                         }}
                       >
-                        {isCrossStitch
+                        {isGoblene
+                          ? null
+                          : isCrossStitch
                           ? (color.isSolid ? '' : (
                               GEOMETRIC_SYMBOLS.has(color.symbol)
                                 ? renderShapeSvg(color.symbol, color.catColor, CELL_SIZE - 2)
@@ -271,7 +274,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
         {/* Header tabel */}
         <div className={`grid ${isCrossStitch ? 'grid-cols-[28px_52px_1fr_auto]' : 'grid-cols-[28px_28px_1fr_auto]'} gap-x-3 pb-1.5 mb-1 border-b border-gray-200`}>
           <span className="text-[10px] font-semibold text-gray-400 text-center">#</span>
-          <span className="text-[10px] font-semibold text-gray-400 text-center">Simbol</span>
+          <span className="text-[10px] font-semibold text-gray-400 text-center">{isCrossStitch ? 'Simbol' : 'Culoare'}</span>
           <span className="text-[10px] font-semibold text-gray-400">Culoare DMC</span>
           <span className="text-[10px] font-semibold text-gray-400 text-right">Cantitate</span>
         </div>
@@ -316,7 +319,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                     className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono"
                     style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}
                   >
-                    {color.symbol}
+                    {isGoblene ? null : color.symbol}
                   </div>
                 )}
 

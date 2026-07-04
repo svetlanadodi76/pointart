@@ -761,7 +761,8 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
-  const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
+  const isCrossStitch = craftType === 'cross_stitch'
+  const isGoblene = craftType === 'goblene'
 
   // Resetează culorile locale când se generează o schemă nouă
   useEffect(() => {
@@ -893,7 +894,9 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                         title={`${color.dmcColor.code} ${color.symbol}`}
                         style={{
                           width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: isCrossStitch
+                          backgroundColor: isGoblene
+                            ? color.dmcColor.hex
+                            : isCrossStitch
                             ? (color.isSolid ? color.catColor : '#ffffff')
                             : color.dmcColor.hex,
                           border: isRuler ? '0.5px solid rgba(0,0,0,0.35)' : '0.5px solid rgba(0,0,0,0.15)',
@@ -904,7 +907,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                           lineHeight: 1,
                         }}
                       >
-                        {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
+                        {isGoblene ? null : isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
                       </div>
                     )
                   })
@@ -951,14 +954,16 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                         : 'border-gray-300 hover:border-violet-400 hover:scale-110'
                     }`}
                     style={{
-                      backgroundColor: isCrossStitch
+                      backgroundColor: isGoblene
+                        ? color.dmcColor.hex
+                        : isCrossStitch
                         ? (color.isSolid ? color.catColor : '#ffffff')
                         : color.dmcColor.hex,
                       color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex),
                     }}
                     title="Click pentru a schimba culoarea"
                   >
-                    {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
+                    {isGoblene ? null : isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
                   </button>
                   {isCrossStitch && (
                     <div
