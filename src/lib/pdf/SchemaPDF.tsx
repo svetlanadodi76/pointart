@@ -2,7 +2,7 @@ import {
   Document, Page, View, Text, Svg, Rect, Line, G, Circle, Polygon, Path,
   StyleSheet, Font
 } from '@react-pdf/renderer'
-import type { GeneratedSchema, CraftType } from '@/types'
+import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS, GEOMETRIC_SYMBOLS } from '@/lib/dmc/categoricalColors'
 
 function contrastColor(hex: string): string {
@@ -73,18 +73,36 @@ const styles = StyleSheet.create({
   legendSymbolText: { fontSize: 10, textAlign: 'center' },
   pageNum: { fontSize: 7, color: '#9ca3af', textAlign: 'center', marginTop: 6 },
   rulerText: { fontSize: 5, fill: '#9ca3af' },
+  materialsBox: { backgroundColor: '#f5f3ff', borderRadius: 4, padding: 8, marginBottom: 8 },
+  materialsTitle: { fontSize: 9, fontWeight: 'bold', color: '#6d28d9', marginBottom: 4 },
+  materialsRow: { flexDirection: 'row', marginBottom: 2 },
+  materialsLabel: { fontSize: 8, color: '#6b7280', width: 80 },
+  materialsValue: { fontSize: 8, color: '#111827', flex: 1 },
 })
+
+const MESH_INFO: Record<string, { label: string; needle: string; density: string }> = {
+  '10mesh': { label: '10 mesh', needle: 'nr. 18-20', density: '3.94 fire/cm' },
+  '12mesh': { label: '12 mesh', needle: 'nr. 20',   density: '4.72 fire/cm' },
+  '14mesh': { label: '14 mesh', needle: 'nr. 20-22', density: '5.51 fire/cm' },
+  '18mesh': { label: '18 mesh', needle: 'nr. 22-24', density: '7.09 fire/cm' },
+}
 
 interface SchemaPDFProps {
   schema: GeneratedSchema
   name?: string
   craftType?: CraftType
+  canvasType?: CanvasType | null
 }
 
-export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross_stitch' }: SchemaPDFProps) {
+export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross_stitch', canvasType }: SchemaPDFProps) {
   const { grid, widthStitches, heightStitches, widthCm, heightCm } = schema
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
+
+  const firstUnit = schema.colors[0]?.unit
+  const threadType = firstUnit === 'silk_skeins' ? 'silk' : firstUnit === 'cotton_skeins' ? 'cotton' : 'wool'
+  const threadLabel = threadType === 'silk' ? 'Mătase pentru goblen' : threadType === 'cotton' ? 'Bumbac pentru goblen' : 'Lână pentru goblen'
+  const meshInfo = canvasType ? MESH_INFO[canvasType] : null
 
   // Atribuie culori categorice după rang (cel mai popular → rank 0)
   const colors = (() => {
@@ -150,6 +168,29 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                 ? ` • Secțiunea ${pageIdx + 1}/${gridPages.length}`
                 : ''}
             </Text>
+
+            {/* Materiale necesare — doar goblen, prima pagină */}
+            {pageIdx === 0 && isGoblene && meshInfo && (
+              <View style={styles.materialsBox}>
+                <Text style={styles.materialsTitle}>Materiale necesare</Text>
+                <View style={styles.materialsRow}>
+                  <Text style={styles.materialsLabel}>Pânză:</Text>
+                  <Text style={styles.materialsValue}>{meshInfo.label} ({meshInfo.density}) — {widthCm + 4}×{heightCm + 4} cm (cu marjă 2 cm)</Text>
+                </View>
+                <View style={styles.materialsRow}>
+                  <Text style={styles.materialsLabel}>Ață:</Text>
+                  <Text style={styles.materialsValue}>{threadLabel} (8 m/sculă)</Text>
+                </View>
+                <View style={styles.materialsRow}>
+                  <Text style={styles.materialsLabel}>Ac:</Text>
+                  <Text style={styles.materialsValue}>Ac tapițerie {meshInfo.needle}</Text>
+                </View>
+                <View style={styles.materialsRow}>
+                  <Text style={styles.materialsLabel}>Notă:</Text>
+                  <Text style={styles.materialsValue}>Lucrați în lumină bună; numărați firele pânzei înainte de a începe.</Text>
+                </View>
+              </View>
+            )}
 
             {/* Grila SVG */}
             <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>

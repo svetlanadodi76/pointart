@@ -132,7 +132,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
         {canDownloadPdf ? (
           <div className="flex flex-wrap gap-2">
             <PDFDownloadLink
-              document={<SchemaPDF schema={schema} name={name} craftType={craftType} />}
+              document={<SchemaPDF schema={schema} name={name} craftType={craftType} canvasType={canvasType} />}
               fileName={`${name.replace(/\s+/g, '-')}.pdf`}
             >
               {({ loading: pdfLoading }: { loading: boolean }) => (

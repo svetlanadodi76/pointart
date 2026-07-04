@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import type { GeneratedSchema, DmcColor, ColorUsage, CraftType } from '@/types'
+import type { GeneratedSchema, DmcColor, ColorUsage, CraftType, CanvasType } from '@/types'
 import type { AnalysisResult } from '@/lib/schema/analyzeImage'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
@@ -690,7 +690,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {result && subscription?.plan !== 'free_trial' && (
               <div className="flex flex-col gap-2">
                 <PDFDownloadLink
-                  document={<SchemaPDF schema={result} name="Schema PointArt" craftType={craftType as CraftType} />}
+                  document={<SchemaPDF schema={result} name="Schema PointArt" craftType={craftType as CraftType} canvasType={canvasType as CanvasType} />}
                   fileName="pointart-schema.pdf"
                 >
                   {({ loading: pdfLoading }: { loading: boolean }) => (
