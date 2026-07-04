@@ -28,7 +28,7 @@ export interface ColorUsage {
   symbol: string
   count: number
   skeins: number
-  unit: 'skeins' | 'packets' // skeins = ață, packets = diamante
+  unit: 'skeins' | 'packets' | 'wool_skeins' // skeins = ață bumbac, wool_skeins = lână goblen, packets = diamante
   alternatives?: DmcColor[]  // top culori similare pentru swap
   catColor?: string           // culoare categorică pentru schema cross-stitch
   isSolid?: boolean           // top 20 culori → culoare plină (fără simbol)

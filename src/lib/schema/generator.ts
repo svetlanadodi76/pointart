@@ -285,14 +285,19 @@ export async function generateSchema(
   const colors: ColorUsage[] = activeGroups.map((group, i) => {
     const count = activeCounts[i]
     let quantity: number
-    let unit: 'skeins' | 'packets'
+    let unit: 'skeins' | 'packets' | 'wool_skeins'
 
     if (settings.craftType === 'diamond') {
       quantity = Math.max(1, Math.ceil(count / 200))
       unit = 'packets'
     } else if (settings.craftType === 'goblene') {
-      quantity = Math.max(1, Math.ceil((count * 6) / 4000))
-      unit = 'skeins'
+      // Sculă lână DMC Tapestry = 8m. Acoperire estimativă per densitate mesh:
+      const stitchesPerWoolSkein: Record<string, number> = {
+        '10mesh': 500, '12mesh': 600, '14mesh': 700, '18mesh': 900,
+      }
+      const coverage = stitchesPerWoolSkein[settings.canvasType] ?? 650
+      quantity = Math.max(1, Math.ceil(count / coverage))
+      unit = 'wool_skeins'
     } else {
       quantity = Math.max(1, Math.ceil((count * config.strands * CM_PER_STITCH) / CM_PER_SKEIN))
       unit = 'skeins'

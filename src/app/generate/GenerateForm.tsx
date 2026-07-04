@@ -975,7 +975,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                   <span className="font-mono text-gray-700 w-14 text-xs">DMC {color.dmcColor.code}</span>
                   <span className="text-gray-500 flex-1 text-xs truncate">{color.dmcColor.name}</span>
                   <span className="text-gray-400 text-xs whitespace-nowrap text-right">
-                    {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'} · {color.count} pct.
+                    {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : 'scule'} · {color.count} pct.
                   </span>
                 </div>
 

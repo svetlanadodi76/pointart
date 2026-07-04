@@ -332,7 +332,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                 {/* Cantitate */}
                 <div className="text-right shrink-0">
                   <p className="text-xs font-semibold text-gray-700">
-                    {color.skeins} {color.unit === 'packets' ? 'pach.' : 'scule'}
+                    {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : 'scule'}
                   </p>
                   <p className="text-xs text-gray-400">{color.count} pct.</p>
                 </div>
