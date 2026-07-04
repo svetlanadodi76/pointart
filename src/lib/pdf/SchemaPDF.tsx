@@ -284,7 +284,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                       )}
                       <Text style={styles.legendCode}>DMC {color.dmcColor.code}</Text>
                       <Text style={styles.legendQty}>
-                        {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : 'scule'}
+                        {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'}
                       </Text>
                       <Text style={styles.legendPct}>{color.count} pct.</Text>
                       <Text style={styles.legendName}>{color.dmcColor.name}</Text>

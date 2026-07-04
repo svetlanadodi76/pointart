@@ -29,6 +29,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [preview, setPreview] = useState<string | null>(null)
   const [craftType, setCraftType] = useState('cross_stitch')
   const [canvasType, setCanvasType] = useState('14CT')
+  const [threadType, setThreadType] = useState<'wool' | 'silk' | 'cotton'>('wool')
   const [widthCm, setWidthCm] = useState(30)
   const [heightCm, setHeightCm] = useState(25)
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape')
@@ -120,6 +121,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     fd.append('imgBrightness', imgBrightness.toString())
     fd.append('imgContrast', imgContrast.toString())
     fd.append('imgSaturation', imgSaturation.toString())
+    fd.append('threadType', threadType)
     return fd
   }
 
@@ -412,6 +414,35 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 ))}
               </div>
             </div>
+
+            {/* Tip ață goblen */}
+            {craftType === 'goblene' && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 className="font-semibold text-gray-900 mb-1">4. Tip ață</h2>
+                <p className="text-xs text-gray-400 mb-4">Afectează calculul cantității necesare</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { value: 'wool',   icon: '🐑', label: 'Lână',    desc: 'DMC Tapestry' },
+                    { value: 'silk',   icon: '🪡', label: 'Mătase',  desc: 'DMC Silk' },
+                    { value: 'cotton', icon: '🌿', label: 'Bumbac',  desc: 'DMC Cotton' },
+                  ] as const).map(t => (
+                    <button
+                      key={t.value}
+                      onClick={() => changeSetting(() => setThreadType(t.value))}
+                      className={`p-3 rounded-xl border-2 text-center transition-colors ${
+                        threadType === t.value
+                          ? 'border-violet-500 bg-violet-50'
+                          : 'border-gray-200 hover:border-violet-300'
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{t.icon}</div>
+                      <div className="text-sm font-medium text-gray-700">{t.label}</div>
+                      <div className="text-xs text-gray-400">{t.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Canvas broderie */}
             {craftType === 'cross_stitch' && (
@@ -975,7 +1006,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                   <span className="font-mono text-gray-700 w-14 text-xs">DMC {color.dmcColor.code}</span>
                   <span className="text-gray-500 flex-1 text-xs truncate">{color.dmcColor.name}</span>
                   <span className="text-gray-400 text-xs whitespace-nowrap text-right">
-                    {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : 'scule'} · {color.count} pct.
+                    {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'} · {color.count} pct.
                   </span>
                 </div>
 

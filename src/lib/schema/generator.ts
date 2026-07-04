@@ -90,6 +90,7 @@ export async function generateSchema(
     maxColors: number
     imgBrightness?: number
     imgContrast?: number
+    threadType?: 'wool' | 'silk' | 'cotton'
     imgSaturation?: number
   }
 ): Promise<GeneratedSchema> {
@@ -285,19 +286,22 @@ export async function generateSchema(
   const colors: ColorUsage[] = activeGroups.map((group, i) => {
     const count = activeCounts[i]
     let quantity: number
-    let unit: 'skeins' | 'packets' | 'wool_skeins'
+    let unit: 'skeins' | 'packets' | 'wool_skeins' | 'silk_skeins' | 'cotton_skeins'
 
     if (settings.craftType === 'diamond') {
       quantity = Math.max(1, Math.ceil(count / 200))
       unit = 'packets'
     } else if (settings.craftType === 'goblene') {
-      // Sculă lână DMC Tapestry = 8m. Acoperire estimativă per densitate mesh:
-      const stitchesPerWoolSkein: Record<string, number> = {
-        '10mesh': 500, '12mesh': 600, '14mesh': 700, '18mesh': 900,
+      // Acoperire estimativă (puncte per sculă 8m) per tip ață × densitate mesh
+      const coverage: Record<string, Record<string, number>> = {
+        wool:   { '10mesh': 500, '12mesh': 600, '14mesh': 700, '18mesh': 900  },
+        silk:   { '10mesh': 900, '12mesh': 1100,'14mesh': 1400,'18mesh': 1800 },
+        cotton: { '10mesh': 700, '12mesh': 800, '14mesh': 900, '18mesh': 1200 },
       }
-      const coverage = stitchesPerWoolSkein[settings.canvasType] ?? 650
-      quantity = Math.max(1, Math.ceil(count / coverage))
-      unit = 'wool_skeins'
+      const thread = settings.threadType ?? 'wool'
+      const stitchesPerSkein = coverage[thread]?.[settings.canvasType] ?? 650
+      quantity = Math.max(1, Math.ceil(count / stitchesPerSkein))
+      unit = thread === 'silk' ? 'silk_skeins' : thread === 'cotton' ? 'cotton_skeins' : 'wool_skeins'
     } else {
       quantity = Math.max(1, Math.ceil((count * config.strands * CM_PER_STITCH) / CM_PER_SKEIN))
       unit = 'skeins'

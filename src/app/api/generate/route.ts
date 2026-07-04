@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     const imgBrightness = parseFloat(formData.get('imgBrightness') as string) || 1.0
     const imgContrast = parseFloat(formData.get('imgContrast') as string) || 1.0
     const imgSaturation = parseFloat(formData.get('imgSaturation') as string) || 1.0
+    const threadType = (formData.get('threadType') as 'wool' | 'silk' | 'cotton') || 'wool'
 
     if (!file || !craftType || !widthCm || !heightCm) {
       return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
       imgBrightness,
       imgContrast,
       imgSaturation,
+      threadType,
     })
 
     // Salvează imaginea originală în Supabase Storage (bucket privat)
