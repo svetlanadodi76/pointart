@@ -7,6 +7,7 @@ export interface CanvasRecommendation {
   minHeightCm: number
   optimalColors: number
   isDiamond: boolean
+  isGoblene: boolean
 }
 
 export interface AnalysisResult {
@@ -21,13 +22,17 @@ export interface AnalysisResult {
 }
 
 const CANVAS_CONFIG = [
-  { type: '11CT', stitchesPerCm: 4.3,   isDiamond: false },
-  { type: '14CT', stitchesPerCm: 5.5,   isDiamond: false },
-  { type: '16CT', stitchesPerCm: 6.3,   isDiamond: false },
-  { type: '18CT', stitchesPerCm: 7.1,   isDiamond: false },
-  { type: '2.5mm', stitchesPerCm: 4.0,  isDiamond: true },
-  { type: '2.8mm', stitchesPerCm: 3.571, isDiamond: true },
-  { type: '3.0mm', stitchesPerCm: 3.333, isDiamond: true },
+  { type: '11CT',   stitchesPerCm: 4.3,   isDiamond: false, isGoblene: false },
+  { type: '14CT',   stitchesPerCm: 5.5,   isDiamond: false, isGoblene: false },
+  { type: '16CT',   stitchesPerCm: 6.3,   isDiamond: false, isGoblene: false },
+  { type: '18CT',   stitchesPerCm: 7.1,   isDiamond: false, isGoblene: false },
+  { type: '2.5mm',  stitchesPerCm: 4.0,   isDiamond: true,  isGoblene: false },
+  { type: '2.8mm',  stitchesPerCm: 3.571, isDiamond: true,  isGoblene: false },
+  { type: '3.0mm',  stitchesPerCm: 3.333, isDiamond: true,  isGoblene: false },
+  { type: '10mesh', stitchesPerCm: 3.94,  isDiamond: false, isGoblene: true  },
+  { type: '12mesh', stitchesPerCm: 4.72,  isDiamond: false, isGoblene: true  },
+  { type: '14mesh', stitchesPerCm: 5.51,  isDiamond: false, isGoblene: true  },
+  { type: '18mesh', stitchesPerCm: 7.09,  isDiamond: false, isGoblene: true  },
 ]
 
 export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult> {
@@ -118,7 +123,7 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
     const densityFactor = cfg.stitchesPerCm / 5.5
     const optimalColors = Math.min(80, Math.round(baseColors * (0.85 + densityFactor * 0.15)))
 
-    return { canvasType: cfg.type, stitchesPerCm: cfg.stitchesPerCm, minWidthCm, minHeightCm, optimalColors, isDiamond: cfg.isDiamond }
+    return { canvasType: cfg.type, stitchesPerCm: cfg.stitchesPerCm, minWidthCm, minHeightCm, optimalColors, isDiamond: cfg.isDiamond, isGoblene: cfg.isGoblene }
   })
 
   const suggested = recommendations.find(r => r.canvasType === '14CT')!

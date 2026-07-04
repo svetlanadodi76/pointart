@@ -13,6 +13,11 @@ const CANVAS_CONFIG = {
   '2.5mm': { stitchesPerCm: 4.0,  strands: 0 },
   '2.8mm': { stitchesPerCm: 3.571, strands: 0 },
   '3.0mm': { stitchesPerCm: 3.333, strands: 0 },
+  // Goblen — mesh/inch ÷ 2.54
+  '10mesh': { stitchesPerCm: 3.94, strands: 1 },
+  '12mesh': { stitchesPerCm: 4.72, strands: 1 },
+  '14mesh': { stitchesPerCm: 5.51, strands: 1 },
+  '18mesh': { stitchesPerCm: 7.09, strands: 1 },
 }
 
 // 1 sculă DMC = 8m = 800cm cu 6 fire. La 14CT folosești 2 fire → 24m utilizabili/sculă.

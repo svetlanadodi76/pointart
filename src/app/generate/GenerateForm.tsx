@@ -51,8 +51,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   useEffect(() => {
     if (craftType === 'diamond') {
       setCanvasType('2.5mm')
-    } else if (['2.5mm', '2.8mm', '3.0mm'].includes(canvasType)) {
-      setCanvasType('14CT')
+    } else if (craftType === 'goblene') {
+      if (!['10mesh', '12mesh', '14mesh', '18mesh'].includes(canvasType)) setCanvasType('14mesh')
+    } else {
+      if (!['11CT', '14CT', '16CT', '18CT'].includes(canvasType)) setCanvasType('14CT')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [craftType])
@@ -141,7 +143,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
   function applyRecommendation(rec: AnalysisResult['recommendations'][0]) {
     const isDiamond = rec.isDiamond
-    setCraftType(isDiamond ? 'diamond' : 'cross_stitch')
+    const craft = isDiamond ? 'diamond' : rec.isGoblene ? 'goblene' : 'cross_stitch'
+    setCraftType(craft)
     setCanvasType(rec.canvasType)
     setWidthCm(rec.minWidthCm)
     setHeightCm(rec.minHeightCm)
@@ -355,7 +358,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                                 className={`transition-colors ${isSuggested ? 'bg-violet-50' : 'hover:bg-gray-50'}`}
                               >
                                 <td className="px-3 py-2 font-medium text-gray-800">
-                                  {rec.isDiamond ? '💎 ' : ''}{rec.canvasType}
+                                  {rec.isDiamond ? '💎 ' : rec.isGoblene ? '🧵 ' : ''}{rec.canvasType}
                                   {isSuggested && <span className="ml-1 text-xs text-violet-500">★</span>}
                                 </td>
                                 <td className="px-3 py-2 text-center text-gray-700">{rec.optimalColors}</td>
@@ -374,7 +377,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         </tbody>
                       </table>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">★ Recomandat · Click <strong>Aplică</strong> pentru a completa automat setările</p>
+                    <p className="text-xs text-gray-400 mt-2">★ Recomandat · 💎 Diamante · 🧵 Goblen · Click <strong>Aplică</strong> pentru a completa automat setările</p>
                   </div>
                 )}
               </div>
@@ -405,10 +408,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               </div>
             </div>
 
-            {/* Canvas (broderie/goblene) */}
-            {craftType !== 'diamond' && (
+            {/* Canvas broderie */}
+            {craftType === 'cross_stitch' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="font-semibold text-gray-900 mb-4">3. Canvas</h2>
+                <h2 className="font-semibold text-gray-900 mb-4">3. Canvas Aida</h2>
                 <div className="grid grid-cols-2 gap-3">
                   {([
                     { ct: '11CT', strands: '3 fire', desc: '4.3 pt/cm — relaxat' },
@@ -425,6 +428,34 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     >
                       <div className="font-bold text-gray-900">{ct}</div>
                       <div className="text-xs text-violet-600">{strands}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Canvas goblen — mesh count */}
+            {craftType === 'goblene' && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 className="font-semibold text-gray-900 mb-1">3. Canvas Mono (mesh)</h2>
+                <p className="text-xs text-gray-400 mb-4">Ochiuri per inch — pânză Zweigart sau similară</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    { ct: '10mesh', label: '10 mesh', thread: '1 fir lână', desc: '3.9 pt/cm — gros' },
+                    { ct: '12mesh', label: '12 mesh', thread: '1 fir lână', desc: '4.7 pt/cm — mediu' },
+                    { ct: '14mesh', label: '14 mesh', thread: '1 fir lână', desc: '5.5 pt/cm — standard ★' },
+                    { ct: '18mesh', label: '18 mesh', thread: '1 fir lână', desc: '7.1 pt/cm — fin' },
+                  ] as const).map(({ ct, label, thread, desc }) => (
+                    <button
+                      key={ct}
+                      onClick={() => changeSetting(() => setCanvasType(ct))}
+                      className={`p-3 rounded-xl border-2 text-center transition-colors ${
+                        canvasType === ct ? 'border-violet-500 bg-violet-50' : 'border-gray-200 hover:border-violet-300'
+                      }`}
+                    >
+                      <div className="font-bold text-gray-900">{label}</div>
+                      <div className="text-xs text-violet-600">{thread}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
                     </button>
                   ))}
@@ -536,6 +567,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   const spc: Record<string, number> = {
                     '11CT': 4.3, '14CT': 5.5, '16CT': 6.3, '18CT': 7.1,
                     '2.5mm': 4.0, '2.8mm': 3.571, '3.0mm': 3.333,
+                    '10mesh': 3.94, '12mesh': 4.72, '14mesh': 5.51, '18mesh': 7.09,
                   }
                   const density = spc[canvasType] ?? 5.5
                   const unit = craftType === 'diamond' ? 'diamante' : 'puncte'

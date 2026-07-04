@@ -118,7 +118,7 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">{t(lang, 'home.pricing_title')}</h2>
           <p className="text-center text-gray-500 mb-12">{t(lang, 'home.tagline').split('.')[0]}.</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             <div className="bg-white rounded-2xl p-8 border border-gray-200">
               <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">{t(lang, 'home.pricing_free_title')}</div>
               <div className="text-3xl font-bold text-gray-900 mb-1">{lang === 'ru' ? 'Бесплатно' : 'Gratuit'}</div>
@@ -179,6 +179,28 @@ export default async function HomePage() {
               </ul>
               <Link href="/pricing" className="block text-center bg-white text-violet-700 py-3 rounded-xl font-semibold hover:bg-violet-50 transition-colors">
                 {lang === 'ru' ? 'Подписаться' : 'Abonează-te'}
+              </Link>
+            </div>
+
+            <div className="bg-white rounded-2xl p-8 border-2 border-amber-400 shadow-amber-100 shadow-md relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                AI ✨
+              </div>
+              <div className="text-sm font-semibold text-amber-600 uppercase tracking-wide mb-2">Premium AI</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">25€</div>
+              <div className="text-gray-500 text-sm mb-6">{lang === 'ru' ? 'в месяц' : 'pe lună'}</div>
+              <ul className="space-y-3 mb-8">
+                {(lang === 'ru'
+                  ? ['Неограниченные схемы', 'PDF схемы', 'Увеличение AI (4×)', 'Улучшение портрета AI', 'Цвета CIEDE2000']
+                  : ['Scheme nelimitate', 'PDF schemă', 'Mărire AI (4×)', 'Îmbunătățire portret AI', 'Culori CIEDE2000']
+                ).map(f => (
+                  <li key={f} className="flex items-center gap-2 text-gray-600">
+                    <span className="text-amber-500">✓</span>{f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/pricing" className="block text-center bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition-colors">
+                {lang === 'ru' ? 'Купить Premium AI' : 'Cumpără Premium AI'}
               </Link>
             </div>
           </div>
