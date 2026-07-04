@@ -591,7 +591,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   : settingsChanged ? '🔄 Regenerează schema' : '✨ Generează schema'}
               </button>
               {loading && isPremium && (
-                <p className="text-xs text-center text-amber-600">Fundal simplificat, imagine mărită, portret îmbunătățit...</p>
+                <p className="text-xs text-center text-amber-600">Imagine mărită AI, portret îmbunătățit, claritate optimizată...</p>
               )}
               <button
                 onClick={handleGenerateVariants}

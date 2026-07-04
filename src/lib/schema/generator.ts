@@ -94,15 +94,15 @@ export async function generateSchema(
 
   // Valorile utilizatorului se combină cu corecțiile noastre de bază
   const brightness = 1.0  * (settings.imgBrightness ?? 1.0)
-  const saturation = 1.2  * (settings.imgSaturation ?? 1.0)
+  const saturation = 1.08 * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
   const { data: pixels } = await sharp(imageBuffer)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
-    .normalize()
+    .normalize({ lower: 2, upper: 98 })
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
-    .linear(1.0, 10)
+    .linear(1.0, 8)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
