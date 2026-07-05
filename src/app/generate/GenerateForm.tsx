@@ -682,22 +682,28 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 {aiSteps.sharpened && <span>· claritate optimizată</span>}
               </div>
             )}
-            {result && schemaId && subscription?.plan !== 'free_trial' && (
+            {result && subscription?.plan !== 'free_trial' && (
               <div className="flex flex-col gap-2">
-                <a
-                  href={`/api/pdf/${schemaId}`}
-                  download
-                  className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  📄 Descarcă PDF schemă
-                </a>
-                <a
-                  href={`/api/pdf/${schemaId}?type=fabric`}
-                  download
-                  className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2"
-                >
-                  🖨️ Tipărire pe pânză (1:1)
-                </a>
+                {schemaId ? (
+                  <>
+                    <a
+                      href={`/api/pdf/${schemaId}`}
+                      download
+                      className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      📄 Descarcă PDF schemă
+                    </a>
+                    <a
+                      href={`/api/pdf/${schemaId}?type=fabric`}
+                      download
+                      className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2"
+                    >
+                      🖨️ Tipărire pe pânză (1:1)
+                    </a>
+                  </>
+                ) : (
+                  <p className="text-xs text-center text-gray-400">Generează o schemă nouă pentru a descărca PDF</p>
+                )}
               </div>
             )}
             {result && subscription?.plan === 'free_trial' && (
