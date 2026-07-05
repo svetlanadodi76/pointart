@@ -66,9 +66,15 @@ function renderShapeSvg(symbol: string, color: string, size: number) {
 
 export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasType }: Props) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
+  const [showSchemaPdf, setShowSchemaPdf] = useState(false)
+  const [showFabricPdf, setShowFabricPdf] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const schemaCanvasRef = useRef<HTMLCanvasElement>(null)
-  const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
+  const _cell = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
+  const _totalPx = schema.widthStitches * _cell * schema.heightStitches * _cell
+  const CELL_SIZE = _totalPx > 9_000_000
+    ? Math.max(5, Math.floor(Math.sqrt(9_000_000 / (schema.widthStitches * schema.heightStitches))))
+    : _cell
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
   const colors = (() => {
@@ -211,32 +217,50 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
 
         {canDownloadPdf ? (
           <div className="flex flex-wrap gap-2">
-            <PDFDownloadLink
-              document={<SchemaPDF schema={schema} name={name} craftType={craftType} canvasType={canvasType} />}
-              fileName={`${name.replace(/\s+/g, '-')}.pdf`}
-            >
-              {({ loading: pdfLoading }: { loading: boolean }) => (
-                <button
-                  disabled={pdfLoading}
-                  className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-60 text-sm"
-                >
-                  {pdfLoading ? '⏳ Pregătesc...' : '📄 PDF schemă'}
-                </button>
-              )}
-            </PDFDownloadLink>
-            <PDFDownloadLink
-              document={<FabricPDF schema={schema} name={name} craftType={craftType} canvasType={canvasType ?? '14CT'} />}
-              fileName={`${name.replace(/\s+/g, '-')}-pinza.pdf`}
-            >
-              {({ loading: pdfLoading }: { loading: boolean }) => (
-                <button
-                  disabled={pdfLoading}
-                  className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors disabled:opacity-60 text-sm"
-                >
-                  {pdfLoading ? '⏳ Pregătesc...' : '🖨️ Tipărire pânză (1:1)'}
-                </button>
-              )}
-            </PDFDownloadLink>
+            {!showSchemaPdf ? (
+              <button
+                onClick={() => setShowSchemaPdf(true)}
+                className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors text-sm"
+              >
+                📄 PDF schemă
+              </button>
+            ) : (
+              <PDFDownloadLink
+                document={<SchemaPDF schema={schema} name={name} craftType={craftType} canvasType={canvasType} />}
+                fileName={`${name.replace(/\s+/g, '-')}.pdf`}
+              >
+                {({ loading: pdfLoading }: { loading: boolean }) => (
+                  <button
+                    disabled={pdfLoading}
+                    className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-60 text-sm"
+                  >
+                    {pdfLoading ? '⏳ Generez... (10-30 sec)' : '⬇️ Descarcă PDF schemă'}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            )}
+            {!showFabricPdf ? (
+              <button
+                onClick={() => setShowFabricPdf(true)}
+                className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm"
+              >
+                🖨️ Tipărire pânză (1:1)
+              </button>
+            ) : (
+              <PDFDownloadLink
+                document={<FabricPDF schema={schema} name={name} craftType={craftType} canvasType={canvasType ?? '14CT'} />}
+                fileName={`${name.replace(/\s+/g, '-')}-pinza.pdf`}
+              >
+                {({ loading: pdfLoading }: { loading: boolean }) => (
+                  <button
+                    disabled={pdfLoading}
+                    className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors disabled:opacity-60 text-sm"
+                  >
+                    {pdfLoading ? '⏳ Generez... (10-30 sec)' : '⬇️ Descarcă tipărire pânză'}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            )}
           </div>
         ) : (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-amber-700 text-sm">

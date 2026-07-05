@@ -44,6 +44,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [variants, setVariants] = useState<Array<{ schema: GeneratedSchema; nColors: number }> | null>(null)
   const [activeVariant, setActiveVariant] = useState(0)
   const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
+  const [showSchemaPdf, setShowSchemaPdf] = useState(false)
+  const [showFabricPdf, setShowFabricPdf] = useState(false)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -59,6 +61,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [craftType])
+
+  // Resetează starea PDF-urilor la fiecare schemă nouă (previne render eager)
+  useEffect(() => { setShowSchemaPdf(false); setShowFabricPdf(false) }, [result])
 
   const canGenerate = subscription?.status === 'active' &&
     (subscription?.plan !== 'free_trial' || subscription?.schemas_remaining > 0)
@@ -689,32 +694,50 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             )}
             {result && subscription?.plan !== 'free_trial' && (
               <div className="flex flex-col gap-2">
-                <PDFDownloadLink
-                  document={<SchemaPDF schema={result} name="Schema PointArt" craftType={craftType as CraftType} canvasType={canvasType as CanvasType} />}
-                  fileName="pointart-schema.pdf"
-                >
-                  {({ loading: pdfLoading }: { loading: boolean }) => (
-                    <button
-                      disabled={pdfLoading}
-                      className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {pdfLoading ? '⏳ Pregătesc...' : '📄 Descarcă PDF schemă'}
-                    </button>
-                  )}
-                </PDFDownloadLink>
-                <PDFDownloadLink
-                  document={<FabricPDF schema={result} name="Schema PointArt" craftType={craftType as any} canvasType={canvasType as any} />}
-                  fileName="pointart-tiparire-pinza.pdf"
-                >
-                  {({ loading: pdfLoading }: { loading: boolean }) => (
-                    <button
-                      disabled={pdfLoading}
-                      className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {pdfLoading ? '⏳ Pregătesc...' : '🖨️ Tipărire pe pânză (1:1)'}
-                    </button>
-                  )}
-                </PDFDownloadLink>
+                {!showSchemaPdf ? (
+                  <button
+                    onClick={() => setShowSchemaPdf(true)}
+                    className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    📄 Descarcă PDF schemă
+                  </button>
+                ) : (
+                  <PDFDownloadLink
+                    document={<SchemaPDF schema={result} name="Schema PointArt" craftType={craftType as CraftType} canvasType={canvasType as CanvasType} />}
+                    fileName="pointart-schema.pdf"
+                  >
+                    {({ loading: pdfLoading }: { loading: boolean }) => (
+                      <button
+                        disabled={pdfLoading}
+                        className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {pdfLoading ? '⏳ Generez PDF... (10-30 sec)' : '⬇️ Descarcă PDF schemă'}
+                      </button>
+                    )}
+                  </PDFDownloadLink>
+                )}
+                {!showFabricPdf ? (
+                  <button
+                    onClick={() => setShowFabricPdf(true)}
+                    className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2"
+                  >
+                    🖨️ Tipărire pe pânză (1:1)
+                  </button>
+                ) : (
+                  <PDFDownloadLink
+                    document={<FabricPDF schema={result} name="Schema PointArt" craftType={craftType as CraftType} canvasType={canvasType as CanvasType} />}
+                    fileName="pointart-tiparire-pinza.pdf"
+                  >
+                    {({ loading: pdfLoading }: { loading: boolean }) => (
+                      <button
+                        disabled={pdfLoading}
+                        className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {pdfLoading ? '⏳ Generez PDF... (10-30 sec)' : '⬇️ Descarcă tipărire pânză'}
+                      </button>
+                    )}
+                  </PDFDownloadLink>
+                )}
               </div>
             )}
             {result && subscription?.plan === 'free_trial' && (
@@ -793,7 +816,11 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const schemaCanvasRef = useRef<HTMLCanvasElement>(null)
-  const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
+  const _cell = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
+  const _totalPx = schema.widthStitches * _cell * schema.heightStitches * _cell
+  const CELL_SIZE = _totalPx > 9_000_000
+    ? Math.max(5, Math.floor(Math.sqrt(9_000_000 / (schema.widthStitches * schema.heightStitches))))
+    : _cell
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
 
