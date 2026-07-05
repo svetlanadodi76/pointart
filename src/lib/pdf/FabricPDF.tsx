@@ -14,13 +14,17 @@ const PT_PER_CM = 28.3465
 
 // Dimensiunea reală a unui punct/diamant pe pânză (cm/celulă)
 const STITCH_SIZE_CM: Record<string, number> = {
-  '11CT':  1 / 4.3,   // ~2.33mm
-  '14CT':  1 / 5.5,   // ~1.82mm
-  '16CT':  1 / 6.3,   // ~1.59mm
-  '18CT':  1 / 7.1,   // ~1.41mm
-  '2.5mm': 0.25,
-  '2.8mm': 0.28,
-  '3.0mm': 0.30,
+  '11CT':   1 / 4.3,   // ~2.33mm
+  '14CT':   1 / 5.5,   // ~1.82mm
+  '16CT':   1 / 6.3,   // ~1.59mm
+  '18CT':   1 / 7.1,   // ~1.41mm
+  '2.5mm':  0.25,
+  '2.8mm':  0.28,
+  '3.0mm':  0.30,
+  '10mesh': 1 / 3.94,  // ~2.54mm
+  '12mesh': 1 / 4.72,  // ~2.12mm
+  '14mesh': 1 / 5.51,  // ~1.82mm
+  '18mesh': 1 / 7.09,  // ~1.41mm
 }
 
 interface FabricPDFProps {
@@ -37,7 +41,8 @@ export function FabricPDF({
   canvasType = '14CT',
 }: FabricPDFProps) {
   const { grid, colors, widthStitches, heightStitches, widthCm, heightCm } = schema
-  const isCrossStitch = craftType === 'cross_stitch' || craftType === 'goblene'
+  const isCrossStitch = craftType === 'cross_stitch'
+  const isGoblene = craftType === 'goblene'
 
   // Atribuie culori și simboluri după rang (identic cu SchemaPDF)
   const colorMeta = (() => {
@@ -48,7 +53,10 @@ export function FabricPDF({
       symbol: rank >= SOLID_THRESHOLD ? (SIMPLE_SYMBOLS[rank - SOLID_THRESHOLD] ?? '?') : '',
       isSolid: rank < SOLID_THRESHOLD,
     }))
-    return colors.map((_, i) => rankMap.get(i) ?? { catColor: '#cccccc', symbol: '', isSolid: false })
+    return colors.map((c, i) => {
+      const r = rankMap.get(i) ?? { catColor: '#cccccc', symbol: '', isSolid: false }
+      return isGoblene ? { ...r, symbol: c.symbol || '', isSolid: false } : r
+    })
   })()
 
   // Dimensiunea unei celule în PDF points (= dimensiunea reală 1:1)
