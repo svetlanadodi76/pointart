@@ -116,8 +116,8 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
     return schema.colors.map((c, i) => ({
       ...c,
       catColor: rankMap.get(i)?.catColor ?? '#cccccc',
-      symbol: rankMap.get(i)?.symbol ?? '',
-      isSolid: rankMap.get(i)?.isSolid ?? false,
+      symbol: isGoblene ? (c.symbol || '') : (rankMap.get(i)?.symbol ?? ''),
+      isSolid: isGoblene ? false : (rankMap.get(i)?.isSolid ?? false),
     }))
   })()
 

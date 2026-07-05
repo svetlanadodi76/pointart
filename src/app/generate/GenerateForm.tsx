@@ -767,7 +767,8 @@ function contrastColor(hex: string): string {
   return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? '#000000' : '#ffffff'
 }
 
-function buildColors(colors: GeneratedSchema['colors']) {
+function buildColors(colors: GeneratedSchema['colors'], craftType = 'cross_stitch') {
+  const isGoblene = craftType === 'goblene'
   const withIdx = colors.map((c, i) => ({ ...c, _idx: i }))
   const sorted = [...withIdx].sort((a, b) => b.count - a.count)
   const byRank = new Map<number, { symbol: string; catColor: string; isSolid: boolean }>()
@@ -780,15 +781,15 @@ function buildColors(colors: GeneratedSchema['colors']) {
   }))
   return withIdx.map(c => ({
     ...c,
-    symbol: byRank.get(c._idx)?.symbol ?? '',
+    symbol: isGoblene ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
     catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
-    isSolid: byRank.get(c._idx)?.isSolid ?? false,
+    isSolid: isGoblene ? false : (byRank.get(c._idx)?.isSolid ?? false),
   }))
 }
 
 function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftType: string }) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
-  const [localColors, setLocalColors] = useState(() => buildColors(schema.colors))
+  const [localColors, setLocalColors] = useState(() => buildColors(schema.colors, craftType))
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
@@ -797,9 +798,9 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
 
   // Resetează culorile locale când se generează o schemă nouă
   useEffect(() => {
-    setLocalColors(buildColors(schema.colors))
+    setLocalColors(buildColors(schema.colors, craftType))
     setEditingIdx(null)
-  }, [schema])
+  }, [schema, craftType])
 
   // Guard sincron: dacă schema s-a schimbat dar useEffect nu s-a executat încă,
   // localColors poate fi din schema anterioară (altă dimensiune) → folosim schema.colors direct
@@ -994,7 +995,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                     }}
                     title="Click pentru a schimba culoarea"
                   >
-                    {isGoblene ? null : isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
+                    {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
                   </button>
                   {isCrossStitch && (
                     <div

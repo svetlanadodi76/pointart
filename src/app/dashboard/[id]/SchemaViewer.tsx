@@ -83,9 +83,9 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
     }))
     return withIdx.map(c => ({
       ...c,
-      symbol: byRank.get(c._idx)?.symbol ?? '',
+      symbol: isGoblene ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
       catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
-      isSolid: byRank.get(c._idx)?.isSolid ?? false,
+      isSolid: isGoblene ? false : (byRank.get(c._idx)?.isSolid ?? false),
     }))
   })()
 
