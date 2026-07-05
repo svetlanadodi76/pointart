@@ -29,6 +29,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Limita de scheme depășită' }, { status: 403 })
   }
 
+  // Rate limit: max 1 generare la 20s (pro/premium) sau 45s (starter/trial)
+  const { data: lastSchema } = await supabase
+    .from('schemas')
+    .select('created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (lastSchema) {
+    const secondsSinceLast = (Date.now() - new Date(lastSchema.created_at).getTime()) / 1000
+    const minInterval = subscription.plan === 'pro' || subscription.plan === 'premium' ? 20 : 45
+    if (secondsSinceLast < minInterval) {
+      const wait = Math.ceil(minInterval - secondsSinceLast)
+      return NextResponse.json({ error: `Așteaptă ${wait} secunde între generări.` }, { status: 429 })
+    }
+  }
+
   try {
     const formData = await request.formData()
     const file = formData.get('image') as File
@@ -46,6 +64,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
     }
 
+    // Max 8MB per imagine — previne OOM și abuzuri
+    if (file.size > 8 * 1024 * 1024) {
+      return NextResponse.json({
+        error: 'Imaginea e prea mare (max 8 MB). Comprimă poza sau alege o rezoluție mai mică.'
+      }, { status: 400 })
+    }
+
     let imageBuffer: Buffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer)
 
     // Hash primii 8KB din imagine — identificator unic pentru a grupa versiunile aceleiași poze
@@ -61,6 +86,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           error: 'Formatul HEIC nu este suportat. Te rugăm să convertești poza în JPG sau PNG înainte de upload (iPhone: Setări → Poze → Format → Cel mai compatibil).'
         }, { status: 400 })
+      }
+    }
+
+    // Auto-resize la max 2500px pentru a reduce memoria Sharp (RAW/DSLR pot fi 8000px+)
+    {
+      const sharp = (await import('sharp')).default
+      const meta = await sharp(imageBuffer).metadata()
+      if ((meta.width ?? 0) > 2500 || (meta.height ?? 0) > 2500) {
+        imageBuffer = await sharp(imageBuffer)
+          .resize(2500, 2500, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 90 })
+          .toBuffer()
       }
     }
 
