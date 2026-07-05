@@ -163,7 +163,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       if (!res.ok) throw new Error(data.error || 'Eroare necunoscută')
       setResult(data.schema)
       setSchemaId(data.schemaId ?? null)
-      setDebugSaveError(data._debugSaveError ?? (!data.schemaId ? 'schemaId lipsă (saveError necunoscut)' : null))
+      const ctxStr = data._debugCtx ? ` | craftType=${data._debugCtx.craftType} canvasType=${data._debugCtx.canvasType} plan=${data._debugCtx.plan}` : ''
+      setDebugSaveError(data._debugSaveError ? `${data._debugSaveError}${ctxStr}` : (!data.schemaId ? `schemaId lipsă${ctxStr}` : null))
       setAiSteps(data.aiSteps ?? null)
       setSettingsChanged(false)
     } catch (e: any) {
