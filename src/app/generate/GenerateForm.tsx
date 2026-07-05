@@ -37,7 +37,6 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [activeVariant, setActiveVariant] = useState(0)
   const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
   const [schemaId, setSchemaId] = useState<string | null>(null)
-  const [debugSaveError, setDebugSaveError] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -163,8 +162,6 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       if (!res.ok) throw new Error(data.error || 'Eroare necunoscută')
       setResult(data.schema)
       setSchemaId(data.schemaId ?? null)
-      const ctxStr = data._debugCtx ? ` | craftType=${data._debugCtx.craftType} canvasType=${data._debugCtx.canvasType} plan=${data._debugCtx.plan}` : ''
-      setDebugSaveError(data._debugSaveError ? `${data._debugSaveError}${ctxStr}` : (!data.schemaId ? `schemaId lipsă${ctxStr}` : null))
       setAiSteps(data.aiSteps ?? null)
       setSettingsChanged(false)
     } catch (e: any) {
@@ -705,14 +702,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     </a>
                   </>
                 ) : (
-                  <>
-                    <p className="text-xs text-center text-gray-400">Schema nu s-a salvat — PDF indisponibil</p>
-                    {debugSaveError && (
-                      <p className="text-xs text-center text-red-500 bg-red-50 rounded p-2 break-all">
-                        DEBUG: {debugSaveError}
-                      </p>
-                    )}
-                  </>
+                  <p className="text-xs text-center text-gray-400">Generează o schemă nouă pentru a descărca PDF</p>
                 )}
               </div>
             )}

@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       }).eq('user_id', user.id)
     }
 
-    return NextResponse.json({ schema, schemaId: savedSchema?.id, aiSteps, _debugSaveError: saveError?.message ?? null, _debugCtx: { craftType, canvasType, plan: subscription.plan } })
+    return NextResponse.json({ schema, schemaId: savedSchema?.id, aiSteps })
 
   } catch (error) {
     console.error('Eroare generare:', error)
