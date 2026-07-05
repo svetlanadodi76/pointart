@@ -1,21 +1,13 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { GeneratedSchema, DmcColor, ColorUsage, CraftType, CanvasType } from '@/types'
 import type { AnalysisResult } from '@/lib/schema/analyzeImage'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
-import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
-import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { t } from '@/lib/i18n/translations'
 import type { Lang } from '@/lib/i18n/translations'
-
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
-  { ssr: false }
-)
 
 const SIZE_PRESETS = [
   { label: '20×15 cm (mic)', width: 20, height: 15 },
@@ -44,8 +36,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [variants, setVariants] = useState<Array<{ schema: GeneratedSchema; nColors: number }> | null>(null)
   const [activeVariant, setActiveVariant] = useState(0)
   const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
-  const [showSchemaPdf, setShowSchemaPdf] = useState(false)
-  const [showFabricPdf, setShowFabricPdf] = useState(false)
+  const [schemaId, setSchemaId] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -62,8 +53,6 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [craftType])
 
-  // Resetează starea PDF-urilor la fiecare schemă nouă (previne render eager)
-  useEffect(() => { setShowSchemaPdf(false); setShowFabricPdf(false) }, [result])
 
   const canGenerate = subscription?.status === 'active' &&
     (subscription?.plan !== 'free_trial' || subscription?.schemas_remaining > 0)
@@ -172,6 +161,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Eroare necunoscută')
       setResult(data.schema)
+      setSchemaId(data.schemaId ?? null)
       setAiSteps(data.aiSteps ?? null)
       setSettingsChanged(false)
     } catch (e: any) {
@@ -692,52 +682,22 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 {aiSteps.sharpened && <span>· claritate optimizată</span>}
               </div>
             )}
-            {result && subscription?.plan !== 'free_trial' && (
+            {result && schemaId && subscription?.plan !== 'free_trial' && (
               <div className="flex flex-col gap-2">
-                {!showSchemaPdf ? (
-                  <button
-                    onClick={() => setShowSchemaPdf(true)}
-                    className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    📄 Descarcă PDF schemă
-                  </button>
-                ) : (
-                  <PDFDownloadLink
-                    document={<SchemaPDF schema={result} name="Schema PointArt" craftType={craftType as CraftType} canvasType={canvasType as CanvasType} />}
-                    fileName="pointart-schema.pdf"
-                  >
-                    {({ loading: pdfLoading }: { loading: boolean }) => (
-                      <button
-                        disabled={pdfLoading}
-                        className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {pdfLoading ? '⏳ Generez PDF... (10-30 sec)' : '⬇️ Descarcă PDF schemă'}
-                      </button>
-                    )}
-                  </PDFDownloadLink>
-                )}
-                {!showFabricPdf ? (
-                  <button
-                    onClick={() => setShowFabricPdf(true)}
-                    className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2"
-                  >
-                    🖨️ Tipărire pe pânză (1:1)
-                  </button>
-                ) : (
-                  <PDFDownloadLink
-                    document={<FabricPDF schema={result} name="Schema PointArt" craftType={craftType as CraftType} canvasType={canvasType as CanvasType} />}
-                    fileName="pointart-tiparire-pinza.pdf"
-                  >
-                    {({ loading: pdfLoading }: { loading: boolean }) => (
-                      <button
-                        disabled={pdfLoading}
-                        className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {pdfLoading ? '⏳ Generez PDF... (10-30 sec)' : '⬇️ Descarcă tipărire pânză'}
-                      </button>
-                    )}
-                  </PDFDownloadLink>
-                )}
+                <a
+                  href={`/api/pdf/${schemaId}`}
+                  download
+                  className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  📄 Descarcă PDF schemă
+                </a>
+                <a
+                  href={`/api/pdf/${schemaId}?type=fabric`}
+                  download
+                  className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2"
+                >
+                  🖨️ Tipărire pe pânză (1:1)
+                </a>
               </div>
             )}
             {result && subscription?.plan === 'free_trial' && (

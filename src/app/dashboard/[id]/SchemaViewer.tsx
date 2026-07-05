@@ -1,20 +1,13 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
-import dynamic from 'next/dynamic'
-import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
-import { FabricPDF } from '@/lib/pdf/FabricPDF'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS, GEOMETRIC_SYMBOLS } from '@/lib/dmc/categoricalColors'
-
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
-  { ssr: false }
-)
 
 interface Props {
   schema: GeneratedSchema
   name: string
+  schemaId: string
   canDownloadPdf: boolean
   craftType: CraftType
   canvasType: CanvasType | null
@@ -64,10 +57,8 @@ function renderShapeSvg(symbol: string, color: string, size: number) {
   return <svg width={size} height={size} style={{ display: 'block', overflow: 'visible' }}>{shape}</svg>
 }
 
-export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasType }: Props) {
+export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType, canvasType }: Props) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
-  const [showSchemaPdf, setShowSchemaPdf] = useState(false)
-  const [showFabricPdf, setShowFabricPdf] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const schemaCanvasRef = useRef<HTMLCanvasElement>(null)
   const _cell = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
@@ -217,50 +208,20 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
 
         {canDownloadPdf ? (
           <div className="flex flex-wrap gap-2">
-            {!showSchemaPdf ? (
-              <button
-                onClick={() => setShowSchemaPdf(true)}
-                className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors text-sm"
-              >
-                📄 PDF schemă
-              </button>
-            ) : (
-              <PDFDownloadLink
-                document={<SchemaPDF schema={schema} name={name} craftType={craftType} canvasType={canvasType} />}
-                fileName={`${name.replace(/\s+/g, '-')}.pdf`}
-              >
-                {({ loading: pdfLoading }: { loading: boolean }) => (
-                  <button
-                    disabled={pdfLoading}
-                    className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-60 text-sm"
-                  >
-                    {pdfLoading ? '⏳ Generez... (10-30 sec)' : '⬇️ Descarcă PDF schemă'}
-                  </button>
-                )}
-              </PDFDownloadLink>
-            )}
-            {!showFabricPdf ? (
-              <button
-                onClick={() => setShowFabricPdf(true)}
-                className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm"
-              >
-                🖨️ Tipărire pânză (1:1)
-              </button>
-            ) : (
-              <PDFDownloadLink
-                document={<FabricPDF schema={schema} name={name} craftType={craftType} canvasType={canvasType ?? '14CT'} />}
-                fileName={`${name.replace(/\s+/g, '-')}-pinza.pdf`}
-              >
-                {({ loading: pdfLoading }: { loading: boolean }) => (
-                  <button
-                    disabled={pdfLoading}
-                    className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors disabled:opacity-60 text-sm"
-                  >
-                    {pdfLoading ? '⏳ Generez... (10-30 sec)' : '⬇️ Descarcă tipărire pânză'}
-                  </button>
-                )}
-              </PDFDownloadLink>
-            )}
+            <a
+              href={`/api/pdf/${schemaId}`}
+              download
+              className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors text-sm inline-flex items-center gap-2"
+            >
+              📄 PDF schemă
+            </a>
+            <a
+              href={`/api/pdf/${schemaId}?type=fabric`}
+              download
+              className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm inline-flex items-center gap-2"
+            >
+              🖨️ Tipărire pânză (1:1)
+            </a>
           </div>
         ) : (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-amber-700 text-sm">

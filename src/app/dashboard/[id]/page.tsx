@@ -113,6 +113,7 @@ export default async function SchemaDetailPage({ params }: Props) {
         <SchemaViewer
           schema={schemaData}
           name={schema.name}
+          schemaId={id}
           canDownloadPdf={canDownloadPdf}
           craftType={schema.craft_type}
           canvasType={schema.canvas_type}
