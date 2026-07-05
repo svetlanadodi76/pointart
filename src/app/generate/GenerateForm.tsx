@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { GeneratedSchema, DmcColor, ColorUsage, CraftType, CanvasType } from '@/types'
@@ -792,6 +792,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
   const [localColors, setLocalColors] = useState(() => buildColors(schema.colors, craftType))
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const schemaCanvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
@@ -825,6 +826,104 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
       }
     }
   }, [view, schema, effectiveColors])
+
+  // Randează schema pe canvas (înlocuiește grila DOM care crapa Chrome la >10k celule)
+  useEffect(() => {
+    if (view !== 'schema' || !schemaCanvasRef.current) return
+    const canvas = schemaCanvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const S = CELL_SIZE
+    const OX = 24  // offset left ruler
+    const OY = 14  // offset top ruler
+
+    canvas.width = schema.widthStitches * S + OX
+    canvas.height = schema.heightStitches * S + OY
+
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // Celule
+    for (let y = 0; y < schema.heightStitches; y++) {
+      for (let x = 0; x < schema.widthStitches; x++) {
+        const colorIdx = schema.grid[y][x]
+        const color = effectiveColors[colorIdx]
+        const px = OX + x * S
+        const py = OY + y * S
+
+        ctx.fillStyle = isGoblene
+          ? color.dmcColor.hex
+          : isCrossStitch
+            ? (color.isSolid ? (color.catColor ?? '#cccccc') : '#ffffff')
+            : color.dmcColor.hex
+        ctx.fillRect(px, py, S, S)
+
+        const sym = isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol
+        if (sym) {
+          ctx.fillStyle = isCrossStitch ? (color.catColor ?? '#cccccc') : contrastColor(color.dmcColor.hex)
+          ctx.font = `bold ${Math.max(S * 0.78, 8)}px monospace`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(sym, px + S / 2, py + S / 2)
+        }
+      }
+    }
+
+    // Linii grilă + riglă
+    ctx.font = '9px sans-serif'
+    for (let x = 0; x <= schema.widthStitches; x++) {
+      const px = OX + x * S
+      const isTen = x % 10 === 0
+      ctx.strokeStyle = isTen ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)'
+      ctx.lineWidth = isTen ? 0.6 : 0.3
+      ctx.beginPath(); ctx.moveTo(px, OY); ctx.lineTo(px, canvas.height); ctx.stroke()
+      if (isTen && x > 0) {
+        ctx.fillStyle = '#9ca3af'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'
+        ctx.fillText(String(x), px, OY - 2)
+      }
+    }
+    for (let y = 0; y <= schema.heightStitches; y++) {
+      const py = OY + y * S
+      const isTen = y % 10 === 0
+      ctx.strokeStyle = isTen ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)'
+      ctx.lineWidth = isTen ? 0.6 : 0.3
+      ctx.beginPath(); ctx.moveTo(OX, py); ctx.lineTo(canvas.width, py); ctx.stroke()
+      if (isTen && y > 0) {
+        ctx.fillStyle = '#9ca3af'; ctx.textAlign = 'right'; ctx.textBaseline = 'top'
+        ctx.fillText(String(y), OX - 2, py + 1)
+      }
+    }
+
+    // Highlight culoare selectată (editingIdx)
+    if (editingIdx !== null) {
+      ctx.strokeStyle = '#7c3aed'
+      ctx.lineWidth = 1.5
+      for (let y = 0; y < schema.heightStitches; y++) {
+        for (let x = 0; x < schema.widthStitches; x++) {
+          if (schema.grid[y][x] === editingIdx) {
+            ctx.strokeRect(OX + x * S + 0.75, OY + y * S + 0.75, S - 1.5, S - 1.5)
+          }
+        }
+      }
+    }
+  }, [view, schema, effectiveColors, isCrossStitch, isGoblene, CELL_SIZE, editingIdx])
+
+  const handleSchemaClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = schemaCanvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const OX = 24
+    const OY = 14
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const cx = Math.floor(((e.clientX - rect.left) * scaleX - OX) / CELL_SIZE)
+    const cy = Math.floor(((e.clientY - rect.top) * scaleY - OY) / CELL_SIZE)
+    if (cx >= 0 && cx < schema.widthStitches && cy >= 0 && cy < schema.heightStitches) {
+      const colorIdx = schema.grid[cy][cx]
+      setEditingIdx(prev => prev === colorIdx ? null : colorIdx)
+    }
+  }, [schema, CELL_SIZE])
 
   function swapColor(origIdx: number, newDmc: DmcColor) {
     setLocalColors(prev => prev.map((c, i) =>
@@ -866,87 +965,14 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
         </div>
       </div>
 
-      {/* Schema cu simboluri + riglă numerotată */}
+      {/* Schema cu simboluri — canvas (înlocuiește grila DOM care crapa Chrome la >10k celule) */}
       {view === 'schema' && (
         <div className="overflow-auto border border-gray-200 rounded-lg">
-          <div style={{ display: 'inline-block', minWidth: 'max-content' }}>
-            {/* Riglă sus */}
-            <div style={{ display: 'flex', paddingLeft: 24 }}>
-              {Array.from({ length: Math.floor(schema.widthStitches / 10) + 1 }, (_, i) => {
-                const col = i * 10
-                if (col >= schema.widthStitches) return null
-                return (
-                  <div
-                    key={col}
-                    style={{
-                      width: Math.min(10, schema.widthStitches - col) * CELL_SIZE,
-                      fontSize: 9, color: '#9ca3af', userSelect: 'none',
-                      paddingLeft: 1, lineHeight: '14px', flexShrink: 0,
-                    }}
-                  >
-                    {col === 0 ? '' : col}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Riglă stânga + grilă */}
-            <div style={{ display: 'flex' }}>
-              <div style={{ width: 24, position: 'relative', flexShrink: 0 }}>
-                {Array.from({ length: Math.floor(schema.heightStitches / 10) + 1 }, (_, i) => {
-                  const row = i * 10
-                  if (row >= schema.heightStitches) return null
-                  return (
-                    <div
-                      key={row}
-                      style={{
-                        position: 'absolute',
-                        top: row * CELL_SIZE,
-                        right: 2, left: 0,
-                        fontSize: 9, color: '#9ca3af',
-                        textAlign: 'right', lineHeight: 1,
-                        userSelect: 'none', paddingTop: 1,
-                      }}
-                    >
-                      {row === 0 ? '' : row}
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Grilă — folosește localColors pentru a reflecta swap-urile */}
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${schema.widthStitches}, ${CELL_SIZE}px)` }}>
-                {schema.grid.map((row, y) =>
-                  row.map((colorIdx, x) => {
-                    const color = effectiveColors[colorIdx]
-                    const isRuler = x % 10 === 0 || y % 10 === 0
-                    return (
-                      <div
-                        key={`${y}-${x}`}
-                        title={`${color.dmcColor.code} ${color.symbol}`}
-                        style={{
-                          width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: isGoblene
-                            ? color.dmcColor.hex
-                            : isCrossStitch
-                            ? (color.isSolid ? color.catColor : '#ffffff')
-                            : color.dmcColor.hex,
-                          border: isRuler ? '0.5px solid rgba(0,0,0,0.35)' : '0.5px solid rgba(0,0,0,0.15)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: Math.max(CELL_SIZE * 0.82, 10), fontWeight: 'bold',
-                          fontFamily: 'monospace',
-                          color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex),
-                          lineHeight: 1,
-                        }}
-                      >
-                        {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            </div>
-          </div>
+          <canvas
+            ref={schemaCanvasRef}
+            onClick={handleSchemaClick}
+            style={{ display: 'block', maxWidth: '100%', cursor: 'crosshair' }}
+          />
         </div>
       )}
 

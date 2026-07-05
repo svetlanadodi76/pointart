@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
 import { FabricPDF } from '@/lib/pdf/FabricPDF'
@@ -67,6 +67,7 @@ function renderShapeSvg(symbol: string, color: string, size: number) {
 export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasType }: Props) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const schemaCanvasRef = useRef<HTMLCanvasElement>(null)
   const CELL_SIZE = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
@@ -105,6 +106,85 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
       }
     }
   }, [view, schema])
+
+  useEffect(() => {
+    if (view !== 'schema' || !schemaCanvasRef.current) return
+    const canvas = schemaCanvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const S = CELL_SIZE
+    const OX = 28
+    const OY = 14
+
+    canvas.width = schema.widthStitches * S + OX
+    canvas.height = schema.heightStitches * S + OY
+
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    for (let y = 0; y < schema.heightStitches; y++) {
+      for (let x = 0; x < schema.widthStitches; x++) {
+        const color = colors[schema.grid[y][x]]
+        const px = OX + x * S
+        const py = OY + y * S
+
+        ctx.fillStyle = isCrossStitch
+          ? (color.isSolid ? (color.catColor ?? '#cccccc') : '#ffffff')
+          : color.dmcColor.hex
+        ctx.fillRect(px, py, S, S)
+
+        const sym = isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol
+        if (sym) {
+          ctx.fillStyle = isCrossStitch ? (color.catColor ?? '#cccccc') : contrastColor(color.dmcColor.hex)
+          ctx.font = `bold ${Math.max(S * 0.78, 8)}px monospace`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(sym, px + S / 2, py + S / 2)
+        }
+      }
+    }
+
+    ctx.font = '9px sans-serif'
+    for (let x = 0; x <= schema.widthStitches; x++) {
+      const px = OX + x * S
+      const isTen = x % 10 === 0
+      ctx.strokeStyle = isTen ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)'
+      ctx.lineWidth = isTen ? 0.6 : 0.3
+      ctx.beginPath(); ctx.moveTo(px, OY); ctx.lineTo(px, canvas.height); ctx.stroke()
+      if (isTen && x > 0) {
+        ctx.fillStyle = '#9ca3af'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'
+        ctx.fillText(String(x), px, OY - 2)
+      }
+    }
+    for (let y = 0; y <= schema.heightStitches; y++) {
+      const py = OY + y * S
+      const isTen = y % 10 === 0
+      ctx.strokeStyle = isTen ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)'
+      ctx.lineWidth = isTen ? 0.6 : 0.3
+      ctx.beginPath(); ctx.moveTo(OX, py); ctx.lineTo(canvas.width, py); ctx.stroke()
+      if (isTen && y > 0) {
+        ctx.fillStyle = '#9ca3af'; ctx.textAlign = 'right'; ctx.textBaseline = 'top'
+        ctx.fillText(String(y), OX - 2, py + 1)
+      }
+    }
+  }, [view, schema, colors, isCrossStitch, CELL_SIZE])
+
+  const handleSchemaClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = schemaCanvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const OX = 28; const OY = 14
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const cx = Math.floor(((e.clientX - rect.left) * scaleX - OX) / CELL_SIZE)
+    const cy = Math.floor(((e.clientY - rect.top) * scaleY - OY) / CELL_SIZE)
+    if (cx >= 0 && cx < schema.widthStitches && cy >= 0 && cy < schema.heightStitches) {
+      const color = colors[schema.grid[cy][cx]]
+      // Afișează info culoare în consolă (util pentru debugging)
+      console.log(`(${cx},${cy}) DMC ${color.dmcColor.code} — ${color.dmcColor.name}`)
+    }
+  }, [schema, colors, CELL_SIZE])
 
   return (
     <div className="space-y-6">
@@ -165,93 +245,14 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
         )}
       </div>
 
-      {/* Schema cu simboluri + riglă */}
+      {/* Schema cu simboluri — canvas (previne crash Chrome la scheme mari) */}
       {view === 'schema' && (
-        <div className="overflow-auto border border-gray-200 rounded-xl bg-white">
-          <div style={{ display: 'inline-block', minWidth: 'max-content', padding: 8 }}>
-            {/* Riglă sus */}
-            <div style={{ display: 'flex', paddingLeft: 28 }}>
-              {Array.from({ length: Math.floor(schema.widthStitches / 10) + 1 }, (_, i) => {
-                const col = i * 10
-                if (col >= schema.widthStitches) return null
-                return (
-                  <div
-                    key={col}
-                    style={{
-                      width: Math.min(10, schema.widthStitches - col) * CELL_SIZE,
-                      fontSize: 9, color: '#9ca3af', userSelect: 'none',
-                      paddingLeft: 1, lineHeight: '14px', flexShrink: 0,
-                    }}
-                  >
-                    {col === 0 ? '' : col}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Riglă stânga + grilă */}
-            <div style={{ display: 'flex' }}>
-              <div style={{ width: 28, position: 'relative', flexShrink: 0 }}>
-                {Array.from({ length: Math.floor(schema.heightStitches / 10) + 1 }, (_, i) => {
-                  const row = i * 10
-                  if (row >= schema.heightStitches) return null
-                  return (
-                    <div
-                      key={row}
-                      style={{
-                        position: 'absolute', top: row * CELL_SIZE,
-                        right: 2, left: 0,
-                        fontSize: 9, color: '#9ca3af',
-                        textAlign: 'right', lineHeight: 1,
-                        userSelect: 'none', paddingTop: 1,
-                      }}
-                    >
-                      {row === 0 ? '' : row}
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${schema.widthStitches}, ${CELL_SIZE}px)` }}>
-                {schema.grid.map((row, y) =>
-                  row.map((colorIdx, x) => {
-                    const color = colors[colorIdx]
-                    const isRuler = x % 10 === 0 || y % 10 === 0
-                    return (
-                      <div
-                        key={`${y}-${x}`}
-                        title={`(${x},${y}) ${color.dmcColor.code} ${color.symbol}`}
-                        style={{
-                          width: CELL_SIZE, height: CELL_SIZE,
-                          backgroundColor: isCrossStitch
-                            ? (color.isSolid ? color.catColor : '#ffffff')
-                            : color.dmcColor.hex,
-                          border: isRuler ? '0.5px solid rgba(0,0,0,0.35)' : '0.5px solid rgba(0,0,0,0.15)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: Math.max(CELL_SIZE * 0.88, 11), fontWeight: 'bold',
-                          fontFamily: 'monospace',
-                          color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex),
-                          lineHeight: 1,
-                        }}
-                      >
-                        {isGoblene
-                          ? (GEOMETRIC_SYMBOLS.has(color.symbol)
-                              ? renderShapeSvg(color.symbol, contrastColor(color.dmcColor.hex), CELL_SIZE - 2)
-                              : color.symbol)
-                          : isCrossStitch
-                          ? (color.isSolid ? '' : (
-                              GEOMETRIC_SYMBOLS.has(color.symbol)
-                                ? renderShapeSvg(color.symbol, color.catColor, CELL_SIZE - 2)
-                                : color.symbol
-                            ))
-                          : color.symbol}
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            </div>
-          </div>
+        <div className="overflow-auto border border-gray-200 rounded-xl bg-white p-2">
+          <canvas
+            ref={schemaCanvasRef}
+            onClick={handleSchemaClick}
+            style={{ display: 'block', maxWidth: '100%', cursor: 'crosshair' }}
+          />
         </div>
       )}
 
