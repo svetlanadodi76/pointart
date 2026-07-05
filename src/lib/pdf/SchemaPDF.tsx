@@ -253,7 +253,7 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                         stroke={isCrossStitch ? '#cccccc' : '#555555'}
                         strokeWidth={isCrossStitch ? 0.5 : 0.35}
                       />
-                      {!isGoblene && cellSize >= 5 && (!isCrossStitch || !color.isSolid) && !!color.symbol && (
+                      {cellSize >= 5 && !!color.symbol && (isGoblene || !isCrossStitch || !color.isSolid) && (
                         GEOMETRIC_SYMBOLS.has(color.symbol)
                           ? renderGeometricShape(color.symbol, x, y, cellSize, symbolColor)
                           : (
@@ -300,9 +300,18 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
                   {sortedColors.map((color, i) => (
                     <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
                       <Text style={styles.legendNum}>{i + 1}</Text>
-                      {isGoblene ? (
-                        /* Goblen — pătrat colorat plin, fără simbol */
-                        <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]} />
+                      {isGoblene && GEOMETRIC_SYMBOLS.has(color.symbol) ? (
+                        /* Goblen — fundal colorat + formă geometrică contrast */
+                        <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
+                          <Svg width={16} height={16} viewBox="0 0 16 16">
+                            {renderGeometricShape(color.symbol, 0, 0, 16, contrastColor(color.dmcColor.hex))}
+                          </Svg>
+                        </View>
+                      ) : isGoblene ? (
+                        /* Goblen — fundal colorat + simbol text contrast */
+                        <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
+                          <Text style={[styles.legendSymbolText, { color: contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
+                        </View>
                       ) : isCrossStitch && color.isSolid ? (
                         /* Culoare plină — fără simbol */
                         <View style={[styles.legendSymbol, { backgroundColor: color.catColor, borderWidth: 0.5, borderColor: '#ccc' }]} />

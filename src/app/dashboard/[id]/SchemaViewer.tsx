@@ -117,7 +117,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
               view === 'schema' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            📐 {isGoblene ? 'Schema (culori + grilă)' : 'Schema (cu simboluri)'}
+            📐 {isGoblene ? 'Schema (culori + simboluri)' : 'Schema (cu simboluri)'}
           </button>
           <button
             onClick={() => setView('final')}
@@ -235,7 +235,9 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                         }}
                       >
                         {isGoblene
-                          ? null
+                          ? (GEOMETRIC_SYMBOLS.has(color.symbol)
+                              ? renderShapeSvg(color.symbol, contrastColor(color.dmcColor.hex), CELL_SIZE - 2)
+                              : color.symbol)
                           : isCrossStitch
                           ? (color.isSolid ? '' : (
                               GEOMETRIC_SYMBOLS.has(color.symbol)
@@ -274,7 +276,7 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
         {/* Header tabel */}
         <div className={`grid ${isCrossStitch ? 'grid-cols-[28px_52px_1fr_auto]' : 'grid-cols-[28px_28px_1fr_auto]'} gap-x-3 pb-1.5 mb-1 border-b border-gray-200`}>
           <span className="text-[10px] font-semibold text-gray-400 text-center">#</span>
-          <span className="text-[10px] font-semibold text-gray-400 text-center">{isCrossStitch ? 'Simbol' : 'Culoare'}</span>
+          <span className="text-[10px] font-semibold text-gray-400 text-center">Simbol</span>
           <span className="text-[10px] font-semibold text-gray-400">Culoare DMC</span>
           <span className="text-[10px] font-semibold text-gray-400 text-right">Cantitate</span>
         </div>
@@ -319,7 +321,9 @@ export function SchemaViewer({ schema, name, canDownloadPdf, craftType, canvasTy
                     className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono"
                     style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}
                   >
-                    {isGoblene ? null : color.symbol}
+                    {GEOMETRIC_SYMBOLS.has(color.symbol)
+                      ? renderShapeSvg(color.symbol, contrastColor(color.dmcColor.hex), 20)
+                      : color.symbol}
                   </div>
                 )}
 

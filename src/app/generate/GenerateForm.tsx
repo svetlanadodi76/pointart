@@ -938,7 +938,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
                           lineHeight: 1,
                         }}
                       >
-                        {isGoblene ? null : isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
+                        {isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol}
                       </div>
                     )
                   })
