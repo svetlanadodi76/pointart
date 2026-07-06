@@ -156,7 +156,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                           → Premium AI
                         </button>
                       )}
-                      {u.status === 'active' && (
+                      {u.status !== 'expired' && (
                         <button
                           onClick={() => handleDeactivate(u.user_id, u.email)}
                           className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg transition-colors"
