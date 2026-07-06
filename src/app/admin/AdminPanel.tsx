@@ -136,7 +136,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      {u.plan !== 'starter' && (
+                      {(u.plan !== 'starter' || u.status === 'expired') && (
                         <button
                           onClick={() => openModal(u.user_id, u.email, 'starter')}
                           className="text-xs bg-violet-50 text-violet-700 hover:bg-violet-100 px-2 py-1 rounded-lg font-medium transition-colors"
@@ -144,7 +144,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                           → Starter
                         </button>
                       )}
-                      {u.plan !== 'pro' && (
+                      {(u.plan !== 'pro' || u.status === 'expired') && (
                         <button
                           onClick={() => openModal(u.user_id, u.email, 'pro')}
                           className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2 py-1 rounded-lg font-medium transition-colors"
@@ -152,7 +152,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                           → Pro
                         </button>
                       )}
-                      {u.plan !== 'premium' && (
+                      {(u.plan !== 'premium' || u.status === 'expired') && (
                         <button
                           onClick={() => openModal(u.user_id, u.email, 'premium')}
                           className="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 px-2 py-1 rounded-lg font-medium transition-colors"
