@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { activateStarter, activatePro, activatePremium, deactivateUser } from './actions'
+import { activateStarter, activatePro, activatePremium, deactivateUser, reactivateUser } from './actions'
 
 interface UserRow {
   user_id: string
@@ -82,6 +82,10 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
     startTransition(() => deactivateUser(userId, userEmail))
   }
 
+  const handleReactivate = (userId: string, userEmail: string) => {
+    startTransition(() => reactivateUser(userId, userEmail))
+  }
+
   return (
     <>
       {/* Căutare */}
@@ -154,6 +158,14 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                           className="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 px-2 py-1 rounded-lg font-medium transition-colors"
                         >
                           → Premium AI
+                        </button>
+                      )}
+                      {u.status === 'cancelled' && (
+                        <button
+                          onClick={() => handleReactivate(u.user_id, u.email)}
+                          className="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-2 py-1 rounded-lg font-medium transition-colors"
+                        >
+                          Reactivează
                         </button>
                       )}
                       {u.status !== 'expired' && (

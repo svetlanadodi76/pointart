@@ -156,3 +156,22 @@ export async function deactivateUser(userId: string, userEmail: string) {
 
   revalidatePath('/admin')
 }
+
+export async function reactivateUser(userId: string, userEmail: string) {
+  await checkAdmin()
+  const admin = createAdminClient()
+
+  await admin.from('subscriptions').update({
+    status: 'active',
+  }).eq('user_id', userId)
+
+  await admin.from('subscription_logs').insert({
+    user_id: userId,
+    user_email: userEmail,
+    event: 'reactivated',
+    plan: null,
+    note: 'reactivat manual de admin',
+  })
+
+  revalidatePath('/admin')
+}
