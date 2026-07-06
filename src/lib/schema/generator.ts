@@ -289,7 +289,7 @@ export async function generateSchema(
     let unit: 'skeins' | 'packets' | 'wool_skeins' | 'silk_skeins' | 'cotton_skeins'
 
     if (settings.craftType === 'diamond') {
-      quantity = Math.max(1, Math.ceil(count / 200))
+      quantity = Math.max(1, Math.ceil(count / 100))
       unit = 'packets'
     } else if (settings.craftType === 'goblene') {
       // Acoperire estimativă (puncte per sculă 8m) per tip ață × densitate mesh

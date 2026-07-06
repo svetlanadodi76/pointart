@@ -13,7 +13,7 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: 'strict' as const,
   path: '/admin',
-  maxAge: 60 * 60 * 24 * 365 * 10, // 10 ani = permanent practic
+  maxAge: 60 * 60 * 24 * 30, // 30 zile
 }
 
 async function verifyAdminEmail() {

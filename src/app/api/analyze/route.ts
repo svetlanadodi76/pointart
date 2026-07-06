@@ -3,11 +3,22 @@ import { createClient } from '@/lib/supabase/server'
 import { getSubscription } from '@/lib/supabase/getSubscription'
 import { analyzeImage } from '@/lib/schema/analyzeImage'
 
+// Rate limit: max 1 analiză la 30s per utilizator (best-effort, per instanță serverless)
+const analyzeLimiter = new Map<string, number>()
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
+
+  const now = Date.now()
+  const lastAnalyze = analyzeLimiter.get(user.id) ?? 0
+  if (now - lastAnalyze < 30_000) {
+    const wait = Math.ceil((30_000 - (now - lastAnalyze)) / 1000)
+    return NextResponse.json({ error: `Așteaptă ${wait} secunde între analize.` }, { status: 429 })
+  }
+  analyzeLimiter.set(user.id, now)
 
   const subscription = await getSubscription(supabase, user.id)
   if (!subscription || subscription.status !== 'active') {

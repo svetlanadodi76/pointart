@@ -8,5 +8,11 @@
       "maxDuration": 30,
       "memory": 512
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/expiry-reminder",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

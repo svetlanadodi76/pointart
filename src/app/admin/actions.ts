@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { sendActivationEmail } from '@/lib/email/resend'
 
 async function checkAdmin() {
   const supabase = await createClient()
@@ -48,6 +49,8 @@ export async function activateStarter(
     note: note ?? null,
   })
 
+  try { await sendActivationEmail({ toEmail: userEmail, plan: 'starter', periodEnd: null }) } catch {}
+
   revalidatePath('/admin')
 }
 
@@ -88,6 +91,8 @@ export async function activatePro(
     note: note ?? null,
   })
 
+  try { await sendActivationEmail({ toEmail: userEmail, plan: 'pro', periodEnd }) } catch {}
+
   revalidatePath('/admin')
 }
 
@@ -127,6 +132,8 @@ export async function activatePremium(
     plan: 'premium',
     note: note ?? null,
   })
+
+  try { await sendActivationEmail({ toEmail: userEmail, plan: 'premium', periodEnd }) } catch {}
 
   revalidatePath('/admin')
 }

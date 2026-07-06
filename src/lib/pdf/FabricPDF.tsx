@@ -50,8 +50,10 @@ export function FabricPDF({
     const rankMap = new Map<number, { catColor: string; symbol: string; isSolid: boolean }>()
     sorted.forEach(([origIdx], rank) => rankMap.set(origIdx, {
       catColor: getCategoricalColor(rank),
-      symbol: rank >= SOLID_THRESHOLD ? (SIMPLE_SYMBOLS[rank - SOLID_THRESHOLD] ?? '?') : '',
-      isSolid: rank < SOLID_THRESHOLD,
+      symbol: isCrossStitch
+        ? (rank >= SOLID_THRESHOLD ? (SIMPLE_SYMBOLS[rank - SOLID_THRESHOLD] ?? '?') : '')
+        : (SIMPLE_SYMBOLS[rank % SIMPLE_SYMBOLS.length] ?? '?'),
+      isSolid: isCrossStitch ? rank < SOLID_THRESHOLD : false,
     }))
     return colors.map((c, i) => {
       const r = rankMap.get(i) ?? { catColor: '#cccccc', symbol: '', isSolid: false }

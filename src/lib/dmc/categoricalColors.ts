@@ -106,15 +106,16 @@ export function getCategoricalColor(rank: number): string {
 export const SOLID_THRESHOLD = 20
 
 // 70 simboluri distincte pentru ranks 20-89 (scheme cu până la 90 culori)
+// NUMAI ASCII — fără Unicode geometric (▲●■ etc.) care nu se randează corect în fontul PDF
 export const SIMPLE_SYMBOLS = [
   // ranks 20-27
   '+', 'X', 'n', '-', '=', 'a', 'k', '~',
   // ranks 28-35
   '1', '5', '6', '9', 'T', 'Y', 'L', 'm',
-  // ranks 36-51 — forme geometrice (triangle, cerc, patrat, romb, jumatati)
-  '▲', '▼', '◀', '▶', '●', '○',
-  '■', '□', '◆', '◇', '◐', '◑',
-  '◒', '◓', '▣', '▤',
+  // ranks 36-51 — ASCII distincte (înlocuiesc fostele simboluri geometrice)
+  'V', 'J', 'C', 'U', 'G', 'F',
+  'H', 'N', 'K', '2', '3', '4',
+  '7', '8', '0', 'I',
   // ranks 52-59
   'S', 'O', '#', '@', '/', 'A', 'E', 'R',
   // ranks 60-65

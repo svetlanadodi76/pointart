@@ -110,8 +110,10 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
     const rankMap = new Map<number, { catColor: string; symbol: string; isSolid: boolean }>()
     sorted.forEach(([origIdx], rank) => rankMap.set(origIdx, {
       catColor: getCategoricalColor(rank),
-      symbol: rank >= SOLID_THRESHOLD ? (SIMPLE_SYMBOLS[rank - SOLID_THRESHOLD] ?? '?') : '',
-      isSolid: rank < SOLID_THRESHOLD,
+      symbol: isCrossStitch
+        ? (rank >= SOLID_THRESHOLD ? (SIMPLE_SYMBOLS[rank - SOLID_THRESHOLD] ?? '?') : '')
+        : (SIMPLE_SYMBOLS[rank % SIMPLE_SYMBOLS.length] ?? '?'),
+      isSolid: isCrossStitch ? rank < SOLID_THRESHOLD : false,
     }))
     return schema.colors.map((c, i) => ({
       ...c,
@@ -296,50 +298,57 @@ export function SchemaPDF({ schema, name = 'Schema PointArt', craftType = 'cross
             {pageIdx === 0 && (
               <View>
                 <Text style={styles.legendTitle}>Culori folosite ({colors.length})</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                  {sortedColors.map((color, i) => (
-                    <View key={i} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
-                      <Text style={styles.legendNum}>{i + 1}</Text>
-                      {isGoblene && GEOMETRIC_SYMBOLS.has(color.symbol) ? (
-                        /* Goblen — fundal colorat + formă geometrică contrast */
-                        <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
-                          <Svg width={16} height={16} viewBox="0 0 16 16">
-                            {renderGeometricShape(color.symbol, 0, 0, 16, contrastColor(color.dmcColor.hex))}
-                          </Svg>
-                        </View>
-                      ) : isGoblene ? (
-                        /* Goblen — fundal colorat + simbol text contrast */
-                        <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
-                          <Text style={[styles.legendSymbolText, { color: contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
-                        </View>
-                      ) : isCrossStitch && color.isSolid ? (
-                        /* Culoare plină — fără simbol */
-                        <View style={[styles.legendSymbol, { backgroundColor: color.catColor, borderWidth: 0.5, borderColor: '#ccc' }]} />
-                      ) : isCrossStitch && GEOMETRIC_SYMBOLS.has(color.symbol) ? (
-                        /* Formă geometrică — SVG în legendă */
-                        <View style={[styles.legendSymbol, { backgroundColor: '#ffffff', borderWidth: 0.5, borderColor: '#ccc' }]}>
-                          <Svg width={16} height={16} viewBox="0 0 16 16">
-                            {renderGeometricShape(color.symbol, 0, 0, 16, color.catColor)}
-                          </Svg>
-                        </View>
-                      ) : (
-                        /* Simbol text (sau DMC pentru diamante) */
-                        <View style={[styles.legendSymbol, { backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
-                          <Text style={[styles.legendSymbolText, { color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
-                        </View>
-                      )}
-                      {/* Pătrat mic cu culoarea reală DMC (doar pentru cross-stitch) */}
-                      {isCrossStitch && (
-                        <View style={{ width: 8, height: 16, backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc', marginRight: 3 }} />
-                      )}
-                      <Text style={styles.legendCode}>DMC {color.dmcColor.code}</Text>
-                      <Text style={styles.legendQty}>
-                        {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'}
-                      </Text>
-                      <Text style={styles.legendPct}>{color.count} pct.</Text>
-                      <Text style={styles.legendName}>{color.dmcColor.name}</Text>
-                    </View>
-                  ))}
+                {!isCrossStitch && !isGoblene && (
+                  <Text style={{ fontSize: 8, color: '#6b7280', marginBottom: 4, marginTop: -4 }}>1 pach. = 100 buc. diamante</Text>
+                )}
+                <View style={{ flexDirection: 'column' }}>
+                  {Array.from({ length: Math.ceil(sortedColors.length / 2) }, (_, rowIdx) => {
+                    const left = sortedColors[rowIdx * 2]
+                    const right = sortedColors[rowIdx * 2 + 1]
+                    const renderEntry = (color: typeof left, idx: number) => (
+                      <View key={idx} style={[styles.legendRow, { width: '50%', paddingRight: 6 }]}>
+                        <Text style={styles.legendNum}>{idx + 1}</Text>
+                        {isGoblene && GEOMETRIC_SYMBOLS.has(color.symbol) ? (
+                          <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
+                            <Svg width={16} height={16} viewBox="0 0 16 16">
+                              {renderGeometricShape(color.symbol, 0, 0, 16, contrastColor(color.dmcColor.hex))}
+                            </Svg>
+                          </View>
+                        ) : isGoblene ? (
+                          <View style={[styles.legendSymbol, { backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
+                            <Text style={[styles.legendSymbolText, { color: contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
+                          </View>
+                        ) : isCrossStitch && color.isSolid ? (
+                          <View style={[styles.legendSymbol, { backgroundColor: color.catColor, borderWidth: 0.5, borderColor: '#ccc' }]} />
+                        ) : isCrossStitch && GEOMETRIC_SYMBOLS.has(color.symbol) ? (
+                          <View style={[styles.legendSymbol, { backgroundColor: '#ffffff', borderWidth: 0.5, borderColor: '#ccc' }]}>
+                            <Svg width={16} height={16} viewBox="0 0 16 16">
+                              {renderGeometricShape(color.symbol, 0, 0, 16, color.catColor)}
+                            </Svg>
+                          </View>
+                        ) : (
+                          <View style={[styles.legendSymbol, { backgroundColor: isCrossStitch ? '#ffffff' : color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc' }]}>
+                            <Text style={[styles.legendSymbolText, { color: isCrossStitch ? color.catColor : contrastColor(color.dmcColor.hex) }]}>{color.symbol}</Text>
+                          </View>
+                        )}
+                        {isCrossStitch && (
+                          <View style={{ width: 8, height: 16, backgroundColor: color.dmcColor.hex, borderWidth: 0.5, borderColor: '#ccc', marginRight: 3 }} />
+                        )}
+                        <Text style={styles.legendCode}>DMC {color.dmcColor.code}</Text>
+                        <Text style={styles.legendQty}>
+                          {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'}
+                        </Text>
+                        <Text style={styles.legendPct}>{color.count} pct.</Text>
+                        <Text style={styles.legendName}>{color.dmcColor.name}</Text>
+                      </View>
+                    )
+                    return (
+                      <View key={rowIdx} style={{ flexDirection: 'row', width: '100%' }} wrap={false}>
+                        {renderEntry(left, rowIdx * 2)}
+                        {right ? renderEntry(right, rowIdx * 2 + 1) : <View style={{ width: '50%' }} />}
+                      </View>
+                    )
+                  })}
                 </View>
               </View>
             )}

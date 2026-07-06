@@ -33,6 +33,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [imgBrightness, setImgBrightness] = useState(1.0)
   const [imgContrast, setImgContrast] = useState(1.0)
   const [imgSaturation, setImgSaturation] = useState(1.0)
+  const [portraitMode, setPortraitMode] = useState(false)
   const [variants, setVariants] = useState<Array<{ schema: GeneratedSchema; nColors: number }> | null>(null)
   const [activeVariant, setActiveVariant] = useState(0)
   const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
@@ -69,6 +70,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     setImgBrightness(1.0)
     setImgContrast(1.0)
     setImgSaturation(1.0)
+    setPortraitMode(false)
     if (fileRef.current) fileRef.current.value = ''
 
     const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
@@ -203,7 +205,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-gray-400 hover:text-gray-600">←</Link>
+            <Link href="/dashboard" className="flex items-center gap-1 text-gray-400 hover:text-violet-700 hover:bg-violet-50 rounded-lg px-2 py-1 transition-colors cursor-pointer select-none">
+              <span className="text-lg leading-none">←</span>
+              <span className="text-sm font-medium">Dashboard</span>
+            </Link>
             <div className="flex items-center gap-2">
               <span className="text-xl">🧵</span>
               <span className="font-bold text-violet-700">PointArt</span>
@@ -272,9 +277,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     <h2 className="font-semibold text-gray-900">✨ Ajustare imagine</h2>
                     <p className="text-xs text-gray-400">Preview instant — se aplică la generare</p>
                   </div>
-                  {(imgBrightness !== 1 || imgContrast !== 1 || imgSaturation !== 1) && (
+                  {(imgBrightness !== 1 || imgContrast !== 1 || imgSaturation !== 1 || portraitMode) && (
                     <button
-                      onClick={() => { setImgBrightness(1); setImgContrast(1); setImgSaturation(1) }}
+                      onClick={() => { setImgBrightness(1); setImgContrast(1); setImgSaturation(1); setPortraitMode(false) }}
                       className="text-xs text-gray-400 hover:text-violet-600 transition-colors"
                     >
                       ↺ Reset
@@ -301,6 +306,33 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       />
                     </div>
                   ))}
+                </div>
+
+                <div className="pt-3 mt-1 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      const next = !portraitMode
+                      setPortraitMode(next)
+                      setImgSaturation(next ? 0.78 : 1.0)
+                      if (result) setSettingsChanged(true)
+                    }}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full ${
+                      portraitMode
+                        ? 'bg-violet-50 text-violet-700 border border-violet-200'
+                        : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 hover:text-gray-700'
+                    }`}
+                  >
+                    <span className="text-base">👤</span>
+                    <div className="text-left flex-1">
+                      <div className="leading-tight">Mod portret</div>
+                      <div className="text-xs font-normal opacity-60 leading-tight">Saturație redusă pentru ten deschis</div>
+                    </div>
+                    <div className={`w-8 h-5 rounded-full transition-colors flex items-center px-0.5 ${
+                      portraitMode ? 'bg-violet-600 justify-end' : 'bg-gray-300 justify-start'
+                    }`}>
+                      <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                    </div>
+                  </button>
                 </div>
               </div>
             )}
