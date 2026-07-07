@@ -55,8 +55,17 @@ export default async function DashboardPage() {
     }
   }
 
+  // Afișează un singur card per imagine — schema primară = prima (cea mai recentă, sorted DESC)
+  const seenHashes = new Set<string>()
+  const primarySchemaList = schemaList.filter(s => {
+    if (!s.image_hash) return true
+    if (seenHashes.has(s.image_hash)) return false
+    seenHashes.add(s.image_hash)
+    return true
+  })
+
   // Signed URLs batch pentru thumbnail-uri (bucket privat)
-  const imagePaths = schemaList.map(s => s.original_image_url).filter(Boolean) as string[]
+  const imagePaths = primarySchemaList.map(s => s.original_image_url).filter(Boolean) as string[]
   const signedUrlMap = new Map<string, string>()
   if (imagePaths.length > 0) {
     const { data: signedData } = await supabase.storage.from('images').createSignedUrls(imagePaths, 3600)
@@ -69,12 +78,12 @@ export default async function DashboardPage() {
 
   // Extrage folderele existente (unice, fără null)
   const existingFolders: string[] = [...new Set(
-    schemaList.map(s => s.folder).filter(Boolean) as string[]
+    primarySchemaList.map(s => s.folder).filter(Boolean) as string[]
   )].sort()
 
   // Grupare scheme pe foldere
   const grouped = new Map<string, SchemaRow[]>()
-  for (const schema of schemaList) {
+  for (const schema of primarySchemaList) {
     const key = schema.folder ?? ''
     if (!grouped.has(key)) grouped.set(key, [])
     grouped.get(key)!.push(schema)
