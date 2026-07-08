@@ -1,5 +1,3 @@
-import sharp from 'sharp'
-
 export interface CanvasRecommendation {
   canvasType: string
   stitchesPerCm: number
@@ -36,6 +34,8 @@ const CANVAS_CONFIG = [
 ]
 
 export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult> {
+  const sharp = (await import('sharp')).default
+
   const meta = await sharp(imageBuffer).metadata()
   const origW = meta.width ?? 800
   const origH = meta.height ?? 600

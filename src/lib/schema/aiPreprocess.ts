@@ -1,5 +1,3 @@
-import sharp from 'sharp'
-
 export interface PreprocessResult {
   buffer: Buffer
   steps: {
@@ -10,6 +8,7 @@ export interface PreprocessResult {
 }
 
 export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResult> {
+  const sharp = (await import('sharp')).default
   const steps = { upscaled: false, faceEnhanced: false, sharpened: false }
 
   if (!process.env.REPLICATE_API_TOKEN) {

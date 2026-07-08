@@ -1,4 +1,3 @@
-import sharp from 'sharp'
 import { findNearestDmc, loadDmcColors, addLabToColors, findNearestByLab, type DmcColor, type DmcColorWithLab } from '@/lib/dmc/matching'
 import { rgbToLab, ciede2000 } from '@/lib/dmc/colorSpace'
 import { assignSymbols } from '@/lib/dmc/symbols'
@@ -94,6 +93,7 @@ export async function generateSchema(
     imgSaturation?: number
   }
 ): Promise<GeneratedSchema> {
+  const sharp = (await import('sharp')).default
   const config = CANVAS_CONFIG[settings.canvasType]
   const widthStitches = Math.round(settings.widthCm * config.stitchesPerCm)
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
