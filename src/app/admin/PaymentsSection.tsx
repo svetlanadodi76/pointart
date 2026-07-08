@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { updatePayment, deletePayment } from './actions'
 
 interface PaymentRow {
   id: string
@@ -17,19 +18,28 @@ const MONTHS = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie',
 const PLAN_COLORS: Record<string, string> = {
   starter: 'bg-violet-100 text-violet-700',
   pro: 'bg-indigo-100 text-indigo-700',
+  premium: 'bg-amber-100 text-amber-700',
+}
+
+const PLAN_LABELS: Record<string, string> = {
+  starter: 'Starter', pro: 'Pro', premium: 'Premium AI',
 }
 
 export function PaymentsSection({ payments }: { payments: PaymentRow[] }) {
   const [selectedYear, setSelectedYear]   = useState('all')
   const [selectedMonth, setSelectedMonth] = useState('all')
+  const [editRow, setEditRow]             = useState<PaymentRow | null>(null)
+  const [editEur, setEditEur]             = useState('')
+  const [editMdl, setEditMdl]             = useState('')
+  const [editNote, setEditNote]           = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [isPending, startTransition]      = useTransition()
 
-  // Ani disponibili: de la 2025 până la curent + orice an din tranzacții
   const currentYear = new Date().getFullYear()
   const yearSet = new Set(payments.map(p => new Date(p.created_at).getFullYear()))
   for (let y = 2025; y <= currentYear; y++) yearSet.add(y)
   const years = [...yearSet].sort((a, b) => b - a)
 
-  // Filtrare
   const filtered = payments.filter(p => {
     const d = new Date(p.created_at)
     if (selectedYear  !== 'all' && d.getFullYear() !== Number(selectedYear))  return false
@@ -40,54 +50,57 @@ export function PaymentsSection({ payments }: { payments: PaymentRow[] }) {
   const totalEur = filtered.reduce((s, p) => s + (p.amount_eur ?? 0), 0)
   const totalMdl = filtered.reduce((s, p) => s + (p.amount_mdl ?? 0), 0)
 
+  function openEdit(p: PaymentRow) {
+    setEditRow(p)
+    setEditEur(p.amount_eur?.toString() ?? '')
+    setEditMdl(p.amount_mdl?.toString() ?? '')
+    setEditNote(p.note ?? '')
+  }
+
+  function handleSaveEdit() {
+    if (!editRow) return
+    startTransition(async () => {
+      await updatePayment(
+        editRow.id,
+        editEur ? parseFloat(editEur) : null,
+        editMdl ? parseFloat(editMdl) : null,
+        editNote || null,
+      )
+      setEditRow(null)
+    })
+  }
+
+  function handleDelete(id: string) {
+    if (confirmDeleteId !== id) { setConfirmDeleteId(id); return }
+    setConfirmDeleteId(null)
+    startTransition(async () => { await deletePayment(id) })
+  }
+
   return (
     <>
       {/* Filtre */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <select
-          value={selectedYear}
-          onChange={e => { setSelectedYear(e.target.value); setSelectedMonth('all') }}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white"
-        >
+        <select value={selectedYear} onChange={e => { setSelectedYear(e.target.value); setSelectedMonth('all') }}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white">
           <option value="all">Toți anii</option>
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
-
-        <select
-          value={selectedMonth}
-          onChange={e => setSelectedMonth(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white"
-        >
+        <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white">
           <option value="all">Toate lunile</option>
-          {MONTHS.map((name, i) => (
-            <option key={i + 1} value={i + 1}>{name}</option>
-          ))}
+          {MONTHS.map((name, i) => <option key={i + 1} value={i + 1}>{name}</option>)}
         </select>
-
         {(selectedYear !== 'all' || selectedMonth !== 'all') && (
-          <button
-            onClick={() => { setSelectedYear('all'); setSelectedMonth('all') }}
-            className="text-xs text-gray-400 hover:text-gray-600 underline"
-          >
-            Resetează
-          </button>
+          <button onClick={() => { setSelectedYear('all'); setSelectedMonth('all') }}
+            className="text-xs text-gray-400 hover:text-gray-600 underline">Resetează</button>
         )}
       </div>
 
       {/* Totaluri */}
       <div className="flex flex-wrap items-center gap-6 mb-5">
-        <div>
-          <p className="text-xs text-gray-400">Total EUR</p>
-          <p className="text-xl font-bold text-violet-700">{totalEur.toFixed(2)} €</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-400">Total MDL</p>
-          <p className="text-xl font-bold text-indigo-700">{totalMdl.toFixed(0)} MDL</p>
-        </div>
-        <div className="ml-auto">
-          <p className="text-xs text-gray-400">Tranzacții</p>
-          <p className="text-xl font-bold text-gray-700">{filtered.length}</p>
-        </div>
+        <div><p className="text-xs text-gray-400">Total EUR</p><p className="text-xl font-bold text-violet-700">{totalEur.toFixed(2)} €</p></div>
+        <div><p className="text-xs text-gray-400">Total MDL</p><p className="text-xl font-bold text-indigo-700">{totalMdl.toFixed(0)} MDL</p></div>
+        <div className="ml-auto"><p className="text-xs text-gray-400">Tranzacții</p><p className="text-xl font-bold text-gray-700">{filtered.length}</p></div>
       </div>
 
       {filtered.length === 0 ? (
@@ -105,33 +118,80 @@ export function PaymentsSection({ payments }: { payments: PaymentRow[] }) {
                 <th className="text-right px-4 py-3 font-semibold text-gray-700">EUR</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-700">MDL</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-700">Notă</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-700">Acțiuni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                    {new Date(p.created_at).toLocaleDateString('ro-RO', {
-                      day: '2-digit', month: '2-digit', year: 'numeric',
-                    })}
+                    {new Date(p.created_at).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </td>
                   <td className="px-4 py-3 text-gray-900 font-medium max-w-[160px] truncate">{p.user_email}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PLAN_COLORS[p.plan] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {p.plan === 'starter' ? 'Starter' : 'Pro'}
+                      {PLAN_LABELS[p.plan] ?? p.plan}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                    {p.amount_eur != null ? `${p.amount_eur} €` : '—'}
+                  <td className="px-4 py-3 text-right font-semibold text-gray-900">{p.amount_eur != null ? `${p.amount_eur} €` : '—'}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-gray-900">{p.amount_mdl != null ? `${p.amount_mdl} MDL` : '—'}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs max-w-[180px] truncate">{p.note ?? '—'}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => openEdit(p)}
+                        className="text-xs text-violet-600 hover:bg-violet-50 px-2 py-1 rounded-lg transition-colors">
+                        Editează
+                      </button>
+                      <button onClick={() => handleDelete(p.id)} disabled={isPending}
+                        className={`text-xs px-2 py-1 rounded-lg transition-colors ${confirmDeleteId === p.id ? 'bg-red-100 text-red-700 font-semibold' : 'text-red-400 hover:bg-red-50'}`}>
+                        {confirmDeleteId === p.id ? 'Sigur?' : 'Șterge'}
+                      </button>
+                      {confirmDeleteId === p.id && (
+                        <button onClick={() => setConfirmDeleteId(null)} className="text-xs text-gray-400 hover:text-gray-600 px-1">Nu</button>
+                      )}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                    {p.amount_mdl != null ? `${p.amount_mdl} MDL` : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{p.note ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal editare */}
+      {editRow && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 className="font-bold text-gray-900 mb-1">Editează încasare</h3>
+            <p className="text-xs text-gray-400 mb-4">{editRow.user_email} — {PLAN_LABELS[editRow.plan] ?? editRow.plan}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sumă EUR</label>
+                <input type="number" value={editEur} onChange={e => setEditEur(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sumă MDL</label>
+                <input type="number" value={editMdl} onChange={e => setEditMdl(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Notă</label>
+                <input type="text" value={editNote} onChange={e => setEditNote(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setEditRow(null)}
+                className="flex-1 border border-gray-200 text-gray-600 rounded-xl py-2 text-sm hover:bg-gray-50 transition-colors">
+                Anulează
+              </button>
+              <button onClick={handleSaveEdit} disabled={isPending}
+                className="flex-1 bg-violet-700 text-white rounded-xl py-2 text-sm font-semibold hover:bg-violet-800 transition-colors disabled:opacity-60">
+                {isPending ? 'Se salvează...' : 'Salvează'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

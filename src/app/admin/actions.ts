@@ -187,6 +187,25 @@ export async function activateFromPendingPayment(
   revalidatePath('/admin')
 }
 
+export async function updatePayment(
+  paymentId: string,
+  amountEur: number | null,
+  amountMdl: number | null,
+  note: string | null,
+) {
+  await checkAdmin()
+  const admin = createAdminClient()
+  await admin.from('payments').update({ amount_eur: amountEur, amount_mdl: amountMdl, note }).eq('id', paymentId)
+  revalidatePath('/admin')
+}
+
+export async function deletePayment(paymentId: string) {
+  await checkAdmin()
+  const admin = createAdminClient()
+  await admin.from('payments').delete().eq('id', paymentId)
+  revalidatePath('/admin')
+}
+
 export async function reactivateUser(userId: string, userEmail: string) {
   await checkAdmin()
   const admin = createAdminClient()
