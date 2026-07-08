@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { AdminPanel } from './AdminPanel'
 import { PaymentsSection } from './PaymentsSection'
+import { PendingPaymentsSection } from './PendingPaymentsSection'
 import { ActivityLog } from './ActivityLog'
 import { SecurityLog } from './SecurityLog'
 import { CollapsibleSection } from './CollapsibleSection'
@@ -32,6 +33,7 @@ export default async function AdminPage() {
     { data: subscriptions },
     { data: profiles },
     { data: paymentsRaw },
+    { data: pendingPaymentsRaw },
     { data: logsRaw },
     { data: securityRaw },
   ] = await Promise.all([
@@ -41,6 +43,11 @@ export default async function AdminPage() {
     admin.from('profiles').select('id, email'),
     admin.from('payments')
       .select('id, user_email, plan, amount_eur, amount_mdl, note, created_at')
+      .eq('status', 'confirmed')
+      .order('created_at', { ascending: false }),
+    admin.from('payments')
+      .select('id, user_email, plan, transaction_number, transaction_date, created_at')
+      .eq('status', 'pending')
       .order('created_at', { ascending: false }),
     admin.from('subscription_logs')
       .select('id, user_email, event, plan, note, created_at')
@@ -53,6 +60,7 @@ export default async function AdminPage() {
   ])
 
   const payments = paymentsRaw ?? []
+  const pendingPayments = pendingPaymentsRaw ?? []
   const logs = logsRaw ?? []
   const securityLogs = securityRaw ?? []
 
@@ -149,6 +157,15 @@ export default async function AdminPage() {
         {/* Tabel utilizatori */}
         <CollapsibleSection title="Utilizatori" badge={users.length}>
           <AdminPanel users={users} />
+        </CollapsibleSection>
+
+        {/* Confirmări plată în așteptare */}
+        <CollapsibleSection
+          title="Confirmări în așteptare"
+          badge={pendingPayments.length}
+          defaultOpen={pendingPayments.length > 0}
+        >
+          <PendingPaymentsSection payments={pendingPayments} />
         </CollapsibleSection>
 
         {/* Încasări */}

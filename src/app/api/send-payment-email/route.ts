@@ -10,14 +10,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
   }
 
-  const { planName, amountEur, amountMdl } = await request.json()
+  const { planId, planName, amountEur, amountMdl } = await request.json()
 
-  if (!planName || !amountEur || !amountMdl) {
+  if (!planId || !planName || !amountEur || !amountMdl) {
     return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
   }
 
   try {
-    await sendPaymentEmail({ toEmail: user.email, planName, amountEur, amountMdl })
+    await sendPaymentEmail({ toEmail: user.email, planId, planName, amountEur, amountMdl })
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Resend error:', error)

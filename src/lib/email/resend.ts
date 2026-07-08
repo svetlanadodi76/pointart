@@ -118,17 +118,21 @@ export async function sendExpiryReminderEmail({
 
 export async function sendPaymentEmail({
   toEmail,
+  planId,
   planName,
   amountEur,
   amountMdl,
 }: {
   toEmail: string
+  planId: string
   planName: string
   amountEur: number
   amountMdl: number
 }) {
   const card = process.env.PAYMENT_CARD || ''
   const contactEmail = process.env.CONTACT_EMAIL || 'contact@pointart.art'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pointart.art'
+  const confirmUrl = `${baseUrl}/confirm-payment?email=${encodeURIComponent(toEmail)}&plan=${planId}&planName=${encodeURIComponent(planName)}`
 
   return resend.emails.send({
     from: FROM,
@@ -164,15 +168,84 @@ export async function sendPaymentEmail({
   </div>
 
   <p style="font-size:14px;color:#4b5563;">
-    După ce efectuezi transferul, <strong>răspunde la acest email</strong> cu confirmarea plății.<br/>
+    După ce efectuezi transferul, apasă butonul de mai jos și completează numărul tranzacției.<br/>
     Planul se activează în <strong>maxim 24 de ore</strong>.
   </p>
+
+  <div style="text-align:center;margin:28px 0;">
+    <a href="${confirmUrl}" style="background:#6d28d9;color:#fff;padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">
+      Confirmă plata →
+    </a>
+  </div>
 
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;"/>
   <p style="font-size:13px;color:#9ca3af;text-align:center;margin:0;">
     Cu drag, <strong>Echipa PointArt</strong><br/>
     <a href="mailto:${contactEmail}" style="color:#6d28d9;">${contactEmail}</a>
   </p>
+</div>`,
+  })
+}
+
+export async function sendAdminPaymentNotification({
+  toEmail,
+  userEmail,
+  planName,
+  transactionNumber,
+  transactionDate,
+}: {
+  toEmail: string
+  userEmail: string
+  planName: string
+  transactionNumber: string
+  transactionDate: string
+}) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pointart.art'
+  const dateFormatted = new Date(transactionDate).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+  return resend.emails.send({
+    from: FROM,
+    to: toEmail,
+    subject: `Confirmare plată nouă — ${planName} (${userEmail})`,
+    html: `
+<div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a;">
+  <div style="text-align:center;padding:32px 0 16px;">
+    <div style="font-size:32px;">💰</div>
+    <div style="font-size:22px;font-weight:700;color:#6d28d9;">PointArt Admin</div>
+  </div>
+
+  <p>Ai primit o nouă confirmare de plată:</p>
+
+  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 24px;margin:24px 0;">
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <tr>
+        <td style="padding:7px 0;color:#6b7280;">Email utilizator</td>
+        <td style="padding:7px 0;font-weight:700;text-align:right;">${userEmail}</td>
+      </tr>
+      <tr>
+        <td style="padding:7px 0;color:#6b7280;">Plan solicitat</td>
+        <td style="padding:7px 0;font-weight:700;text-align:right;">${planName}</td>
+      </tr>
+      <tr style="border-top:1px solid #d1fae5;">
+        <td style="padding:10px 0 4px;color:#6b7280;">Număr tranzacție</td>
+        <td style="padding:10px 0 4px;font-weight:700;color:#059669;text-align:right;">#${transactionNumber}</td>
+      </tr>
+      <tr>
+        <td style="padding:7px 0;color:#6b7280;">Data transferului</td>
+        <td style="padding:7px 0;font-weight:700;text-align:right;">${dateFormatted}</td>
+      </tr>
+    </table>
+  </div>
+
+  <p style="font-size:14px;color:#4b5563;">
+    Verifică extrasul de cont și activează abonamentul din panoul admin.
+  </p>
+
+  <div style="text-align:center;margin:28px 0;">
+    <a href="${baseUrl}/admin" style="background:#6d28d9;color:#fff;padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">
+      Mergi la Admin →
+    </a>
+  </div>
 </div>`,
   })
 }
