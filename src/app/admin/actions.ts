@@ -157,6 +157,36 @@ export async function deactivateUser(userId: string, userEmail: string) {
   revalidatePath('/admin')
 }
 
+const PLAN_AMOUNTS: Record<string, { eur: number; mdl: number }> = {
+  starter: { eur: 5,  mdl: 99  },
+  pro:     { eur: 10, mdl: 199 },
+  premium: { eur: 25, mdl: 499 },
+}
+
+export async function activateFromPendingPayment(
+  paymentId: string,
+  userId: string,
+  userEmail: string,
+  plan: string,
+) {
+  await checkAdmin()
+  const admin = createAdminClient()
+  const amounts = PLAN_AMOUNTS[plan] ?? { eur: null, mdl: null }
+
+  if (plan === 'pro') await activatePro(userId, userEmail, amounts.eur, amounts.mdl)
+  else if (plan === 'premium') await activatePremium(userId, userEmail, amounts.eur, amounts.mdl)
+  else await activateStarter(userId, userEmail, amounts.eur, amounts.mdl)
+
+  // Marchează plata ca confirmată
+  await admin.from('payments').update({
+    status: 'confirmed',
+    amount_eur: amounts.eur,
+    amount_mdl: amounts.mdl,
+  }).eq('id', paymentId)
+
+  revalidatePath('/admin')
+}
+
 export async function reactivateUser(userId: string, userEmail: string) {
   await checkAdmin()
   const admin = createAdminClient()

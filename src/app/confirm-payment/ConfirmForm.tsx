@@ -81,7 +81,7 @@ export function ConfirmForm({ email, planId, planName }: { email: string; planId
           onChange={e => setTxNumber(e.target.value)}
           placeholder="ex. 123456789"
           required
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
         />
         <p className="text-xs text-gray-400 mt-1">Numărul din extrasul de cont / confirmarea băncii</p>
       </div>
@@ -95,7 +95,7 @@ export function ConfirmForm({ email, planId, planName }: { email: string; planId
           value={txDate}
           onChange={e => setTxDate(e.target.value)}
           required
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
         />
       </div>
 

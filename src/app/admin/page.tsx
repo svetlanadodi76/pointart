@@ -46,7 +46,7 @@ export default async function AdminPage() {
       .eq('status', 'confirmed')
       .order('created_at', { ascending: false }),
     admin.from('payments')
-      .select('id, user_email, plan, transaction_number, transaction_date, created_at')
+      .select('id, user_id, user_email, plan, transaction_number, transaction_date, created_at')
       .eq('status', 'pending')
       .order('created_at', { ascending: false }),
     admin.from('subscription_logs')
