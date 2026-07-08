@@ -39,7 +39,7 @@ export async function sendActivationEmail({
     html: `
 <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a;">
   <div style="text-align:center;padding:32px 0 16px;">
-    <div style="font-size:32px;">🧵</div>
+    <img src="https://pointart.art/logo.jpg" alt="PointArt" style="width:72px;height:72px;border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;" />
     <div style="font-size:22px;font-weight:700;color:#6d28d9;">PointArt</div>
   </div>
 
@@ -90,7 +90,7 @@ export async function sendExpiryReminderEmail({
     html: `
 <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a;">
   <div style="text-align:center;padding:32px 0 16px;">
-    <div style="font-size:32px;">🧵</div>
+    <img src="https://pointart.art/logo.jpg" alt="PointArt" style="width:72px;height:72px;border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;" />
     <div style="font-size:22px;font-weight:700;color:#6d28d9;">PointArt</div>
   </div>
 
@@ -142,7 +142,7 @@ export async function sendPaymentEmail({
     html: `
 <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a;">
   <div style="text-align:center;padding:32px 0 16px;">
-    <div style="font-size:32px;">🧵</div>
+    <img src="https://pointart.art/logo.jpg" alt="PointArt" style="width:72px;height:72px;border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;" />
     <div style="font-size:22px;font-weight:700;color:#6d28d9;">PointArt</div>
   </div>
 
@@ -210,7 +210,7 @@ export async function sendAdminPaymentNotification({
     html: `
 <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a;">
   <div style="text-align:center;padding:32px 0 16px;">
-    <div style="font-size:32px;">💰</div>
+    <img src="https://pointart.art/logo.jpg" alt="PointArt" style="width:72px;height:72px;border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;" />
     <div style="font-size:22px;font-weight:700;color:#6d28d9;">PointArt Admin</div>
   </div>
 
