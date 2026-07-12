@@ -134,7 +134,6 @@ export async function POST(request: NextRequest) {
     })
     if (uploadError) {
       console.error('Storage upload error:', uploadError.message)
-      await logSecurity('storage_upload_failed', user.email ?? user.id, uploadError.message)
     }
 
     // Salvează schema în baza de date
