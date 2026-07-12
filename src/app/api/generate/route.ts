@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     let imageBuffer: Buffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer)
+    const originalBuffer = imageBuffer // bytes originali pentru thumbnail (garantat valizi)
 
     // Hash primii 8KB din imagine — identificator unic pentru a grupa versiunile aceleiași poze
     const imageHash = crypto.createHash('sha256').update(imageBuffer.slice(0, 8192)).digest('hex').slice(0, 16)
@@ -123,13 +124,13 @@ export async function POST(request: NextRequest) {
     })
 
     // Salvează imaginea originală în Supabase Storage (admin client — bypass RLS)
-    // Forțează JPEG explicit — imageBuffer poate fi PNG dacă nu a trecut prin resize
-    const sharpUpload = (await import('sharp')).default
-    const uploadBuffer = await sharpUpload(imageBuffer).jpeg({ quality: 88 }).toBuffer()
-    const fileName = `${user.id}/${Date.now()}.jpg`
+    // Folosim originalBuffer (bytes exacți uploadați de user) — garantat valid
+    const ext = fname.endsWith('.png') ? 'png' : 'jpg'
+    const mimeType = fname.endsWith('.png') ? 'image/png' : 'image/jpeg'
+    const fileName = `${user.id}/${Date.now()}.${ext}`
     const admin = createAdminClient()
-    const { error: uploadError } = await admin.storage.from('images').upload(fileName, uploadBuffer, {
-      contentType: 'image/jpeg',
+    const { error: uploadError } = await admin.storage.from('images').upload(fileName, originalBuffer, {
+      contentType: mimeType,
       upsert: true,
     })
     if (uploadError) {
