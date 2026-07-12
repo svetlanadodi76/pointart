@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getSubscription } from '@/lib/supabase/getSubscription'
 import { generateSchema } from '@/lib/schema/generator'
 import { aiPreprocess } from '@/lib/schema/aiPreprocess'
@@ -121,15 +122,20 @@ export async function POST(request: NextRequest) {
       threadType,
     })
 
-    // Salvează imaginea originală în Supabase Storage (bucket privat)
+    // Salvează imaginea originală în Supabase Storage (admin client — bypass RLS)
     // Forțează JPEG explicit — imageBuffer poate fi PNG dacă nu a trecut prin resize
     const sharpUpload = (await import('sharp')).default
     const uploadBuffer = await sharpUpload(imageBuffer).jpeg({ quality: 88 }).toBuffer()
     const fileName = `${user.id}/${Date.now()}.jpg`
-    await supabase.storage.from('images').upload(fileName, uploadBuffer, {
+    const admin = createAdminClient()
+    const { error: uploadError } = await admin.storage.from('images').upload(fileName, uploadBuffer, {
       contentType: 'image/jpeg',
       upsert: true,
     })
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError.message)
+      await logSecurity('storage_upload_failed', user.email ?? user.id, uploadError.message)
+    }
 
     // Salvează schema în baza de date
     const { data: savedSchema, error: saveError } = await supabase.from('schemas').insert({
@@ -143,7 +149,7 @@ export async function POST(request: NextRequest) {
       height_cm: schema.heightCm,
       max_colors: maxColors,
       colors_used: schema.colors.length,
-      original_image_url: fileName,
+      original_image_url: uploadError ? null : fileName,
       schema_data: schema,
       image_hash: imageHash,
     }).select().single()
