@@ -173,16 +173,34 @@ export async function activateFromPendingPayment(
   const admin = createAdminClient()
   const amounts = PLAN_AMOUNTS[plan] ?? { eur: null, mdl: null }
 
-  if (plan === 'pro') await activatePro(userId, userEmail, amounts.eur, amounts.mdl)
-  else if (plan === 'premium') await activatePremium(userId, userEmail, amounts.eur, amounts.mdl)
-  else await activateStarter(userId, userEmail, amounts.eur, amounts.mdl)
+  // Activează subscripția direct (fără a insera un payment nou)
+  const periodEnd = plan !== 'starter' ? new Date() : null
+  if (periodEnd) periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-  // Marchează plata ca confirmată
+  await admin.from('subscriptions').update({
+    plan,
+    status: 'active',
+    schemas_remaining: plan === 'starter' ? 3 : null,
+    trial_ends_at: null,
+    current_period_end: periodEnd?.toISOString() ?? null,
+  }).eq('user_id', userId)
+
+  // Actualizează payment-ul existent (nu inserează unul nou)
   await admin.from('payments').update({
     status: 'confirmed',
     amount_eur: amounts.eur,
     amount_mdl: amounts.mdl,
   }).eq('id', paymentId)
+
+  await admin.from('subscription_logs').insert({
+    user_id: userId,
+    user_email: userEmail,
+    event: `activated_${plan}`,
+    plan,
+    note: 'activat din confirmare plată',
+  })
+
+  try { await sendActivationEmail({ toEmail: userEmail, plan, periodEnd }) } catch {}
 
   revalidatePath('/admin')
 }
