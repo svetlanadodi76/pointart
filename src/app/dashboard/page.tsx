@@ -72,14 +72,9 @@ export default async function DashboardPage() {
   const signedUrlMap = new Map<string, string>()
   if (imagePaths.length > 0) {
     const adminStorage = createAdminClient()
-    const { data: signedData, error: signedError } = await adminStorage.storage.from('images').createSignedUrls(imagePaths, 604800)
-    console.log('[dashboard] imagePaths:', imagePaths)
-    console.log('[dashboard] signedError:', signedError)
-    console.log('[dashboard] signedData:', JSON.stringify(signedData))
-    if (signedData) {
-      for (const item of signedData) {
-        if (item.signedUrl && item.path) signedUrlMap.set(item.path, item.signedUrl)
-      }
+    for (const path of imagePaths) {
+      const { data } = adminStorage.storage.from('images').getPublicUrl(path)
+      if (data?.publicUrl) signedUrlMap.set(path, data.publicUrl)
     }
   }
 
