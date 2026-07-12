@@ -70,7 +70,7 @@ export default async function DashboardPage() {
   const imagePaths = primarySchemaList.map(s => s.original_image_url).filter(Boolean) as string[]
   const signedUrlMap = new Map<string, string>()
   if (imagePaths.length > 0) {
-    const { data: signedData } = await supabase.storage.from('images').createSignedUrls(imagePaths, 3600)
+    const { data: signedData } = await supabase.storage.from('images').createSignedUrls(imagePaths, 604800)
     if (signedData) {
       for (const item of signedData) {
         if (item.signedUrl && item.path) signedUrlMap.set(item.path, item.signedUrl)

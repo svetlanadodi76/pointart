@@ -122,8 +122,11 @@ export async function POST(request: NextRequest) {
     })
 
     // Salvează imaginea originală în Supabase Storage (bucket privat)
+    // Forțează JPEG explicit — imageBuffer poate fi PNG dacă nu a trecut prin resize
+    const sharpUpload = (await import('sharp')).default
+    const uploadBuffer = await sharpUpload(imageBuffer).jpeg({ quality: 88 }).toBuffer()
     const fileName = `${user.id}/${Date.now()}.jpg`
-    await supabase.storage.from('images').upload(fileName, imageBuffer, {
+    await supabase.storage.from('images').upload(fileName, uploadBuffer, {
       contentType: 'image/jpeg',
       upsert: true,
     })
