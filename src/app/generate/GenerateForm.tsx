@@ -40,6 +40,12 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [schemaId, setSchemaId] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
+  // Preprocessing Premium
+  const [preprocessedBlob, setPreprocessedBlob] = useState<Blob | null>(null)
+  const [preprocessedPreview, setPreprocessedPreview] = useState<string | null>(null)
+  const [preprocessedSteps, setPreprocessedSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
+  const [preprocessing, setPreprocessing] = useState(false)
+  const [usePreprocessed, setUsePreprocessed] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Resetează canvasType la valoarea implicită când se schimbă tipul lucrării
@@ -71,6 +77,11 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     setImgContrast(1.0)
     setImgSaturation(1.0)
     setPortraitMode(false)
+    setPreprocessedBlob(null)
+    setPreprocessedPreview(null)
+    setPreprocessedSteps(null)
+    setPreprocessing(false)
+    setUsePreprocessed(false)
     if (fileRef.current) fileRef.current.value = ''
 
     const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
@@ -108,7 +119,15 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
   function buildFd(nColors: number) {
     const fd = new FormData()
-    fd.append('image', image!)
+    if (usePreprocessed && preprocessedBlob) {
+      fd.append('image', new File([preprocessedBlob], 'preprocessed.jpg', { type: 'image/jpeg' }))
+      fd.append('preprocessedImage', new File([preprocessedBlob], 'preprocessed.jpg', { type: 'image/jpeg' }))
+      fd.append('skipAI', 'true')
+      if (preprocessedSteps) fd.append('aiSteps', JSON.stringify(preprocessedSteps))
+    } else {
+      fd.append('image', image!)
+      if (isPremium && preprocessedBlob !== null) fd.append('skipAI', 'true') // a văzut comparația, a ales originalul
+    }
     fd.append('craftType', craftType)
     fd.append('canvasType', canvasType)
     fd.append('widthCm', widthCm.toString())
@@ -119,6 +138,33 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     fd.append('imgSaturation', imgSaturation.toString())
     fd.append('threadType', threadType)
     return fd
+  }
+
+  async function handlePreprocess() {
+    if (!image) return
+    setPreprocessing(true)
+    setError(null)
+    setPreprocessedBlob(null)
+    setPreprocessedPreview(null)
+    setUsePreprocessed(false)
+    try {
+      const fd = new FormData()
+      fd.append('image', image)
+      const res = await fetch('/api/preprocess', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Eroare procesare AI')
+      }
+      const steps = res.headers.get('X-AI-Steps')
+      const blob = await res.blob()
+      setPreprocessedBlob(blob)
+      setPreprocessedPreview(URL.createObjectURL(blob))
+      setPreprocessedSteps(steps ? JSON.parse(steps) : null)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setPreprocessing(false)
+    }
   }
 
   async function handleAnalyze() {
@@ -268,6 +314,103 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 </button>
               )}
             </div>
+
+            {/* AI Preprocessing — doar Premium, după upload */}
+            {isPremium && image && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-amber-600 font-bold text-sm">★ Premium AI</span>
+                  <span className="text-xs text-amber-700">Îmbunătățire imagine cu AI înainte de generare</span>
+                </div>
+
+                {!preprocessedPreview && !preprocessing && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-amber-700">
+                      Aplică upscaling 4×, îmbunătățire portret și claritate optimizată (30–60 sec)
+                    </p>
+                    <button
+                      onClick={handlePreprocess}
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                    >
+                      ✨ Îmbunătățește imaginea cu AI
+                    </button>
+                    <p className="text-xs text-center text-amber-600">
+                      sau generează direct fără preprocessing
+                    </p>
+                  </div>
+                )}
+
+                {preprocessing && (
+                  <div className="flex items-center justify-center gap-3 py-4">
+                    <svg className="w-5 h-5 animate-spin text-amber-600" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    <span className="text-sm text-amber-700 font-medium">Procesare AI... (30–60 sec)</span>
+                  </div>
+                )}
+
+                {preprocessedPreview && (
+                  <div className="space-y-4">
+                    {/* Comparație before/after */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs text-gray-500 text-center mb-1.5">Original</p>
+                        {preview && preview !== '__heic__' ? (
+                          <img src={preview} alt="Original" className="w-full h-32 object-cover rounded-lg border border-gray-200" />
+                        ) : (
+                          <div className="w-full h-32 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-400">HEIC</div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs text-amber-600 font-semibold text-center mb-1.5">★ AI Enhanced</p>
+                        <img src={preprocessedPreview} alt="AI Enhanced" className="w-full h-32 object-cover rounded-lg border border-amber-300" />
+                      </div>
+                    </div>
+
+                    {/* Pași AI aplicați */}
+                    {preprocessedSteps && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {preprocessedSteps.upscaled && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">↑ mărită 4×</span>}
+                        {preprocessedSteps.faceEnhanced && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">👤 portret îmbunătățit</span>}
+                        {preprocessedSteps.sharpened && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">◈ claritate optimizată</span>}
+                      </div>
+                    )}
+
+                    {/* Butoane accept/cancel */}
+                    {usePreprocessed ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-green-700 font-medium flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</span>
+                          Imaginea AI selectată
+                        </span>
+                        <button
+                          onClick={() => setUsePreprocessed(false)}
+                          className="text-xs text-gray-500 hover:text-gray-700 underline"
+                        >
+                          Revino la original
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setUsePreprocessed(true)}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-semibold transition-colors"
+                        >
+                          Folosește imaginea AI
+                        </button>
+                        <button
+                          onClick={() => { setPreprocessedPreview(null); setPreprocessedBlob(null); setPreprocessedSteps(null) }}
+                          className="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-xl text-sm transition-colors"
+                        >
+                          Anulează
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Ajustare imagine — apare doar după upload */}
             {preview && preview !== '__heic__' && (
@@ -670,10 +813,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             )}
 
             <div className="space-y-3">
-              {isPremium && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
-                  <span>★</span>
-                  <span>Premium AI activ — imaginea va fi procesată cu AI înainte de generare</span>
+              {isPremium && usePreprocessed && (
+                <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-700 flex items-center gap-2">
+                  <span>✓</span>
+                  <span>Schema se va genera din imaginea îmbunătățită AI</span>
                 </div>
               )}
               <button
@@ -682,12 +825,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 className="w-full bg-violet-700 text-white py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading
-                  ? isPremium ? '🤖 Procesare AI imagine... (30-60 sec)' : '⏳ Generez schema...'
+                  ? '⏳ Generez schema...'
                   : settingsChanged ? '🔄 Regenerează schema' : '✨ Generează schema'}
               </button>
-              {loading && isPremium && (
-                <p className="text-xs text-center text-amber-600">Imagine mărită AI, portret îmbunătățit, claritate optimizată...</p>
-              )}
               <button
                 onClick={handleGenerateVariants}
                 disabled={!image || loading || !canGenerate}

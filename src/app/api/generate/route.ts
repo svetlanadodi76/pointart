@@ -105,7 +105,16 @@ export async function POST(request: NextRequest) {
 
     // AI preprocessing pentru utilizatorii Premium
     let aiSteps = null
-    if (subscription.plan === 'premium') {
+    const skipAI = formData.get('skipAI') === 'true'
+    const preprocessedFile = formData.get('preprocessedImage') as File | null
+
+    if (preprocessedFile && skipAI) {
+      // Userul a ales imaginea preprocesată explicit
+      imageBuffer = Buffer.from(await preprocessedFile.arrayBuffer() as ArrayBuffer)
+      const stepsRaw = formData.get('aiSteps') as string | null
+      aiSteps = stepsRaw ? JSON.parse(stepsRaw) : null
+    } else if (subscription.plan === 'premium' && !skipAI) {
+      // Comportament vechi: AI automat pentru Premium
       const result = await aiPreprocess(imageBuffer)
       imageBuffer = result.buffer
       aiSteps = result.steps
