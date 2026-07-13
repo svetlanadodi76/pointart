@@ -6,6 +6,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { getLang } from '@/lib/i18n/getLang'
 import { t } from '@/lib/i18n/translations'
+import { TrackView } from '@/components/TrackView'
 
 export default async function PricingPage() {
   const supabase = await createClient()
@@ -25,6 +26,7 @@ export default async function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <TrackView path="/pricing" />
       {/* Header */}
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">

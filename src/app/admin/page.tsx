@@ -29,6 +29,11 @@ export default async function AdminPage() {
 
   const admin = createAdminClient()
 
+  const now = new Date()
+  const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0)
+  const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - 7)
+  const startOfMonth = new Date(now); startOfMonth.setDate(now.getDate() - 30)
+
   const [
     { data: subscriptions },
     { data: profiles },
@@ -36,6 +41,8 @@ export default async function AdminPage() {
     { data: pendingPaymentsRaw },
     { data: logsRaw },
     { data: securityRaw },
+    { data: schemasRaw },
+    { data: viewsMonth },
   ] = await Promise.all([
     admin.from('subscriptions')
       .select('user_id, plan, status, schemas_remaining, trial_ends_at, current_period_end, created_at')
@@ -57,14 +64,42 @@ export default async function AdminPage() {
       .select('id, event, email, details, created_at')
       .order('created_at', { ascending: false })
       .limit(100),
+    admin.from('schemas')
+      .select('user_id, created_at'),
+    admin.from('page_views')
+      .select('path, created_at')
+      .gte('created_at', startOfMonth.toISOString()),
   ])
 
   const payments = paymentsRaw ?? []
   const pendingPayments = pendingPaymentsRaw ?? []
   const logs = logsRaw ?? []
   const securityLogs = securityRaw ?? []
+  const schemas = schemasRaw ?? []
+  const views = viewsMonth ?? []
 
   const emailMap = new Map((profiles ?? []).map((p: { id: string; email: string }) => [p.id, p.email]))
+
+  // Vizite pe site
+  const viewStats = {
+    today: views.filter(v => new Date(v.created_at) >= startOfDay).length,
+    week: views.filter(v => new Date(v.created_at) >= startOfWeek).length,
+    month: views.length,
+    byPath: Object.entries(
+      views.reduce((acc: Record<string, number>, v) => {
+        acc[v.path] = (acc[v.path] ?? 0) + 1
+        return acc
+      }, {})
+    ).sort((a, b) => b[1] - a[1]),
+  }
+
+  // Scheme generate per plan (bazat pe planul curent al userului)
+  const userPlanMap = new Map((subscriptions ?? []).map(s => [s.user_id, s.plan]))
+  const schemasByPlan = schemas.reduce((acc: Record<string, number>, s) => {
+    const plan = userPlanMap.get(s.user_id) ?? 'unknown'
+    acc[plan] = (acc[plan] ?? 0) + 1
+    return acc
+  }, {})
 
   const users = (subscriptions ?? []).map((s: {
     user_id: string
@@ -145,6 +180,57 @@ export default async function AdminPage() {
               { label: 'Total inactivi', value: stats.inactiveTotal, color: 'text-gray-900' },
               { label: 'Expirate',       value: stats.expired,       color: 'text-orange-500' },
               { label: 'Anulate',        value: stats.cancelled,     color: 'text-red-500' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                <p className={`text-3xl font-bold ${color}`}>{value}</p>
+                <p className="text-xs text-gray-500 mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Vizite pe site */}
+        <div>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Vizite pe site</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Azi',         value: viewStats.today, color: 'text-gray-900' },
+              { label: 'Săptămâna',   value: viewStats.week,  color: 'text-blue-600' },
+              { label: '30 zile',     value: viewStats.month, color: 'text-violet-600' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                <p className={`text-3xl font-bold ${color}`}>{value}</p>
+                <p className="text-xs text-gray-500 mt-1">{label}</p>
+              </div>
+            ))}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs font-semibold text-gray-500 mb-2">Per pagină (30 zile)</p>
+              {viewStats.byPath.length === 0 ? (
+                <p className="text-xs text-gray-400">Fără date încă</p>
+              ) : (
+                <ul className="space-y-1">
+                  {viewStats.byPath.map(([path, count]) => (
+                    <li key={path} className="flex justify-between text-xs">
+                      <span className="text-gray-600">{path}</span>
+                      <span className="font-semibold text-gray-900">{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Scheme generate per plan */}
+        <div>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Scheme generate (total)</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              { label: 'Total',      value: schemas.length,                        color: 'text-gray-900' },
+              { label: 'Trial',      value: schemasByPlan['free_trial'] ?? 0,      color: 'text-blue-600' },
+              { label: 'Starter',    value: schemasByPlan['starter'] ?? 0,         color: 'text-violet-600' },
+              { label: 'Pro',        value: schemasByPlan['pro'] ?? 0,             color: 'text-indigo-600' },
+              { label: 'Premium AI', value: schemasByPlan['premium'] ?? 0,         color: 'text-amber-600' },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <p className={`text-3xl font-bold ${color}`}>{value}</p>

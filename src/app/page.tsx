@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { SiteFooter } from '@/components/SiteFooter'
 import { LanguageToggle } from '@/components/LanguageToggle'
+import { TrackView } from '@/components/TrackView'
 import { getLang } from '@/lib/i18n/getLang'
 import { t } from '@/lib/i18n/translations'
 import { createClient } from '@/lib/supabase/server'
@@ -12,6 +13,7 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-white flex flex-col">
+      <TrackView path="/" />
       {/* Header */}
       <header className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
