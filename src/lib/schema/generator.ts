@@ -104,8 +104,8 @@ export async function generateSchema(
   const contrast   = settings.imgContrast ?? 1.0
 
   const { data: pixels } = await sharp(imageBuffer)
+    .median(1)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
-    .median(2)
     .normalize({ lower: 2, upper: 98 })
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
