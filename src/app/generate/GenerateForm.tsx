@@ -120,13 +120,14 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   function buildFd(nColors: number) {
     const fd = new FormData()
     if (usePreprocessed && preprocessedBlob) {
+      // Generare din imaginea preprocesată AI
       fd.append('image', new File([preprocessedBlob], 'preprocessed.jpg', { type: 'image/jpeg' }))
-      fd.append('preprocessedImage', new File([preprocessedBlob], 'preprocessed.jpg', { type: 'image/jpeg' }))
+      fd.append('originalImage', image!) // originala → thumbnail în Storage
       fd.append('skipAI', 'true')
       if (preprocessedSteps) fd.append('aiSteps', JSON.stringify(preprocessedSteps))
     } else {
       fd.append('image', image!)
-      if (isPremium && preprocessedBlob !== null) fd.append('skipAI', 'true') // a văzut comparația, a ales originalul
+      if (isPremium && preprocessedBlob !== null) fd.append('skipAI', 'true')
     }
     fd.append('craftType', craftType)
     fd.append('canvasType', canvasType)

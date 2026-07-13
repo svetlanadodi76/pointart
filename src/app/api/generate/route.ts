@@ -73,7 +73,11 @@ export async function POST(request: NextRequest) {
     }
 
     let imageBuffer: Buffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer)
-    const originalBuffer = imageBuffer // bytes originali pentru thumbnail (garantat valizi)
+    // originalImage trimis separat când userul folosește imaginea preprocesată AI
+    const originalImageFile = formData.get('originalImage') as File | null
+    const originalBuffer = originalImageFile
+      ? Buffer.from(await originalImageFile.arrayBuffer() as ArrayBuffer)
+      : imageBuffer // bytes originali pentru thumbnail (garantat valizi)
 
     // Hash primii 8KB din imagine — identificator unic pentru a grupa versiunile aceleiași poze
     const imageHash = crypto.createHash('sha256').update(imageBuffer.slice(0, 8192)).digest('hex').slice(0, 16)
@@ -106,15 +110,13 @@ export async function POST(request: NextRequest) {
     // AI preprocessing pentru utilizatorii Premium
     let aiSteps = null
     const skipAI = formData.get('skipAI') === 'true'
-    const preprocessedFile = formData.get('preprocessedImage') as File | null
 
-    if (preprocessedFile && skipAI) {
-      // Userul a ales imaginea preprocesată explicit
-      imageBuffer = Buffer.from(await preprocessedFile.arrayBuffer() as ArrayBuffer)
+    if (skipAI) {
+      // Userul a ales explicit (imaginea e deja în imageBuffer — originală sau preprocesată)
       const stepsRaw = formData.get('aiSteps') as string | null
       aiSteps = stepsRaw ? JSON.parse(stepsRaw) : null
-    } else if (subscription.plan === 'premium' && !skipAI) {
-      // Comportament vechi: AI automat pentru Premium
+    } else if (subscription.plan === 'premium') {
+      // Comportament vechi: AI automat pentru Premium (fallback)
       const result = await aiPreprocess(imageBuffer)
       imageBuffer = result.buffer
       aiSteps = result.steps
