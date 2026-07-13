@@ -335,8 +335,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     >
                       ✨ Îmbunătățește imaginea cu AI
                     </button>
-                    <p className="text-xs text-center text-amber-600">
-                      sau generează direct fără preprocessing
+                    <p className="text-xs text-amber-600 bg-amber-100 rounded-lg px-3 py-2">
+                      Rezultat optim pe <strong>portrete individuale</strong>. Fotografii de grup sau peisaje → generează direct fără AI.
                     </p>
                   </div>
                 )}
