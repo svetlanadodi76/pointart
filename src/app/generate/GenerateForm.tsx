@@ -358,14 +358,14 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       <div>
                         <p className="text-xs text-gray-500 text-center mb-1.5">Original</p>
                         {preview && preview !== '__heic__' ? (
-                          <img src={preview} alt="Original" className="w-full h-32 object-cover rounded-lg border border-gray-200" />
+                          <img src={preview} alt="Original" className="w-full h-32 object-cover object-top rounded-lg border border-gray-200" />
                         ) : (
                           <div className="w-full h-32 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-400">HEIC</div>
                         )}
                       </div>
                       <div>
                         <p className="text-xs text-amber-600 font-semibold text-center mb-1.5">★ AI Enhanced</p>
-                        <img src={preprocessedPreview} alt="AI Enhanced" className="w-full h-32 object-cover rounded-lg border border-amber-300" />
+                        <img src={preprocessedPreview} alt="AI Enhanced" className="w-full h-32 object-cover object-top rounded-lg border border-amber-300" />
                       </div>
                     </div>
 
