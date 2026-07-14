@@ -68,6 +68,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     : _cell
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
+  const isDiamond = craftType === 'diamond'
   const colors = (() => {
     const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
     const sorted = [...withIdx].sort((a, b) => b.count - a.count)
@@ -81,9 +82,9 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     }))
     return withIdx.map(c => ({
       ...c,
-      symbol: isGoblene ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
+      symbol: (isGoblene || isDiamond) ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
       catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
-      isSolid: isGoblene ? false : (byRank.get(c._idx)?.isSolid ?? false),
+      isSolid: (isGoblene || isDiamond) ? false : (byRank.get(c._idx)?.isSolid ?? false),
     }))
   })()
 

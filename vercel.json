@@ -12,7 +12,7 @@
       "maxDuration": 30,
       "memory": 512
     },
-    "src/app/api/pdf/[id]/route.ts": {
+    "src/app/api/pdf/[id]/route.tsx": {
       "maxDuration": 120,
       "memory": 1024
     }
