@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('image') as File
     if (!file) return NextResponse.json({ error: 'Lipsește imaginea' }, { status: 400 })
+    if (file.size > 8 * 1024 * 1024) return NextResponse.json({ error: 'Imaginea depășește 8 MB' }, { status: 400 })
 
     let imageBuffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer)
 
