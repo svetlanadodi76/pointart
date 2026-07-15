@@ -4,7 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export async function POST(request: NextRequest) {
   try {
     const { path } = await request.json()
-    if (!path || typeof path !== 'string' || path.length > 200) {
+    const ALLOWED = ['/', '/pricing']
+    if (!path || !ALLOWED.includes(path)) {
       return NextResponse.json({ ok: false })
     }
     const admin = createAdminClient()
