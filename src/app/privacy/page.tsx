@@ -71,8 +71,8 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-3">5. Furnizorii noștri de servicii</h2>
             <p>Folosim următoarele servicii terțe pentru operarea PointArt:</p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
-              <li><strong>Supabase</strong> — bază de date și autentificare (UE/SUA). <a href="https://supabase.com/privacy" className="text-violet-600 hover:underline" target="_blank" rel="noopener">Politica Supabase →</a></li>
-              <li><strong>Vercel</strong> — găzduire aplicație (SUA). <a href="https://vercel.com/legal/privacy-policy" className="text-violet-600 hover:underline" target="_blank" rel="noopener">Politica Vercel →</a></li>
+              <li><strong>Supabase</strong> — bază de date și autentificare (UE/SUA). <span className="text-violet-600">Politica Supabase →</span></li>
+              <li><strong>Vercel</strong> — găzduire aplicație (SUA). <span className="text-violet-600">Politica Vercel →</span></li>
             </ul>
             <p className="mt-3">Acești furnizori au acces la date strict în măsura necesară prestării serviciului lor.</p>
           </section>
