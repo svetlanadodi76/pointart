@@ -168,21 +168,8 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     }
   }, [view, schema, colors, isCrossStitch, CELL_SIZE])
 
-  const handleSchemaClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = schemaCanvasRef.current
-    if (!canvas) return
-    const rect = canvas.getBoundingClientRect()
-    const OX = 28; const OY = 14
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-    const cx = Math.floor(((e.clientX - rect.left) * scaleX - OX) / CELL_SIZE)
-    const cy = Math.floor(((e.clientY - rect.top) * scaleY - OY) / CELL_SIZE)
-    if (cx >= 0 && cx < schema.widthStitches && cy >= 0 && cy < schema.heightStitches) {
-      const color = colors[schema.grid[cy][cx]]
-      // Afișează info culoare în consolă (util pentru debugging)
-      console.log(`(${cx},${cy}) DMC ${color.dmcColor.code} — ${color.dmcColor.name}`)
-    }
-  }, [schema, colors, CELL_SIZE])
+  const handleSchemaClick = useCallback((_e: React.MouseEvent<HTMLCanvasElement>) => {
+  }, [])
 
   return (
     <div className="space-y-6">
