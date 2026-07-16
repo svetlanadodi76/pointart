@@ -241,10 +241,18 @@ export async function generateSchema(
     for (const idx of row) stitchCounts[idx]++
   }
 
-  // Elimină culorile sub prag: 0 puncte sau < 0.3% din total (min 2 puncte)
+  // Elimină culorile sub prag: < 0.3% din total, dar culori cu saturație înaltă
+  // (roșu buze, albastru aprins) se păstrează cu prag redus la 0.05% — sunt vizual distinctive
   const totalStitches = widthStitches * heightStitches
   const minStitches = Math.max(2, Math.floor(totalStitches * 0.003))
-  const validMask = stitchCounts.map((c: number) => c >= minStitches)
+  const minStitchesAccent = Math.max(2, Math.floor(totalStitches * 0.0005))
+  const validMask = stitchCounts.map((c: number, i: number) => {
+    if (c < 2) return false
+    const { r, g, b } = colorGroups[i].dmc
+    const mx = Math.max(r, g, b) / 255, mn = Math.min(r, g, b) / 255
+    const sat = mx === mn ? 0 : (mx - mn) / (mx + mn < 1 ? mx + mn : 2 - mx - mn)
+    return c >= (sat > 0.4 ? minStitchesAccent : minStitches)
+  })
 
   // Lucrăm pe copii mutabile ale array-urilor
   let activeGroups = [...colorGroups]
