@@ -546,8 +546,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                                 <td className="px-3 py-2 text-center text-gray-700">{rec.minWidthCm}×{rec.minHeightCm} cm</td>
                                 <td className="px-3 py-2 text-center text-gray-500 text-xs">{(() => {
                                   const total = Math.round(rec.minWidthCm * rec.stitchesPerCm) * Math.round(rec.minHeightCm * rec.stitchesPerCm)
-                                  const mins = rec.isDiamond ? 1 : rec.isGoblene ? 2 : 2.5
-                                  const h = Math.round(total * mins / 60)
+                                  const spm = rec.isDiamond ? 4.5 : rec.isGoblene ? 2 : 2.5
+                                  const h = Math.round(total / spm / 60)
                                   const mo = Math.round(h / 120)
                                   return mo >= 2 ? `~${mo} luni` : `~${h} ore`
                                 })()}</td>
@@ -791,8 +791,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   const w = Math.round(widthCm * density)
                   const h = Math.round(heightCm * density)
                   const total = w * h
-                  const minsPerStitch = craftType === 'diamond' ? 1 : craftType === 'goblene' ? 2 : 2.5
-                  const hours = Math.round(total * minsPerStitch / 60)
+                  const spm = craftType === 'diamond' ? 4.5 : craftType === 'goblene' ? 2 : 2.5
+                  const hours = Math.round(total / spm / 60)
                   const months = Math.round(hours / (4 * 30))
                   const timeLabel = hours < 100
                     ? `~${hours} ore`
