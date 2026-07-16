@@ -95,12 +95,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Auto-resize la max 2500px pentru a reduce memoria Sharp (RAW/DSLR pot fi 8000px+)
+    // Normalizează orientarea EXIF + resize max 2500px
     {
       const sharp = (await import('sharp')).default
       const meta = await sharp(imageBuffer).metadata()
-      if ((meta.width ?? 0) > 2500 || (meta.height ?? 0) > 2500) {
+      const needsRotate = (meta.orientation ?? 1) !== 1
+      const needsResize = (meta.width ?? 0) > 2500 || (meta.height ?? 0) > 2500
+      if (needsRotate || needsResize) {
         imageBuffer = await sharp(imageBuffer)
+          .rotate()
           .resize(2500, 2500, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 90 })
           .toBuffer()

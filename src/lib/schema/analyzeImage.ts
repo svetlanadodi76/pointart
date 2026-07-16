@@ -37,8 +37,10 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
   const sharp = (await import('sharp')).default
 
   const meta = await sharp(imageBuffer).metadata()
-  const origW = meta.width ?? 800
-  const origH = meta.height ?? 600
+  // EXIF orientation 5-8 = rotit 90°/270° — swap dimensiuni pentru aspect ratio corect
+  const swapDims = (meta.orientation ?? 1) >= 5
+  const origW = swapDims ? (meta.height ?? 600) : (meta.width ?? 800)
+  const origH = swapDims ? (meta.width ?? 800) : (meta.height ?? 600)
   const aspectRatio = origW / origH
 
   // Detectare margini via kernel Laplacian pe imagine greyscale redusă

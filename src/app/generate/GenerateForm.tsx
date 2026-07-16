@@ -48,10 +48,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [usePreprocessed, setUsePreprocessed] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // Resetează canvasType la valoarea implicită când se schimbă tipul lucrării
+  // Resetează canvasType doar dacă nu e compatibil cu noul tip de lucrare
   useEffect(() => {
     if (craftType === 'diamond') {
-      setCanvasType('2.5mm')
+      if (!['2.5mm', '2.8mm', '3.0mm'].includes(canvasType)) setCanvasType('2.5mm')
     } else if (craftType === 'goblene') {
       if (!['10mesh', '12mesh', '14mesh', '18mesh'].includes(canvasType)) setCanvasType('14mesh')
     } else {
