@@ -263,7 +263,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
           </div>
           <div className="flex items-center gap-3">
             <LanguageToggle lang={lang} />
-            <span className="text-gray-500 text-sm hidden sm:block">{t(lang, 'generate.title')}</span>
+            <Link href="/generate" className="text-sm font-medium text-violet-700 hover:text-violet-900 transition-colors hidden sm:block">
+              {t(lang, 'generate.new_schema')}
+            </Link>
           </div>
         </div>
       </header>
