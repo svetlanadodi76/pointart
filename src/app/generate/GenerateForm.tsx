@@ -521,6 +521,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                             <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Pânză</th>
                             <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Culori</th>
                             <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Dimensiuni min.</th>
+                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Timp est.</th>
                             <th className="px-3 py-2"></th>
                           </tr>
                         </thead>
@@ -543,6 +544,13 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                                 </td>
                                 <td className="px-3 py-2 text-center text-gray-700">{rec.optimalColors}</td>
                                 <td className="px-3 py-2 text-center text-gray-700">{rec.minWidthCm}×{rec.minHeightCm} cm</td>
+                                <td className="px-3 py-2 text-center text-gray-500 text-xs">{(() => {
+                                  const total = Math.round(rec.minWidthCm * rec.stitchesPerCm) * Math.round(rec.minHeightCm * rec.stitchesPerCm)
+                                  const mins = rec.isDiamond ? 1 : rec.isGoblene ? 2 : 2.5
+                                  const h = Math.round(total * mins / 60)
+                                  const mo = Math.round(h / 120)
+                                  return mo >= 2 ? `~${mo} luni` : `~${h} ore`
+                                })()}</td>
                                 <td className="px-3 py-2 text-right">
                                   <button
                                     onClick={() => applyRecommendation(rec)}
@@ -780,7 +788,18 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   }
                   const density = spc[canvasType] ?? 5.5
                   const unit = craftType === 'diamond' ? 'diamante' : 'puncte'
-                  return `→ ${Math.round(widthCm * density)} × ${Math.round(heightCm * density)} ${unit}`
+                  const w = Math.round(widthCm * density)
+                  const h = Math.round(heightCm * density)
+                  const total = w * h
+                  const minsPerStitch = craftType === 'diamond' ? 1 : craftType === 'goblene' ? 2 : 2.5
+                  const hours = Math.round(total * minsPerStitch / 60)
+                  const months = Math.round(hours / (4 * 30))
+                  const timeLabel = hours < 100
+                    ? `~${hours} ore`
+                    : months < 2
+                    ? `~${hours} ore (~${Math.round(hours/4)} zile la 4h/zi)`
+                    : `~${hours} ore (~${months} luni la 4h/zi)`
+                  return `→ ${w} × ${h} ${unit} · ${timeLabel}`
                 })()}
               </p>
             </div>
