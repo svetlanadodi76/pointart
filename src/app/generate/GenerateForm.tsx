@@ -38,6 +38,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [activeVariant, setActiveVariant] = useState(0)
   const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
   const [schemaId, setSchemaId] = useState<string | null>(null)
+  const [pdfLoading, setPdfLoading] = useState<'schema' | 'fabric' | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   // Preprocessing Premium
@@ -198,6 +199,30 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     const isPortrait = rec.minHeightCm > rec.minWidthCm
     setOrientation(isPortrait ? 'portrait' : 'landscape')
     if (result) setSettingsChanged(true)
+  }
+
+  async function downloadPdf(type: 'schema' | 'fabric') {
+    if (!schemaId) return
+    setPdfLoading(type)
+    setError(null)
+    try {
+      const res = await fetch(`/api/pdf/${schemaId}${type === 'fabric' ? '?type=fabric' : ''}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Eroare la generarea PDF (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = type === 'fabric' ? 'tiparire-pinza-1x1.pdf' : 'schema-pointart.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setPdfLoading(null)
+    }
   }
 
   async function handleGenerate() {
@@ -881,20 +906,20 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               <div className="flex flex-col gap-2">
                 {schemaId ? (
                   <>
-                    <a
-                      href={`/api/pdf/${schemaId}`}
-                      download
-                      className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                    <button
+                      onClick={() => downloadPdf('schema')}
+                      disabled={pdfLoading !== null}
+                      className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                     >
-                      📄 Descarcă PDF schemă
-                    </a>
-                    <a
-                      href={`/api/pdf/${schemaId}?type=fabric`}
-                      download
-                      className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2"
+                      {pdfLoading === 'schema' ? '⏳ Generez PDF...' : '📄 Descarcă PDF schemă'}
+                    </button>
+                    <button
+                      onClick={() => downloadPdf('fabric')}
+                      disabled={pdfLoading !== null}
+                      className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                     >
-                      🖨️ Tipărire pe pânză (1:1)
-                    </a>
+                      {pdfLoading === 'fabric' ? '⏳ Generez PDF...' : '🖨️ Tipărire pe pânză (1:1)'}
+                    </button>
                   </>
                 ) : (
                   <p className="text-xs text-center text-gray-400">Generează o schemă nouă pentru a descărca PDF</p>

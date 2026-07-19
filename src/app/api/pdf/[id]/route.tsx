@@ -36,13 +36,13 @@ export async function GET(
   const canvasType = (schema.canvas_type ?? '14CT') as CanvasType
   const name = schema.name as string
 
-  const doc = (type === 'fabric'
-    ? React.createElement(FabricPDF, { schema: schemaData, name, craftType, canvasType })
-    : React.createElement(SchemaPDF, { schema: schemaData, name, craftType, canvasType })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) as any
-
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const doc = (type === 'fabric'
+      ? React.createElement(FabricPDF, { schema: schemaData, name, craftType, canvasType })
+      : React.createElement(SchemaPDF, { schema: schemaData, name, craftType, canvasType })
+    ) as any
+
     const buffer = await renderToBuffer(doc)
     const filename = `${name.replace(/\s+/g, '-')}-${type}.pdf`
     const body = new Uint8Array(buffer)
@@ -55,7 +55,7 @@ export async function GET(
       },
     })
   } catch (err) {
-    console.error('[PDF] renderToBuffer failed:', err)
+    console.error('[PDF] generation failed:', err)
     return NextResponse.json(
       { error: 'Eroare la generarea PDF. Încearcă din nou sau contactează suportul.' },
       { status: 500 }
