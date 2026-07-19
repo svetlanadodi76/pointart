@@ -65,12 +65,16 @@ export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResul
     console.error('[AI] face enhancement error:', e)
   }
 
-  // Step 3: Sharp postprocessing final
+  // Step 3: Sharp postprocessing final + limitare dimensiune output (max 2500px, JPEG 82%)
+  // Fără resize, Real-ESRGAN 4× poate returna imagini de 10-20MB care depășesc limita Vercel
   try {
     buf = await sharp(buf)
+      .rotate()
+      .resize(2500, 2500, { fit: 'inside', withoutEnlargement: true })
       .sharpen({ sigma: 1.2 })
       .median(1)
       .modulate({ saturation: 1.15 })
+      .jpeg({ quality: 82 })
       .toBuffer()
     steps.sharpened = true
   } catch {

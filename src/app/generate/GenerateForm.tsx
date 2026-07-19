@@ -121,8 +121,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     const fd = new FormData()
     if (usePreprocessed && preprocessedBlob) {
       // Generare din imaginea preprocesată AI
+      // Nu trimitem originalImage separat — reduce payload (preprocess poate fi 2-3MB, original încă 2-4MB → 413)
+      // Thumbnailul din Storage va fi imaginea preprocesată (reprezentativă pentru schema generată)
       fd.append('image', new File([preprocessedBlob], 'preprocessed.jpg', { type: 'image/jpeg' }))
-      fd.append('originalImage', image!) // originala → thumbnail în Storage
       fd.append('skipAI', 'true')
       if (preprocessedSteps) fd.append('aiSteps', JSON.stringify(preprocessedSteps))
     } else {
