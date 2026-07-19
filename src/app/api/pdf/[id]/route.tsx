@@ -42,15 +42,23 @@ export async function GET(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) as any
 
-  const buffer = await renderToBuffer(doc)
-  const filename = `${name.replace(/\s+/g, '-')}-${type}.pdf`
-  const body = new Uint8Array(buffer)
+  try {
+    const buffer = await renderToBuffer(doc)
+    const filename = `${name.replace(/\s+/g, '-')}-${type}.pdf`
+    const body = new Uint8Array(buffer)
 
-  return new NextResponse(body, {
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Cache-Control': 'private, no-store',
-    },
-  })
+    return new NextResponse(body, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'private, no-store',
+      },
+    })
+  } catch (err) {
+    console.error('[PDF] renderToBuffer failed:', err)
+    return NextResponse.json(
+      { error: 'Eroare la generarea PDF. Încearcă din nou sau contactează suportul.' },
+      { status: 500 }
+    )
+  }
 }
