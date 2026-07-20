@@ -23,6 +23,21 @@ function contrastBW(hex: string): [number, number, number] {
   return 0.299 * r + 0.587 * g + 0.114 * b > 128 ? [0, 0, 0] : [1, 1, 1]
 }
 
+// Helvetica folosește WinAnsi — suportă doar ASCII + Latin-1 (0x00-0xFF)
+// Caracterele românești ă/Ă, ș/Ș, ț/Ț sunt în Latin Extended-A (>0xFF) → trebuie transliterate
+function pdf(text: string): string {
+  const map: Record<string, string> = {
+    'ă': 'a', 'Ă': 'A',
+    'ș': 's', 'Ș': 'S', 'ş': 's', 'Ş': 'S',
+    'ț': 't', 'Ț': 'T', 'ţ': 't', 'Ţ': 'T',
+  }
+  return [...text].map(ch => {
+    if (map[ch]) return map[ch]
+    const code = ch.charCodeAt(0)
+    return (code >= 32 && code <= 126) || (code >= 160 && code <= 255) ? ch : ''
+  }).join('')
+}
+
 function encodeChar(ch: string): string | null {
   const code = ch.charCodeAt(0)
   if ((code >= 32 && code <= 126) || (code >= 160 && code <= 255)) return ch
@@ -100,9 +115,9 @@ export async function generateSchemaPdf(
     const secH = tile.endRow - tile.startRow
 
     // Header
-    page.drawText(name, { x: MARGIN, y: PAGE_H - MARGIN - 10, size: 11, font: fontBold, color: violet })
+    page.drawText(pdf(name), { x: MARGIN, y: PAGE_H - MARGIN - 10, size: 11, font: fontBold, color: violet })
     page.drawText(
-      `${widthStitches}×${heightStitches} puncte • ${widthCm}×${heightCm} cm • ${canvasType} • Pagina ${ti + 1}/${totalPages}`,
+      pdf(`${widthStitches}x${heightStitches} puncte - ${widthCm}x${heightCm} cm - ${canvasType} - Pagina ${ti + 1}/${totalPages}`),
       { x: MARGIN, y: PAGE_H - MARGIN - 22, size: 7, font, color: gray }
     )
 
@@ -198,16 +213,17 @@ export async function generateSchemaPdf(
 
   // ─── Pagina legendă ──────────────────────────────────────────────────────────
   const legendPage = pdfDoc.addPage(PageSizes.A4)
-  legendPage.drawText(name, { x: MARGIN, y: PAGE_H - MARGIN - 10, size: 11, font: fontBold, color: violet })
+  legendPage.drawText(pdf(name), { x: MARGIN, y: PAGE_H - MARGIN - 10, size: 11, font: fontBold, color: violet })
   legendPage.drawText(
-    `Legendă culori • ${colors.length} culori DMC • Pagina ${totalPages}/${totalPages}`,
+    `Legenda culori - ${colors.length} culori DMC - Pagina ${totalPages}/${totalPages}`,
     { x: MARGIN, y: PAGE_H - MARGIN - 22, size: 7, font, color: gray }
   )
 
   // Sumar materiale
   const totalStitches = widthStitches * heightStitches
+  const fmtNum = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   legendPage.drawText(
-    `${widthStitches}×${heightStitches} = ${totalStitches.toLocaleString('ro-RO')} puncte • ${widthCm}×${heightCm} cm • ${canvasType}`,
+    `${widthStitches}x${heightStitches} = ${fmtNum(totalStitches)} puncte - ${widthCm}x${heightCm} cm - ${canvasType}`,
     { x: MARGIN, y: PAGE_H - MARGIN - 38, size: 8, font, color: black }
   )
 
@@ -244,11 +260,11 @@ export async function generateSchemaPdf(
       legendPage.drawText(sym, { x: lx + 3, y: ly - 9, size: 8, font, color: rgb(sr, sg, sb) })
     }
 
-    // Text: "DMC 310 Black — 110 pach. • 10990 pct."
+    // Text: "DMC 310 Black  110 pach. - 10990 pct."
     const qty = color.skeins
-    const unit = color.unit === 'packets' ? 'pach.' : color.unit?.includes('wool') ? 'scule lână' : color.unit?.includes('silk') ? 'scule mătase' : color.unit?.includes('cotton') ? 'scule bumbac' : 'scule'
-    const label = `DMC ${color.dmcColor.code}  ${color.dmcColor.name}`
-    const qty2 = `${qty} ${unit} · ${color.count.toLocaleString('ro-RO')} pct.`
+    const unit = color.unit === 'packets' ? 'pach.' : color.unit?.includes('wool') ? 'scule lana' : color.unit?.includes('silk') ? 'scule matase' : color.unit?.includes('cotton') ? 'scule bumbac' : 'scule'
+    const label = pdf(`DMC ${color.dmcColor.code}  ${color.dmcColor.name}`)
+    const qty2 = `${qty} ${unit} - ${fmtNum(color.count)} pct.`
 
     legendPage.drawText(label, { x: lx + 18, y: ly - 6, size: 8, font: fontBold, color: black })
     legendPage.drawText(qty2, { x: lx + 18, y: ly - 14, size: 7, font, color: gray })
