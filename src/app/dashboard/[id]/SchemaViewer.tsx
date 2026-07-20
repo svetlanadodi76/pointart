@@ -59,6 +59,31 @@ function renderShapeSvg(symbol: string, color: string, size: number) {
 
 export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType, canvasType }: Props) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
+  const [pdfLoading, setPdfLoading] = useState<'schema' | 'fabric' | null>(null)
+  const [pdfError, setPdfError] = useState<string | null>(null)
+
+  async function downloadPdf(type: 'schema' | 'fabric') {
+    setPdfLoading(type)
+    setPdfError(null)
+    try {
+      const res = await fetch(`/api/pdf/${schemaId}${type === 'fabric' ? '?type=fabric' : ''}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Eroare la generarea PDF (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = type === 'fabric' ? 'tiparire-pinza-1x1.pdf' : 'schema-pointart.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setPdfError(e.message)
+    } finally {
+      setPdfLoading(null)
+    }
+  }
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const schemaCanvasRef = useRef<HTMLCanvasElement>(null)
   const _cell = Math.max(12, Math.min(20, Math.floor(700 / schema.widthStitches)))
@@ -195,21 +220,26 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         </div>
 
         {canDownloadPdf ? (
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={`/api/pdf/${schemaId}`}
-              download
-              className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors text-sm inline-flex items-center gap-2"
-            >
-              📄 PDF schemă
-            </a>
-            <a
-              href={`/api/pdf/${schemaId}?type=fabric`}
-              download
-              className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm inline-flex items-center gap-2"
-            >
-              🖨️ Tipărire pânză (1:1)
-            </a>
+          <div className="flex flex-col gap-2 items-end">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => downloadPdf('schema')}
+                disabled={pdfLoading !== null}
+                className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
+              >
+                {pdfLoading === 'schema' ? '⏳ Generez...' : '📄 PDF schemă'}
+              </button>
+              <button
+                onClick={() => downloadPdf('fabric')}
+                disabled={pdfLoading !== null}
+                className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
+              >
+                {pdfLoading === 'fabric' ? '⏳ Generez...' : '🖨️ Tipărire pânză (1:1)'}
+              </button>
+            </div>
+            {pdfError && (
+              <p className="text-red-600 text-xs">{pdfError}</p>
+            )}
           </div>
         ) : (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-amber-700 text-sm">
