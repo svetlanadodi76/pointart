@@ -54,10 +54,8 @@ export async function GET(
       },
     })
   } catch (err) {
-    console.error('[PDF] generation failed:', err)
-    return NextResponse.json(
-      { error: 'Eroare la generarea PDF. Încearcă din nou sau contactează suportul.' },
-      { status: 500 }
-    )
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[PDF] generation failed:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
