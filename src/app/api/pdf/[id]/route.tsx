@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
 import { createClient } from '@/lib/supabase/server'
 import { getSubscription } from '@/lib/supabase/getSubscription'
-import { SchemaPDF } from '@/lib/pdf/SchemaPDF'
+import { generateSchemaPdf } from '@/lib/pdf/generateSchemaPdf'
 import { generateFabricPdf } from '@/lib/pdf/generateFabricPdf'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
-import React from 'react'
 
 export async function GET(
   request: NextRequest,
@@ -40,13 +38,9 @@ export async function GET(
     let buffer: Buffer
 
     if (type === 'fabric') {
-      // pdf-lib: generare directă fără React, mult mai rapid pentru schema mari (80k+ celule)
       buffer = await generateFabricPdf(schemaData, craftType, canvasType)
     } else {
-      // @react-pdf/renderer: schema cu pagini, legendă, riglă
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const doc = React.createElement(SchemaPDF, { schema: schemaData, name, craftType, canvasType }) as any
-      buffer = await renderToBuffer(doc)
+      buffer = await generateSchemaPdf(schemaData, craftType, canvasType, name)
     }
 
     const filename = `${name.replace(/\s+/g, '-')}-${type}.pdf`
