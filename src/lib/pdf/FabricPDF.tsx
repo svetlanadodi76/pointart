@@ -1,4 +1,4 @@
-import { Document, Page, View, Svg, Rect, Line, Text } from '@react-pdf/renderer'
+import { Document, Page, Svg, Rect, Line, Text, View } from '@react-pdf/renderer'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS } from '@/lib/dmc/categoricalColors'
 
@@ -25,8 +25,9 @@ const STITCH_SIZE_CM: Record<string, number> = {
   '18mesh': 1 / 7.09,
 }
 
-// Câte rânduri per chunk SVG — la 165 col × 20 rând = 3.300 elemente/SVG (vs 36k într-un singur SVG)
-const ROWS_PER_CHUNK = 20
+// A4 fără marjă — maximizăm zona utilă pentru 1:1
+const PAGE_W = 595
+const PAGE_H = 842
 
 interface FabricPDFProps {
   schema: GeneratedSchema
@@ -35,8 +36,8 @@ interface FabricPDFProps {
   canvasType?: CanvasType
 }
 
-export function FabricPDF({ schema, craftType, canvasType = '14CT' }: FabricPDFProps) {
-  const { grid, colors, widthStitches, heightStitches } = schema
+export function FabricPDF({ schema, name = 'PointArt', craftType, canvasType = '14CT' }: FabricPDFProps) {
+  const { grid, colors, widthStitches, heightStitches, widthCm, heightCm } = schema
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
   const isDiamond = craftType === 'diamond'
@@ -63,98 +64,125 @@ export function FabricPDF({ schema, craftType, canvasType = '14CT' }: FabricPDFP
   const showSymbols = cellPt >= 4.5
   const fontSize = Math.max(cellPt * (isCrossStitch ? 0.72 : 0.68), 3)
 
-  // Pagina = dimensiunea exactă a pânzei (1:1)
-  const pageWidth = widthStitches * cellPt
-  const pageHeight = heightStitches * cellPt
+  // Celule per pagină A4 la scală 1:1 (fără marjă)
+  const colsPerPage = Math.max(1, Math.floor(PAGE_W / cellPt))
+  const rowsPerPage = Math.max(1, Math.floor(PAGE_H / cellPt))
+  const pageCols = Math.ceil(widthStitches / colsPerPage)
+  const pageRows = Math.ceil(heightStitches / rowsPerPage)
 
-  // Chunk-uri de rânduri — fiecare chunk = un SVG separat (~3k elemente, nu 36k)
-  const chunks: Array<{ startRow: number; endRow: number }> = []
-  for (let r = 0; r < heightStitches; r += ROWS_PER_CHUNK) {
-    chunks.push({ startRow: r, endRow: Math.min(r + ROWS_PER_CHUNK, heightStitches) })
+  const tiles: Array<{
+    startRow: number; endRow: number
+    startCol: number; endCol: number
+    tileR: number; tileC: number
+  }> = []
+  for (let pr = 0; pr < pageRows; pr++) {
+    for (let pc = 0; pc < pageCols; pc++) {
+      tiles.push({
+        startRow: pr * rowsPerPage,
+        endRow: Math.min((pr + 1) * rowsPerPage, heightStitches),
+        startCol: pc * colsPerPage,
+        endCol: Math.min((pc + 1) * colsPerPage, widthStitches),
+        tileR: pr, tileC: pc,
+      })
+    }
   }
 
+  const totalTiles = tiles.length
+
   return (
-    <Document title="Tipărire pânză 1:1" author="PointArt">
-      <Page size={[pageWidth, pageHeight]} style={{ padding: 0, position: 'relative' }}>
+    <Document title={`${name} — Tipărire 1:1`} author="PointArt">
+      {tiles.map((tile, pageIdx) => {
+        const secW = tile.endCol - tile.startCol
+        const secH = tile.endRow - tile.startRow
+        const svgW = secW * cellPt
+        const svgH = secH * cellPt
 
-        {/* Chunk-uri de celule — fiecare ~3k elemente SVG în loc de 36k+ */}
-        {chunks.map((chunk, chunkIdx) => {
-          const chunkRows = chunk.endRow - chunk.startRow
-          const chunkH = chunkRows * cellPt
-          const chunkTop = chunk.startRow * cellPt
-
+        // Marcaje fiecare 10 celule — offset față de startCol/startRow
+        const tenCols = Array.from({ length: Math.ceil(secW / 10) + 1 }, (_, i) => {
+          const absCol = Math.ceil(tile.startCol / 10) * 10 + i * 10
+          if (absCol < tile.startCol || absCol > tile.endCol) return null
+          const x = (absCol - tile.startCol) * cellPt
           return (
-            <View
-              key={chunkIdx}
-              style={{ position: 'absolute', top: chunkTop, left: 0 }}
-            >
-              <Svg width={pageWidth} height={chunkH} viewBox={`0 0 ${pageWidth} ${chunkH}`}>
-                {Array.from({ length: chunkRows }, (_, rowOffset) => {
-                  const absRow = chunk.startRow + rowOffset
-                  return grid[absRow].map((colorIdx, x) => {
-                    const color = colors[colorIdx]
-                    const meta = colorMeta[colorIdx]
-                    const cx = x * cellPt
-                    const cy = rowOffset * cellPt
-
-                    const fill = isCrossStitch
-                      ? (meta.isSolid ? meta.catColor : '#ffffff')
-                      : color.dmcColor.hex
-
-                    const sym = isDiamond
-                      ? (color.symbol || meta.symbol)
-                      : isCrossStitch
-                        ? (meta.isSolid ? null : meta.symbol)
-                        : (color.symbol || meta.symbol)
-
-                    const symColor = isDiamond
-                      ? contrastColor(color.dmcColor.hex)
-                      : isCrossStitch
-                        ? meta.catColor
-                        : contrastColor(color.dmcColor.hex)
-
-                    return [
-                      <Rect key={`r-${absRow}-${x}`}
-                        x={cx} y={cy} width={cellPt} height={cellPt} fill={fill}
-                      />,
-                      showSymbols && sym ? (
-                        <Text key={`t-${absRow}-${x}`}
-                          style={{ fontSize, fill: symColor, textAnchor: 'middle' }}
-                          x={cx + cellPt / 2} y={cy + cellPt * 0.75}
-                        >
-                          {sym}
-                        </Text>
-                      ) : null,
-                    ]
-                  })
-                })}
-              </Svg>
-            </View>
+            <Line key={`v-${i}`} x1={x} y1={0} x2={x} y2={svgH}
+              stroke="#000" strokeWidth={0.6} opacity={0.5} />
           )
-        })}
+        })
+        const tenRows = Array.from({ length: Math.ceil(secH / 10) + 1 }, (_, i) => {
+          const absRow = Math.ceil(tile.startRow / 10) * 10 + i * 10
+          if (absRow < tile.startRow || absRow > tile.endRow) return null
+          const y = (absRow - tile.startRow) * cellPt
+          return (
+            <Line key={`h-${i}`} x1={0} y1={y} x2={svgW} y2={y}
+              stroke="#000" strokeWidth={0.6} opacity={0.5} />
+          )
+        })
 
-        {/* Linii de orientare la fiecare 10 celule — SVG separat */}
-        <View style={{ position: 'absolute', top: 0, left: 0 }}>
-          <Svg width={pageWidth} height={pageHeight} viewBox={`0 0 ${pageWidth} ${pageHeight}`}>
-            {Array.from({ length: Math.floor(widthStitches / 10) + 1 }, (_, i) => (
-              <Line key={`v-${i}`}
-                x1={i * 10 * cellPt} y1={0} x2={i * 10 * cellPt} y2={pageHeight}
-                stroke="#000000" strokeWidth={0.5} opacity={0.4}
-              />
-            ))}
-            {Array.from({ length: Math.floor(heightStitches / 10) + 1 }, (_, i) => (
-              <Line key={`h-${i}`}
-                x1={0} y1={i * 10 * cellPt} x2={pageWidth} y2={i * 10 * cellPt}
-                stroke="#000000" strokeWidth={0.5} opacity={0.4}
-              />
-            ))}
-            <Rect x={0} y={0} width={pageWidth} height={pageHeight}
-              fill="none" stroke="#000000" strokeWidth={1}
-            />
-          </Svg>
-        </View>
+        return (
+          <Page key={pageIdx} size="A4" style={{ padding: 0 }}>
+            {/* Header minimal: număr pagină + coordonate secțiune */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingVertical: 2 }}>
+              <Text style={{ fontSize: 6, color: '#9ca3af' }}>
+                {name} • {widthCm}×{heightCm} cm • {canvasType} • Tipărire 1:1 (printează la 100%, fără scalare)
+              </Text>
+              <Text style={{ fontSize: 6, color: '#9ca3af' }}>
+                Secțiunea {tile.tileR + 1}-{tile.tileC + 1} / {pageRows}×{pageCols} • Pagina {pageIdx + 1}/{totalTiles}
+              </Text>
+            </View>
 
-      </Page>
+            <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+              {/* Celule */}
+              {Array.from({ length: secH }, (_, rowOffset) =>
+                Array.from({ length: secW }, (_, colOffset) => {
+                  const absRow = tile.startRow + rowOffset
+                  const absCol = tile.startCol + colOffset
+                  const colorIdx = grid[absRow][absCol]
+                  const color = colors[colorIdx]
+                  const meta = colorMeta[colorIdx]
+                  const cx = colOffset * cellPt
+                  const cy = rowOffset * cellPt
+
+                  const fill = isCrossStitch
+                    ? (meta.isSolid ? meta.catColor : '#ffffff')
+                    : color.dmcColor.hex
+
+                  const sym = isDiamond
+                    ? (color.symbol || meta.symbol)
+                    : isCrossStitch
+                      ? (meta.isSolid ? null : meta.symbol)
+                      : (color.symbol || meta.symbol)
+
+                  const symColor = isDiamond
+                    ? contrastColor(color.dmcColor.hex)
+                    : isCrossStitch ? meta.catColor : contrastColor(color.dmcColor.hex)
+
+                  return [
+                    <Rect key={`r-${rowOffset}-${colOffset}`}
+                      x={cx} y={cy} width={cellPt} height={cellPt} fill={fill}
+                    />,
+                    showSymbols && sym ? (
+                      <Text key={`t-${rowOffset}-${colOffset}`}
+                        style={{ fontSize, fill: symColor, textAnchor: 'middle' }}
+                        x={cx + cellPt / 2} y={cy + cellPt * 0.75}
+                      >
+                        {sym}
+                      </Text>
+                    ) : null,
+                  ]
+                })
+              )}
+
+              {/* Linii la fiecare 10 celule */}
+              {tenCols}
+              {tenRows}
+
+              {/* Bordură secțiune */}
+              <Rect x={0} y={0} width={svgW} height={svgH}
+                fill="none" stroke="#000" strokeWidth={0.8}
+              />
+            </Svg>
+          </Page>
+        )
+      })}
     </Document>
   )
 }
