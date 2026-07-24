@@ -47,6 +47,11 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [preprocessedSteps, setPreprocessedSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
   const [preprocessing, setPreprocessing] = useState(false)
   const [usePreprocessed, setUsePreprocessed] = useState(false)
+  // Smart Focus Premium
+  const [smartFocusBlob, setSmartFocusBlob] = useState<Blob | null>(null)
+  const [smartFocusPreview, setSmartFocusPreview] = useState<string | null>(null)
+  const [smartFocusing, setSmartFocusing] = useState(false)
+  const [useSmartFocus, setUseSmartFocus] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Resetează canvasType doar dacă nu e compatibil cu noul tip de lucrare
@@ -83,6 +88,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     setPreprocessedSteps(null)
     setPreprocessing(false)
     setUsePreprocessed(false)
+    setSmartFocusBlob(null)
+    setSmartFocusPreview(null)
+    setSmartFocusing(false)
+    setUseSmartFocus(false)
     if (fileRef.current) fileRef.current.value = ''
 
     const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
@@ -120,16 +129,16 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
   function buildFd(nColors: number) {
     const fd = new FormData()
-    if (usePreprocessed && preprocessedBlob) {
-      // Generare din imaginea preprocesată AI
-      // Nu trimitem originalImage separat — reduce payload (preprocess poate fi 2-3MB, original încă 2-4MB → 413)
-      // Thumbnailul din Storage va fi imaginea preprocesată (reprezentativă pentru schema generată)
+    if (useSmartFocus && smartFocusBlob) {
+      fd.append('image', new File([smartFocusBlob], 'smartfocus.jpg', { type: 'image/jpeg' }))
+      fd.append('skipAI', 'true')
+    } else if (usePreprocessed && preprocessedBlob) {
       fd.append('image', new File([preprocessedBlob], 'preprocessed.jpg', { type: 'image/jpeg' }))
       fd.append('skipAI', 'true')
       if (preprocessedSteps) fd.append('aiSteps', JSON.stringify(preprocessedSteps))
     } else {
       fd.append('image', image!)
-      if (isPremium && preprocessedBlob !== null) fd.append('skipAI', 'true')
+      if (isPremium && (preprocessedBlob !== null || smartFocusBlob !== null)) fd.append('skipAI', 'true')
     }
     fd.append('craftType', craftType)
     fd.append('canvasType', canvasType)
@@ -167,6 +176,31 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       setError(e.message)
     } finally {
       setPreprocessing(false)
+    }
+  }
+
+  async function handleSmartFocus() {
+    if (!image) return
+    setSmartFocusing(true)
+    setError(null)
+    setSmartFocusBlob(null)
+    setSmartFocusPreview(null)
+    setUseSmartFocus(false)
+    try {
+      const fd = new FormData()
+      fd.append('image', image)
+      const res = await fetch('/api/smart-focus', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Eroare Smart Focus')
+      }
+      const blob = await res.blob()
+      setSmartFocusBlob(blob)
+      setSmartFocusPreview(URL.createObjectURL(blob))
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setSmartFocusing(false)
     }
   }
 
@@ -381,7 +415,6 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
                 {preprocessedPreview && (
                   <div className="space-y-4">
-                    {/* Comparație before/after */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <p className="text-xs text-gray-500 text-center mb-1.5">Original</p>
@@ -396,8 +429,6 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         <img src={preprocessedPreview} alt="AI Enhanced" className="w-full rounded-lg border border-amber-300" />
                       </div>
                     </div>
-
-                    {/* Pași AI aplicați */}
                     {preprocessedSteps && (
                       <div className="flex flex-wrap gap-1.5">
                         {preprocessedSteps.upscaled && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">↑ mărită 4×</span>}
@@ -405,25 +436,20 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         {preprocessedSteps.sharpened && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">◈ claritate optimizată</span>}
                       </div>
                     )}
-
-                    {/* Butoane accept/cancel */}
                     {usePreprocessed ? (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-green-700 font-medium flex items-center gap-1.5">
                           <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</span>
                           Imaginea AI selectată
                         </span>
-                        <button
-                          onClick={() => setUsePreprocessed(false)}
-                          className="text-xs text-gray-500 hover:text-gray-700 underline"
-                        >
+                        <button onClick={() => setUsePreprocessed(false)} className="text-xs text-gray-500 hover:text-gray-700 underline">
                           Revino la original
                         </button>
                       </div>
                     ) : (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setUsePreprocessed(true)}
+                          onClick={() => { setUsePreprocessed(true); setUseSmartFocus(false) }}
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-semibold transition-colors"
                         >
                           Folosește imaginea AI
@@ -438,6 +464,85 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     )}
                   </div>
                 )}
+
+                {/* ── Smart Focus ── */}
+                <div className="border-t border-amber-200 mt-4 pt-4">
+                  <p className="text-xs font-semibold text-amber-700 mb-3">🎯 Smart Focus — optimizare fundal</p>
+
+                  {!smartFocusPreview && !smartFocusing && (
+                    <div className="space-y-2">
+                      <button
+                        onClick={handleSmartFocus}
+                        disabled={preprocessing || smartFocusing}
+                        className="w-full bg-violet-600 hover:bg-violet-700 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50"
+                      >
+                        🎯 Optimizează imaginea
+                      </button>
+                      <p className="text-xs text-amber-600 bg-amber-100 rounded-lg px-3 py-2">
+                        Detectează subiectul automat și simplifică fundalul — eliberează culori pentru zone importante (portret, peisaj, flori, animal).
+                      </p>
+                    </div>
+                  )}
+
+                  {smartFocusing && (
+                    <div className="flex items-center justify-center gap-3 py-4">
+                      <svg className="w-5 h-5 animate-spin text-violet-600" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      <span className="text-sm text-violet-700 font-medium">Analizez imaginea... (20–40 sec)</span>
+                    </div>
+                  )}
+
+                  {smartFocusPreview && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-gray-500 text-center mb-1.5">Original</p>
+                          {preview && preview !== '__heic__' ? (
+                            <img src={preview} alt="Original" className="w-full rounded-lg border border-gray-200" />
+                          ) : (
+                            <div className="w-full h-32 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-400">HEIC</div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs text-violet-600 font-semibold text-center mb-1.5">🎯 Smart Focus</p>
+                          <img src={smartFocusPreview} alt="Smart Focus" className="w-full rounded-lg border border-violet-300" />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">🎯 subiect detectat</span>
+                        <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">◎ fundal simplificat</span>
+                      </div>
+                      {useSmartFocus ? (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-green-700 font-medium flex items-center gap-1.5">
+                            <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</span>
+                            Smart Focus selectat
+                          </span>
+                          <button onClick={() => setUseSmartFocus(false)} className="text-xs text-gray-500 hover:text-gray-700 underline">
+                            Revino la original
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { setUseSmartFocus(true); setUsePreprocessed(false) }}
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-semibold transition-colors"
+                          >
+                            Folosește Smart Focus
+                          </button>
+                          <button
+                            onClick={() => { setSmartFocusPreview(null); setSmartFocusBlob(null); setUseSmartFocus(false) }}
+                            className="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-xl text-sm transition-colors"
+                          >
+                            Anulează
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -861,7 +966,13 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             )}
 
             <div className="space-y-3">
-              {isPremium && usePreprocessed && (
+              {isPremium && useSmartFocus && (
+                <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-700 flex items-center gap-2">
+                  <span>✓</span>
+                  <span>Schema se va genera cu Smart Focus aplicat</span>
+                </div>
+              )}
+              {isPremium && usePreprocessed && !useSmartFocus && (
                 <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-700 flex items-center gap-2">
                   <span>✓</span>
                   <span>Schema se va genera din imaginea îmbunătățită AI</span>
