@@ -54,6 +54,7 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
       const result = await sharp(blurredBg)
         .composite([{ input: subjectPng, blend: 'over' }])
         .flatten({ background: '#ffffff' })   // elimină canalul alpha → JPEG compatibil
+        .median(2)                            // netezește tranziții ten/păr → mai puțin dithering pe fețe
         .jpeg({ quality: 85 })
         .toBuffer()
 

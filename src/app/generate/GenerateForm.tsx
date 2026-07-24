@@ -513,6 +513,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       <div className="flex flex-wrap gap-1.5">
                         <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">🎯 subiect detectat</span>
                         <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">◎ fundal simplificat</span>
+                        <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">◈ fețe netezite</span>
                       </div>
                       {useSmartFocus ? (
                         <div className="flex items-center justify-between">
