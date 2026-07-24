@@ -911,29 +911,49 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   />
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-2">
-                {(() => {
-                  const spc: Record<string, number> = {
-                    '11CT': 4.3, '14CT': 5.5, '16CT': 6.3, '18CT': 7.1,
-                    '2.5mm': 4.0, '2.8mm': 3.571, '3.0mm': 3.333,
-                    '10mesh': 3.94, '12mesh': 4.72, '14mesh': 5.51, '18mesh': 7.09,
-                  }
-                  const density = spc[canvasType] ?? 5.5
-                  const unit = craftType === 'diamond' ? 'diamante' : 'puncte'
-                  const w = Math.round(widthCm * density)
-                  const h = Math.round(heightCm * density)
-                  const total = w * h
-                  const spm = craftType === 'diamond' ? 4.5 : craftType === 'goblene' ? 2 : 2.5
-                  const hours = Math.round(total / spm / 60)
-                  const months = Math.round(hours / (4 * 30))
-                  const timeLabel = hours < 100
-                    ? `~${hours} ore`
-                    : months < 2
-                    ? `~${hours} ore (~${Math.round(hours/4)} zile la 4h/zi)`
-                    : `~${hours} ore (~${months} luni la 4h/zi)`
-                  return `→ ${w} × ${h} ${unit} · ${timeLabel}`
-                })()}
-              </p>
+              {(() => {
+                const spc: Record<string, number> = {
+                  '11CT': 4.3, '14CT': 5.5, '16CT': 6.3, '18CT': 7.1,
+                  '2.5mm': 4.0, '2.8mm': 3.571, '3.0mm': 3.333,
+                  '10mesh': 3.94, '12mesh': 4.72, '14mesh': 5.51, '18mesh': 7.09,
+                }
+                const density = spc[canvasType] ?? 5.5
+                const unit = craftType === 'diamond' ? 'diamante' : 'puncte'
+                const w = Math.round(widthCm * density)
+                const h = Math.round(heightCm * density)
+                const total = w * h
+                const spm = craftType === 'diamond' ? 4.5 : craftType === 'goblene' ? 2 : 2.5
+                const hours = Math.round(total / spm / 60)
+                const months = Math.round(hours / (4 * 30))
+                const timeLabel = hours < 100
+                  ? `~${hours} ore`
+                  : months < 2
+                  ? `~${hours} ore (~${Math.round(hours/4)} zile la 4h/zi)`
+                  : `~${hours} ore (~${months} luni la 4h/zi)`
+
+                // Avertisment grup: ochi vizibili necesită ≥8 puncte/ochi
+                // ochi ≈ 12% din lățimea per persoană
+                const fc = analysis?.faceCount ?? 0
+                const stitchesPerEye = fc >= 3 ? Math.round((w / fc) * 0.12) : 99
+                const minWidthCm = fc >= 3 ? Math.ceil(fc * 8 / 0.12 / density) : 0
+                const showWarning = fc >= 3 && stitchesPerEye < 8
+
+                return (
+                  <>
+                    <p className="text-xs text-gray-400 mt-2">
+                      → {w} × {h} {unit} · {timeLabel}
+                    </p>
+                    {showWarning && (
+                      <div className="mt-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2.5 text-xs text-orange-700">
+                        <span className="font-semibold">⚠️ {fc} persoane detectate</span>
+                        {' '}— la {widthCm}cm aveți ~{stitchesPerEye} puncte/ochi (minim 8 pentru vizibilitate).
+                        <br />
+                        <span className="font-medium">Recomandare: minim {minWidthCm} cm lățime</span> pentru ochi clari cu {canvasType}.
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </div>
 
             {/* Culori */}
