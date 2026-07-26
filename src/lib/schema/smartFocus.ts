@@ -50,11 +50,24 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
       // Fundal neutru solid (bej cald) — ocupă 1-2 culori în paletă în loc de 5-6
       const neutralBg = await sharp({
         create: { width: w, height: h, channels: 3, background: { r: 218, g: 212, b: 200 } },
-      }).jpeg({ quality: 90 }).toBuffer()
+      }).png().toBuffer()
 
-      // Composite: subiect (RGBA de la RMBG) peste fundal neutru
+      // Resize masca RMBG la dimensiunile originale (modelul poate returna altă rezoluție)
+      const maskResized = await sharp(subjectPng)
+        .resize(w, h, { fit: 'fill' })
+        .toBuffer()
+
+      // Aplică masca RMBG pe imaginea originală: blend 'dest-in' = pixeli originali × alpha mască
+      // Rezultat: subiectul cu culorile originale exacte + background transparent
+      const maskedSubject = await sharp(imageBuffer)
+        .ensureAlpha()
+        .composite([{ input: maskResized, blend: 'dest-in' }])
+        .png()
+        .toBuffer()
+
+      // Composite subiect mascat peste fundal neutru
       const result = await sharp(neutralBg)
-        .composite([{ input: subjectPng, blend: 'over' }])
+        .composite([{ input: maskedSubject, blend: 'over' }])
         .flatten({ background: '#ffffff' })
         .median(2)
         .jpeg({ quality: 85 })
