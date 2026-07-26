@@ -40,21 +40,23 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
     console.error('[SmartFocus] RMBG error:', e)
   }
 
-  // Step 2: Composite — subiect original pe fundal blurat/desaturat
+  // Step 2: Composite — subiect original pe fundal neutru solid
   if (subjectPng) {
     try {
-      // Fundal: blur puternic + culori reduse la jumătate
-      const blurredBg = await sharp(imageBuffer)
-        .blur(30)
-        .modulate({ saturation: 0.1, brightness: 0.85 })
-        .toBuffer()
+      const meta2 = await sharp(imageBuffer).metadata()
+      const w = meta2.width!
+      const h = meta2.height!
 
-      // Composite: subiect (RGBA de la RMBG) peste fundal blurat
-      // blend 'over' → unde subjectPng e opac, apare subiectul; unde e transparent → fundalul blurat
-      const result = await sharp(blurredBg)
+      // Fundal neutru solid (bej cald) — ocupă 1-2 culori în paletă în loc de 5-6
+      const neutralBg = await sharp({
+        create: { width: w, height: h, channels: 3, background: { r: 218, g: 212, b: 200 } },
+      }).jpeg({ quality: 90 }).toBuffer()
+
+      // Composite: subiect (RGBA de la RMBG) peste fundal neutru
+      const result = await sharp(neutralBg)
         .composite([{ input: subjectPng, blend: 'over' }])
-        .flatten({ background: '#ffffff' })   // elimină canalul alpha → JPEG compatibil
-        .median(2)                            // netezește tranziții ten/păr → mai puțin dithering pe fețe
+        .flatten({ background: '#ffffff' })
+        .median(2)
         .jpeg({ quality: 85 })
         .toBuffer()
 
