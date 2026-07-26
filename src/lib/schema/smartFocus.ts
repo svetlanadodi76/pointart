@@ -45,8 +45,8 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
     try {
       // Fundal: blur puternic + culori reduse la jumătate
       const blurredBg = await sharp(imageBuffer)
-        .blur(7)
-        .modulate({ saturation: 0.4 })
+        .blur(30)
+        .modulate({ saturation: 0.1, brightness: 0.85 })
         .toBuffer()
 
       // Composite: subiect (RGBA de la RMBG) peste fundal blurat
