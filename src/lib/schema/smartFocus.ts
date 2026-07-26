@@ -26,7 +26,7 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN })
 
     const output = await Promise.race([
-      replicate.run('briaai/rmbg-2.0', {
+      replicate.run('lucataco/remove-bg', {
         input: { image: `data:${mimeType};base64,${base64}` },
       }),
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 60000)),
