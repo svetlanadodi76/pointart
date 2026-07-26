@@ -10,7 +10,6 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
   const sharp = (await import('sharp')).default
   const steps = { maskExtracted: false, backgroundBlurred: false }
 
-  // Fără token → returnează originalul nemodificat
   if (!process.env.REPLICATE_API_TOKEN) {
     return { buffer: imageBuffer, steps }
   }
@@ -52,20 +51,43 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
         create: { width: w, height: h, channels: 3, background: { r: 218, g: 212, b: 200 } },
       }).png().toBuffer()
 
-      // Resize masca RMBG la dimensiunile originale (modelul poate returna altă rezoluție)
+      // Resize masca RMBG la dimensiunile exacte ale imaginii originale
       const maskResized = await sharp(subjectPng)
         .resize(w, h, { fit: 'fill' })
         .toBuffer()
 
-      // Aplică masca RMBG pe imaginea originală: blend 'dest-in' = pixeli originali × alpha mască
-      // Rezultat: subiectul cu culorile originale exacte + background transparent
-      const maskedSubject = await sharp(imageBuffer)
-        .ensureAlpha()
-        .composite([{ input: maskResized, blend: 'dest-in' }])
+      const maskMeta = await sharp(maskResized).metadata()
+      console.error('[SmartFocus] mask meta:', JSON.stringify({
+        format: maskMeta.format, width: maskMeta.width, height: maskMeta.height,
+        channels: maskMeta.channels, hasAlpha: maskMeta.hasAlpha, origW: w, origH: h,
+      }))
+
+      // Extrage alpha din masca RMBG (single channel raw)
+      // Dacă RMBG returnează PNG fără alpha → folosim greyscale negat (alb=fundal→0, subiect→>0)
+      const alphaRaw = maskMeta.hasAlpha
+        ? await sharp(maskResized).extractChannel('alpha').raw().toBuffer()
+        : await sharp(maskResized).greyscale().negate().raw().toBuffer()
+
+      // Extrage RGB original (raw, 3 canale)
+      const origRaw = await sharp(imageBuffer)
+        .resize(w, h, { fit: 'fill' })
+        .removeAlpha()
+        .raw()
+        .toBuffer()
+
+      // Construiește manual RGBA: culori originale + alpha din maska RMBG
+      const rgbaData = Buffer.allocUnsafe(w * h * 4)
+      for (let i = 0; i < w * h; i++) {
+        rgbaData[i * 4]     = origRaw[i * 3]
+        rgbaData[i * 4 + 1] = origRaw[i * 3 + 1]
+        rgbaData[i * 4 + 2] = origRaw[i * 3 + 2]
+        rgbaData[i * 4 + 3] = alphaRaw[i]
+      }
+
+      const maskedSubject = await sharp(rgbaData, { raw: { width: w, height: h, channels: 4 } })
         .png()
         .toBuffer()
 
-      // Composite subiect mascat peste fundal neutru
       const result = await sharp(neutralBg)
         .composite([{ input: maskedSubject, blend: 'over' }])
         .flatten({ background: '#ffffff' })
@@ -80,6 +102,5 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
     }
   }
 
-  // Fallback: returnează originalul dacă orice pas a eșuat
   return { buffer: imageBuffer, steps }
 }
