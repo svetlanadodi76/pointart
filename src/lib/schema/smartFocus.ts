@@ -10,33 +10,32 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
   const sharp = (await import('sharp')).default
   const steps = { maskExtracted: false, backgroundBlurred: false }
 
-  if (!process.env.REPLICATE_API_TOKEN) {
+  if (!process.env.REMOVE_BG_API_KEY) {
     return { buffer: imageBuffer, steps }
   }
 
   let subjectPng: Buffer | null = null
 
-  // Step 1: RMBG-2.0 — detectare subiect + extragere mască
+  // Step 1: remove.bg API — elimină fundalul, returnează PNG cu alpha transparent
   try {
     const meta = await sharp(imageBuffer).metadata()
     const mimeType = meta.format === 'png' ? 'image/png' : 'image/jpeg'
-    const base64 = imageBuffer.toString('base64')
 
-    const Replicate = (await import('replicate')).default
-    const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN })
+    const formData = new FormData()
+    formData.append('image_file', new Blob([new Uint8Array(imageBuffer)], { type: mimeType }), 'image.jpg')
+    formData.append('size', 'full')
 
-    const output = await Promise.race([
-      replicate.run('lucataco/remove-bg', {
-        input: { image: `data:${mimeType};base64,${base64}` },
-      }),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 60000)),
-    ]) as unknown as string
+    const res = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
+      headers: { 'X-Api-Key': process.env.REMOVE_BG_API_KEY },
+      body: formData,
+    })
 
-    const res = await fetch(output)
+    if (!res.ok) throw new Error(`remove.bg ${res.status}: ${await res.text()}`)
     subjectPng = Buffer.from(await res.arrayBuffer())
     steps.maskExtracted = true
   } catch (e) {
-    console.error('[SmartFocus] RMBG error:', e)
+    console.error('[SmartFocus] remove.bg error:', e)
   }
 
   // Step 2: Composite — subiect original pe fundal neutru solid
