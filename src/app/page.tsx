@@ -57,6 +57,9 @@ export default async function HomePage() {
           />
         </div>
         <div className="bg-[#f5ede4] py-10 px-4 text-center">
+          <p className="text-lg sm:text-xl text-gray-600 italic mb-8 max-w-2xl mx-auto">
+            {t(lang, 'home.tagline')}
+          </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href={user ? '/dashboard' : '/auth/register'} className="bg-violet-700 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors">
               {user ? (lang === 'ru' ? 'Мой кабинет' : 'Contul meu') : t(lang, 'home.cta_start')}
