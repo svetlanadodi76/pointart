@@ -45,25 +45,26 @@ export default async function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
-        <div className="inline-flex items-center gap-2 bg-violet-50 text-violet-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-          <span>✨</span>
-          <span>{t(lang, 'home.badge')}</span>
+      <section>
+        <div className="w-full">
+          <Image
+            src="/hero-banner.jpg"
+            alt="PointArt — Scheme de broderie și picturi cu diamante din imaginea ta"
+            width={1280}
+            height={512}
+            className="w-full h-auto object-cover"
+            priority
+          />
         </div>
-        <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-          {t(lang, 'home.h1_before')}<br />
-          {t(lang, 'home.h1_into')}<span className="text-violet-700">{t(lang, 'home.h1_highlight')}</span>
-        </h1>
-        <p className="text-lg sm:text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
-          {t(lang, 'home.tagline')}
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <Link href={user ? '/dashboard' : '/auth/register'} className="bg-violet-700 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors">
-            {user ? (lang === 'ru' ? 'Мой кабинет' : 'Contul meu') : t(lang, 'home.cta_start')}
-          </Link>
-          <Link href="#cum-functioneaza" className="text-gray-600 hover:text-violet-700 font-medium transition-colors">
-            {t(lang, 'home.cta_how')}
-          </Link>
+        <div className="bg-[#f5ede4] py-10 px-4 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link href={user ? '/dashboard' : '/auth/register'} className="bg-violet-700 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors">
+              {user ? (lang === 'ru' ? 'Мой кабинет' : 'Contul meu') : t(lang, 'home.cta_start')}
+            </Link>
+            <Link href="#cum-functioneaza" className="text-gray-600 hover:text-violet-700 font-medium transition-colors">
+              {t(lang, 'home.cta_how')}
+            </Link>
+          </div>
         </div>
       </section>
 
