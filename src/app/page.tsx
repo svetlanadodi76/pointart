@@ -57,6 +57,10 @@ export default async function HomePage() {
           />
         </div>
         <div className="bg-[#f5ede4] py-10 px-4 text-center">
+          <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+            {t(lang, 'home.h1_before')}<br />
+            {t(lang, 'home.h1_into')}<span className="text-violet-700">{t(lang, 'home.h1_highlight')}</span>
+          </h1>
           <p className="text-lg sm:text-xl text-gray-600 italic mb-8 max-w-2xl mx-auto">
             {t(lang, 'home.tagline')}
           </p>
