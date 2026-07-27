@@ -45,53 +45,39 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
       const w = meta2.width!
       const h = meta2.height!
 
-      // Fundal neutru solid (bej cald) — ocupă 1-2 culori în paletă în loc de 5-6
-      const neutralBg = await sharp({
-        create: { width: w, height: h, channels: 3, background: { r: 218, g: 212, b: 200 } },
-      }).png().toBuffer()
-
-      // Resize masca RMBG la dimensiunile exacte ale imaginii originale
+      // Resize masca remove.bg la dimensiunile exacte ale imaginii originale
       const maskResized = await sharp(subjectPng)
         .resize(w, h, { fit: 'fill' })
         .toBuffer()
 
       const maskMeta = await sharp(maskResized).metadata()
-      console.error('[SmartFocus] mask meta:', JSON.stringify({
-        format: maskMeta.format, width: maskMeta.width, height: maskMeta.height,
-        channels: maskMeta.channels, hasAlpha: maskMeta.hasAlpha, origW: w, origH: h,
-      }))
 
-      // Extrage alpha din masca RMBG (single channel raw)
-      // Dacă RMBG returnează PNG fără alpha → folosim greyscale negat (alb=fundal→0, subiect→>0)
+      // Extrage alpha din masca remove.bg (single channel raw)
       const alphaRaw = maskMeta.hasAlpha
         ? await sharp(maskResized).extractChannel('alpha').raw().toBuffer()
         : await sharp(maskResized).greyscale().negate().raw().toBuffer()
 
-      // Extrage RGB original (raw, 3 canale)
-      const origRaw = await sharp(imageBuffer)
-        .resize(w, h, { fit: 'fill' })
-        .removeAlpha()
+      // Fundal blurat + desaturat (mai puțin zgomot de culori în schemă)
+      const blurredBg = await sharp(imageBuffer)
+        .blur(25)
+        .modulate({ saturation: 0.3 })
         .raw()
         .toBuffer()
 
-      // Construiește manual RGBA: culori originale + alpha din maska RMBG
+      // Construiește RGBA: subiect original unde masca e opacă, fundal blurat unde e transparentă
+      const origRaw = await sharp(imageBuffer).removeAlpha().raw().toBuffer()
       const rgbaData = Buffer.allocUnsafe(w * h * 4)
       for (let i = 0; i < w * h; i++) {
-        rgbaData[i * 4]     = origRaw[i * 3]
-        rgbaData[i * 4 + 1] = origRaw[i * 3 + 1]
-        rgbaData[i * 4 + 2] = origRaw[i * 3 + 2]
-        rgbaData[i * 4 + 3] = alphaRaw[i]
+        const a = alphaRaw[i]
+        // Blend între subiect original și fundal blurat în funcție de alpha mască
+        rgbaData[i * 4]     = Math.round((origRaw[i * 3]     * a + blurredBg[i * 3]     * (255 - a)) / 255)
+        rgbaData[i * 4 + 1] = Math.round((origRaw[i * 3 + 1] * a + blurredBg[i * 3 + 1] * (255 - a)) / 255)
+        rgbaData[i * 4 + 2] = Math.round((origRaw[i * 3 + 2] * a + blurredBg[i * 3 + 2] * (255 - a)) / 255)
+        rgbaData[i * 4 + 3] = 255
       }
 
-      const maskedSubject = await sharp(rgbaData, { raw: { width: w, height: h, channels: 4 } })
-        .png()
-        .toBuffer()
-
-      const result = await sharp(neutralBg)
-        .composite([{ input: maskedSubject, blend: 'over' }])
-        .flatten({ background: '#ffffff' })
-        .median(2)
-        .jpeg({ quality: 85 })
+      const result = await sharp(rgbaData, { raw: { width: w, height: h, channels: 4 } })
+        .jpeg({ quality: 90 })
         .toBuffer()
 
       steps.backgroundBlurred = true
