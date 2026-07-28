@@ -112,12 +112,13 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (isPortrait) {
-    // Portrete: sharpen margini + normalize agresiv (portretele beneficiază de contrast maxim)
     pipeline.sharpen({ sigma: 1.2, m1: 1.5, m2: 30 })
     pipeline.normalize({ lower: 2, upper: 98 })
+  } else {
+    // Peisaje: normalize conservator — echilibrează canalele fără să clipeze culorile deschise
+    // upper:85 = clipăm doar top 15% (reflexii extreme), nu și cerul pale-blue (~70-80 percentilă)
+    pipeline.normalize({ lower: 1, upper: 85 })
   }
-  // Peisaje: fără normalize — canalul Blue al cerului e cel mai luminos din imagine
-  // și normalize l-ar clipsa la 255 (alb). Culorile originale sunt suficient de bune.
 
   const { data: pixels } = await pipeline
     .modulate({ saturation, brightness })
