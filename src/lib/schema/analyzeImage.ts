@@ -158,14 +158,16 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
     return { canvasType: cfg.type, stitchesPerCm: cfg.stitchesPerCm, minWidthCm, minHeightCm, optimalColors, isDiamond: cfg.isDiamond, isGoblene: cfg.isGoblene }
   })
 
-  const suggested = recommendations.find(r => r.canvasType === '14CT')!
+  // Portret cu față detectată → 18CT (7.1 spc): +29% puncte față de 14CT → detalii mai clare
+  const suggestedCanvas = faceCount >= 1 ? '18CT' : '14CT'
+  const suggested = recommendations.find(r => r.canvasType === suggestedCanvas)!
 
   return {
     complexityScore,
     complexityLabel,
     aspectRatio,
     recommendations,
-    suggestedCanvas: '14CT',
+    suggestedCanvas,
     suggestedColors: suggested.optimalColors,
     suggestedWidthCm: suggested.minWidthCm,
     suggestedHeightCm: suggested.minHeightCm,

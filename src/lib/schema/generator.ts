@@ -103,9 +103,17 @@ export async function generateSchema(
   const saturation = 1.08 * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
-  const { data: pixels } = await sharp(imageBuffer)
+  const isPortrait = settings.heightCm > settings.widthCm
+
+  // Construim pipeline Sharp — sharpen după resize doar pentru portrete
+  // sigma=1.2: raza de acuitate, m1=1.5: intensitate zone plate, m2=30: intensitate margini
+  const pipeline = sharp(imageBuffer)
     .median(1)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
+
+  if (isPortrait) pipeline.sharpen({ sigma: 1.2, m1: 1.5, m2: 30 })
+
+  const { data: pixels } = await pipeline
     .normalize({ lower: 2, upper: 98 })
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
