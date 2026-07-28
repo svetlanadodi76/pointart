@@ -111,13 +111,18 @@ export async function generateSchema(
     .median(1)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
-  if (isPortrait) pipeline.sharpen({ sigma: 1.2, m1: 1.5, m2: 30 })
+  if (isPortrait) {
+    // Portrete: sharpen margini + normalize agresiv (portretele beneficiază de contrast maxim)
+    pipeline.sharpen({ sigma: 1.2, m1: 1.5, m2: 30 })
+    pipeline.normalize({ lower: 2, upper: 98 })
+  }
+  // Peisaje: fără normalize — canalul Blue al cerului e cel mai luminos din imagine
+  // și normalize l-ar clipsa la 255 (alb). Culorile originale sunt suficient de bune.
 
   const { data: pixels } = await pipeline
-    .normalize({ lower: 2, upper: isPortrait ? 98 : 94 })
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
-    .linear(1.0, 8)
+    .linear(1.0, isPortrait ? 8 : 0)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
