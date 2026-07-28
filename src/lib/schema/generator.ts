@@ -79,6 +79,17 @@ function averageColors(colors: [number, number, number][]): [number, number, num
   return [Math.round(sum[0] / colors.length), Math.round(sum[1] / colors.length), Math.round(sum[2] / colors.length)]
 }
 
+function rgbToHue(r: number, g: number, b: number): number {
+  const rn = r / 255, gn = g / 255, bn = b / 255
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn)
+  if (max === min) return 0
+  const d = max - min
+  let h = max === rn ? (gn - bn) / d + (gn < bn ? 6 : 0)
+        : max === gn ? (bn - rn) / d + 2
+                     : (rn - gn) / d + 4
+  return h * 60
+}
+
 export async function generateSchema(
   imageBuffer: Buffer,
   settings: {
@@ -150,9 +161,31 @@ export async function generateSchema(
   }
 
   // Sortează după frecvență și ia top N culori
-  const sortedColors = [...colorFreq.entries()]
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, settings.maxColors)
+  const allSorted = [...colorFreq.entries()].sort((a, b) => b[1].count - a[1].count)
+  const sortedColors = allSorted.slice(0, settings.maxColors)
+
+  // Bonus diversitate ton: culori cu ton distinct (ex: cer albastru ~210°) care pierd
+  // competiția de frecvență față de culorile dominante (pink ~330°, verde ~120°)
+  // se forțează în paletă — max 3 culori bonus, doar dacă tonul lor e la >25° distanță
+  const selectedHues = sortedColors.map(([key]) => {
+    const [r, g, b] = key.split(',').map(Number)
+    return rgbToHue(r, g, b)
+  })
+  let bonusAdded = 0
+  for (const [key, data] of allSorted.slice(settings.maxColors)) {
+    if (bonusAdded >= 3) break
+    const [r, g, b] = key.split(',').map(Number)
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
+    if (mx < 40 || mn > 215 || mx - mn < 30) continue  // prea întunecat/deschis/nesaturat
+    const hue = rgbToHue(r, g, b)
+    const minHueDist = selectedHues.reduce((acc, sh) =>
+      Math.min(acc, Math.min(Math.abs(hue - sh), 360 - Math.abs(hue - sh))), Infinity)
+    if (minHueDist > 25) {
+      sortedColors.push([key, data])
+      selectedHues.push(hue)
+      bonusAdded++
+    }
+  }
 
   // Pentru fiecare grup, calculează culoarea medie și găsește DMC-ul cel mai apropiat
   const colorGroups: Array<{ qKey: string; dmc: DmcColor; count: number }> = []
