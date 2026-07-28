@@ -126,17 +126,15 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
     complexityScore >= 4 ? 'Medie' :
     complexityScore >= 2 ? 'Redusă' : 'Simplă'
 
-  // Boost pentru portrete: pielea e uniformă (scor mic) dar fața are nevoie
-  // de minim 200 puncte pentru recunoaștere facială corectă
+  // Portrete au nevoie de mai multe puncte pentru recunoaștere facială
+  // Peisaje/flori arată bine și la densitate mai mică
   const isPortrait = aspectRatio < 1
   const portraitBoost = isPortrait ? 80 : 0
 
-  // Număr minim de puncte pe latura scurtă în funcție de complexitate
-  const minStitchesShortBase =
-    complexityScore >= 8 ? 320 :
-    complexityScore >= 6 ? 250 :
-    complexityScore >= 4 ? 190 :
-    complexityScore >= 2 ? 150 : 110
+  // Scala separată portret vs peisaj — peisajele tolerează ~30% mai puține puncte
+  const minStitchesShortBase = isPortrait
+    ? (complexityScore >= 8 ? 320 : complexityScore >= 6 ? 250 : complexityScore >= 4 ? 190 : complexityScore >= 2 ? 150 : 110)
+    : (complexityScore >= 8 ? 220 : complexityScore >= 6 ? 175 : complexityScore >= 4 ? 140 : complexityScore >= 2 ? 115 : 90)
 
   const minStitchesShort = minStitchesShortBase + portraitBoost
 

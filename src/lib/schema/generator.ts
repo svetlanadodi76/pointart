@@ -114,7 +114,7 @@ export async function generateSchema(
   if (isPortrait) pipeline.sharpen({ sigma: 1.2, m1: 1.5, m2: 30 })
 
   const { data: pixels } = await pipeline
-    .normalize({ lower: 2, upper: 98 })
+    .normalize({ lower: 2, upper: isPortrait ? 98 : 94 })
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
     .linear(1.0, 8)
