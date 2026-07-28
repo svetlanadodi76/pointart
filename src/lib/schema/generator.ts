@@ -123,7 +123,6 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (isPortrait) {
-    pipeline.sharpen({ sigma: 1.2, m1: 1.5, m2: 30 })
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
     // Peisaje: gamma(1.3) = luminează uniform toate canalele fără clipare
@@ -135,7 +134,6 @@ export async function generateSchema(
   const { data: pixels } = await pipeline
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
-    .linear(1.0, isPortrait ? 8 : 0)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
@@ -247,14 +245,14 @@ export async function generateSchema(
         finalGrid[y][x] = bestIdx
         const chosen = colorGroups[bestIdx].dmc
 
-        // Eroarea de cuantizare — clamp redus pentru blocuri mai curate (stil goblen)
-        const MAX_ERR = 10
+        // Portrete: difuzie mare (gradiente fine pe piele) → MAX_ERR=15, DIFFUSE=0.25
+        // Peisaje: difuzie redusă (blocuri mai uniforme, fără zgomot în zone plane) → 10/0.15
+        const MAX_ERR = isPortrait ? 15 : 10
         const er = Math.max(-MAX_ERR, Math.min(MAX_ERR, r - chosen.r))
         const eg = Math.max(-MAX_ERR, Math.min(MAX_ERR, g - chosen.g))
         const eb = Math.max(-MAX_ERR, Math.min(MAX_ERR, b - chosen.b))
 
-        // Difuzare redusă → mai puțin zgomot, zone mai uniforme de culoare
-        const DIFFUSE = 0.15
+        const DIFFUSE = isPortrait ? 0.25 : 0.15
         const addErr = (nx: number, ny: number, f: number) => {
           if (nx < 0 || nx >= widthStitches || ny >= heightStitches) return
           const ni = (ny * widthStitches + nx) * 3
