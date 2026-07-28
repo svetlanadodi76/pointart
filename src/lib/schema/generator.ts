@@ -90,6 +90,26 @@ function rgbToHue(r: number, g: number, b: number): number {
   return h * 60
 }
 
+// ─── Profiluri de generare ────────────────────────────────────────────────────
+// FACES: imagini cu fețe umane — piele netedă, gradiente fine, fără bonus cer
+// NATURE: peisaje, flori, animale — blocuri curate, cer albastru protejat
+// ─────────────────────────────────────────────────────────────────────────────
+const FACES_PROFILE = {
+  pipelineMode:      'faces' as const,  // normalize per-canal: accentuează tonurile pielii
+  qFactor:           32,
+  maxErr:            15,                // difuzie mare → gradiente fine pe piele
+  diffuse:           0.25,
+  hueDiversityBonus: false,             // paleta pielii nu are nevoie de protecție ton
+}
+
+const NATURE_PROFILE = {
+  pipelineMode:      'nature' as const, // gamma(1.3): luminează uniform fără clipare canal
+  qFactor:           32,
+  maxErr:            10,                // difuzie redusă → blocuri uniforme (cer, iarbă)
+  diffuse:           0.15,
+  hueDiversityBonus: true,              // protejează culori cu ton distinct (cer albastru)
+}
+
 export async function generateSchema(
   imageBuffer: Buffer,
   settings: {
@@ -98,6 +118,7 @@ export async function generateSchema(
     widthCm: number
     heightCm: number
     maxColors: number
+    hasFaces?: boolean               // true = fețe umane detectate → profil FACES
     imgBrightness?: number
     imgContrast?: number
     threadType?: 'wool' | 'silk' | 'cotton'
@@ -114,19 +135,18 @@ export async function generateSchema(
   const saturation = 1.08 * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
-  const isPortrait = settings.heightCm > settings.widthCm
+  // Selecție profil bazat pe CONȚINUT (fețe detectate), nu pe orientare (vertical/orizontal)
+  const profile = settings.hasFaces ? FACES_PROFILE : NATURE_PROFILE
 
-  // Construim pipeline Sharp — sharpen după resize doar pentru portrete
-  // sigma=1.2: raza de acuitate, m1=1.5: intensitate zone plate, m2=30: intensitate margini
   const pipeline = sharp(imageBuffer)
     .median(1)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
-  if (isPortrait) {
+  if (profile.pipelineMode === 'faces') {
+    // normalize per-canal: fiecare canal R/G/B e întins independent → tonuri piele mai vii
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
-    // Peisaje: gamma(1.3) = luminează uniform toate canalele fără clipare
-    // Spre deosebire de normalize (per-canal, clipează), gamma e non-liniar și
+    // gamma(1.3): luminează uniform fără clipare per-canal
     // păstrează raportul R/G/B → cerul rămâne albastru, florile roz, apa verde-închis
     pipeline.gamma(1.3)
   }
@@ -145,9 +165,7 @@ export async function generateSchema(
   // Construiește harta de frecvențe a culorilor (cuantizate)
   const colorFreq = new Map<string, { count: number; pixels: [number, number, number][] }>()
 
-  // factor=32 pentru toate tipurile: buckets mai largi → zone curate + culori rare (cer, umbre)
-  // se unesc într-un singur bucket destul de mare pentru a intra în top N culori
-  const qFactor = 32
+  const qFactor = profile.qFactor
 
   for (let i = 0; i < pixels.length; i += 3) {
     const [qr, qg, qb] = quantizeColor(pixels[i], pixels[i + 1], pixels[i + 2], qFactor)
@@ -162,11 +180,11 @@ export async function generateSchema(
   const allSorted = [...colorFreq.entries()].sort((a, b) => b[1].count - a[1].count)
   const sortedColors = allSorted.slice(0, settings.maxColors)
 
-  // Bonus diversitate ton — DOAR pentru peisaje (nu portrete)
-  // Peisajele au cer albastru (~210°) care pierde competiția de frecvență față de
-  // culorile dominante (pink ~330°, verde ~120°) → se forțează în paletă
-  // Portretele NU au nevoie: pielea e dominantă și bonus-ul adaugă culori reci în fundal
-  if (!isPortrait) {
+  // Bonus diversitate ton — activ doar în profilul NATURE (profile.hueDiversityBonus)
+  // Protejează culori cu ton distinct (cer albastru ~210°) care pierd competiția de
+  // frecvență față de culorile dominante. Dezactivat pentru FACES: pielea e dominantă
+  // și bonus-ul ar adăuga culori reci nepotrivite în fundalul portretelor.
+  if (profile.hueDiversityBonus) {
     const selectedHues = sortedColors.map(([key]) => {
       const [r, g, b] = key.split(',').map(Number)
       return rgbToHue(r, g, b)
@@ -245,14 +263,12 @@ export async function generateSchema(
         finalGrid[y][x] = bestIdx
         const chosen = colorGroups[bestIdx].dmc
 
-        // Portrete: difuzie mare (gradiente fine pe piele) → MAX_ERR=15, DIFFUSE=0.25
-        // Peisaje: difuzie redusă (blocuri mai uniforme, fără zgomot în zone plane) → 10/0.15
-        const MAX_ERR = isPortrait ? 15 : 10
+        const MAX_ERR = profile.maxErr
         const er = Math.max(-MAX_ERR, Math.min(MAX_ERR, r - chosen.r))
         const eg = Math.max(-MAX_ERR, Math.min(MAX_ERR, g - chosen.g))
         const eb = Math.max(-MAX_ERR, Math.min(MAX_ERR, b - chosen.b))
 
-        const DIFFUSE = isPortrait ? 0.25 : 0.15
+        const DIFFUSE = profile.diffuse
         const addErr = (nx: number, ny: number, f: number) => {
           if (nx < 0 || nx >= widthStitches || ny >= heightStitches) return
           const ni = (ny * widthStitches + nx) * 3

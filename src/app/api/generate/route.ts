@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getSubscription } from '@/lib/supabase/getSubscription'
 import { generateSchema } from '@/lib/schema/generator'
 import { aiPreprocess } from '@/lib/schema/aiPreprocess'
+import { analyzeImage } from '@/lib/schema/analyzeImage'
 import { logSecurity } from '@/lib/supabase/logSecurity'
 import type { CraftType, CanvasType } from '@/types'
 
@@ -110,6 +111,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Detectare fețe pentru selecția profilului de generare (FACES vs NATURE)
+    let hasFaces = false
+    try {
+      const analysis = await analyzeImage(imageBuffer)
+      hasFaces = analysis.faceCount > 0
+    } catch { /* fallback: tratăm ca nature */ }
+
     // AI preprocessing pentru utilizatorii Premium
     let aiSteps = null
     const skipAI = formData.get('skipAI') === 'true'
@@ -131,6 +139,7 @@ export async function POST(request: NextRequest) {
       widthCm,
       heightCm,
       maxColors: maxColors || 30,
+      hasFaces,
       imgBrightness,
       imgContrast,
       imgSaturation,
