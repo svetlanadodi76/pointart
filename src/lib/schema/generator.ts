@@ -115,9 +115,10 @@ export async function generateSchema(
     pipeline.sharpen({ sigma: 1.2, m1: 1.5, m2: 30 })
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
-    // Peisaje: normalize conservator — echilibrează canalele fără să clipeze culorile deschise
-    // upper:85 = clipăm doar top 15% (reflexii extreme), nu și cerul pale-blue (~70-80 percentilă)
-    pipeline.normalize({ lower: 1, upper: 85 })
+    // Peisaje: gamma(1.3) = luminează uniform toate canalele fără clipare
+    // Spre deosebire de normalize (per-canal, clipează), gamma e non-liniar și
+    // păstrează raportul R/G/B → cerul rămâne albastru, florile roz, apa verde-închis
+    pipeline.gamma(1.3)
   }
 
   const { data: pixels } = await pipeline
