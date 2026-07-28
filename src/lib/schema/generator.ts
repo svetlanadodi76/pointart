@@ -129,8 +129,11 @@ export async function generateSchema(
   // Construiește harta de frecvențe a culorilor (cuantizate)
   const colorFreq = new Map<string, { count: number; pixels: [number, number, number][] }>()
 
+  // Portrete: factor mai mare → buckets mai largi → zone curate de culoare (stil goblen)
+  const qFactor = isPortrait ? 32 : 24
+
   for (let i = 0; i < pixels.length; i += 3) {
-    const [qr, qg, qb] = quantizeColor(pixels[i], pixels[i + 1], pixels[i + 2])
+    const [qr, qg, qb] = quantizeColor(pixels[i], pixels[i + 1], pixels[i + 2], qFactor)
     const key = `${qr},${qg},${qb}`
     if (!colorFreq.has(key)) colorFreq.set(key, { count: 0, pixels: [] })
     const entry = colorFreq.get(key)!
@@ -200,14 +203,14 @@ export async function generateSchema(
         finalGrid[y][x] = bestIdx
         const chosen = colorGroups[bestIdx].dmc
 
-        // Eroarea de cuantizare — clamp ±15 (cross-stitch = blocuri mari, nu zgomot pixel)
-        const MAX_ERR = 15
+        // Eroarea de cuantizare — clamp redus pentru blocuri mai curate (stil goblen)
+        const MAX_ERR = 10
         const er = Math.max(-MAX_ERR, Math.min(MAX_ERR, r - chosen.r))
         const eg = Math.max(-MAX_ERR, Math.min(MAX_ERR, g - chosen.g))
         const eb = Math.max(-MAX_ERR, Math.min(MAX_ERR, b - chosen.b))
 
-        // Difuzare la 25% — tranziții subtile la margini, fără zgomot pe zone uniforme
-        const DIFFUSE = 0.25
+        // Difuzare redusă → mai puțin zgomot, zone mai uniforme de culoare
+        const DIFFUSE = 0.15
         const addErr = (nx: number, ny: number, f: number) => {
           if (nx < 0 || nx >= widthStitches || ny >= heightStitches) return
           const ni = (ny * widthStitches + nx) * 3
@@ -221,6 +224,8 @@ export async function generateSchema(
         addErr(x + 1, y + 1, 1 / 16)
       }
     }
+    // Portrete: elimină punctele izolate rămase după dithering → zone mai curate
+    if (isPortrait) finalGrid = smoothIsolatedPixels(finalGrid, 1)
   } else {
     // Scheme mici: nearest-neighbor simplu (dithering nu e vizibil la dimensiuni mici)
     finalGrid = []
@@ -228,7 +233,7 @@ export async function generateSchema(
       const row: number[] = []
       for (let x = 0; x < widthStitches; x++) {
         const pixelIdx = (y * widthStitches + x) * 3
-        const [qr, qg, qb] = quantizeColor(pixels[pixelIdx], pixels[pixelIdx + 1], pixels[pixelIdx + 2])
+        const [qr, qg, qb] = quantizeColor(pixels[pixelIdx], pixels[pixelIdx + 1], pixels[pixelIdx + 2], qFactor)
         const key = `${qr},${qg},${qb}`
         let colorIdx = colorToIndex.get(key)
         if (colorIdx === undefined) {
