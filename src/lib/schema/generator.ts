@@ -266,8 +266,8 @@ export async function generateSchema(
         addErr(x + 1, y + 1, 1 / 16)
       }
     }
-    // Portrete: elimină punctele izolate rămase după dithering → zone mai curate
-    if (isPortrait) finalGrid = smoothIsolatedPixels(finalGrid, 1)
+    // smoothIsolatedPixels nu se aplică la portrete: amplifică patch-urile de culoare
+    // rece din fundal (elimină zgomotul warm din interiorul lor → devin vizibil albastre)
   } else {
     // Scheme mici: nearest-neighbor simplu (dithering nu e vizibil la dimensiuni mici)
     finalGrid = []
