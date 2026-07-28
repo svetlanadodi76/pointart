@@ -136,8 +136,9 @@ export async function generateSchema(
   // Construiește harta de frecvențe a culorilor (cuantizate)
   const colorFreq = new Map<string, { count: number; pixels: [number, number, number][] }>()
 
-  // Portrete: factor mai mare → buckets mai largi → zone curate de culoare (stil goblen)
-  const qFactor = isPortrait ? 32 : 24
+  // factor=32 pentru toate tipurile: buckets mai largi → zone curate + culori rare (cer, umbre)
+  // se unesc într-un singur bucket destul de mare pentru a intra în top N culori
+  const qFactor = 32
 
   for (let i = 0; i < pixels.length; i += 3) {
     const [qr, qg, qb] = quantizeColor(pixels[i], pixels[i + 1], pixels[i + 2], qFactor)
