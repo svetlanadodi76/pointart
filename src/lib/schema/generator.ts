@@ -170,7 +170,7 @@ export async function generateSchema(
       const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2]
       const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
       const isSkin = r > 95 && g > 40 && b > 20
-        && mx - mn > 15 && r > g && r > b && Math.abs(r - g) > 15 && g > b
+        && mx - mn > 15 && r > g && r > b && Math.abs(r - g) > 15 && g > b && g > r * 0.45
       if (isSkin) {
         const grey = (r + g + b) / 3
         const SKIN_SAT_BOOST = 1.08
