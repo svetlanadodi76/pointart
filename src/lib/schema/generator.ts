@@ -158,6 +158,29 @@ export async function generateSchema(
     .raw()
     .toBuffer({ resolveWithObject: true })
 
+  // ─── FACES: ajustări specifice pe pixeli (după pipeline Sharp) ──────────────
+  if (profile.pipelineMode === 'faces') {
+    // Warm shift: +4R, -3B → reduce tonurile verzui/reci din umbrele pielii
+    for (let i = 0; i < pixels.length; i += 3) {
+      pixels[i]     = Math.min(255, pixels[i]     + 4)
+      pixels[i + 2] = Math.max(0,   pixels[i + 2] - 3)
+    }
+    // Saturație adaptivă pe pixeli cu ton de piele (Kovac + g>b pentru a exclude flori roz)
+    for (let i = 0; i < pixels.length; i += 3) {
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2]
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
+      const isSkin = r > 95 && g > 40 && b > 20
+        && mx - mn > 15 && r > g && r > b && Math.abs(r - g) > 15 && g > b
+      if (isSkin) {
+        const grey = (r + g + b) / 3
+        const SKIN_SAT_BOOST = 1.08
+        pixels[i]     = Math.max(0, Math.min(255, Math.round(grey + (r - grey) * SKIN_SAT_BOOST)))
+        pixels[i + 1] = Math.max(0, Math.min(255, Math.round(grey + (g - grey) * SKIN_SAT_BOOST)))
+        pixels[i + 2] = Math.max(0, Math.min(255, Math.round(grey + (b - grey) * SKIN_SAT_BOOST)))
+      }
+    }
+  }
+
   const dmcColors = await loadDmcColors()
   // Precomputăm LAB o singură dată pentru toată paleta DMC (~500 culori)
   const dmcWithLab = addLabToColors(dmcColors)

@@ -95,8 +95,10 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
     if (row > 70) continue  // ignorăm zona de jos (corp, haine)
     const r = colorPixels[i], g = colorPixels[i + 1], b = colorPixels[i + 2]
     const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
+    // g > b discriminează pielea de flori roz/magenta (lotus, trandafiri):
+    // piele: R=200,G=150,B=120 → g > b ✓ | lotus roz: R=220,G=80,B=130 → g < b ✗
     const isSkin = r > 95 && g > 40 && b > 20
-      && mx - mn > 15 && r > g && r > b && Math.abs(r - g) > 15
+      && mx - mn > 15 && r > g && r > b && Math.abs(r - g) > 15 && g > b
     if (isSkin) skinColumns[col]++
   }
   // Netezim profilul și numărăm vârfuri (fiecare vârf = o persoană)
