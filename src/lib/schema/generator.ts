@@ -100,7 +100,7 @@ const FACES_PROFILE = {
   maxErr:            15,                // difuzie mare → gradiente fine pe piele
   diffuse:           0.25,
   hueDiversityBonus: false,             // paleta pielii nu are nevoie de protecție ton
-  smoothPasses:      1,                 // elimină puncte izolate (sigur: fără bonus albastru)
+  smoothPasses:      0,                 // fără smooth: amplifică patch-uri reci din fundal
 }
 
 const NATURE_PROFILE = {
@@ -147,9 +147,6 @@ export async function generateSchema(
   if (profile.pipelineMode === 'faces') {
     // normalize per-canal: fiecare canal R/G/B e întins independent → tonuri piele mai vii
     pipeline.normalize({ lower: 2, upper: 98 })
-    // gamma(1.1): deschide umbrele pe față fără a supraexpune luminile
-    // Formula nonliniară: umbra 50→56 (+6), mid 180→186 (+6), lumini 240→241 (aproape neschimbat)
-    pipeline.gamma(1.1)
   } else {
     // gamma(1.3): luminează uniform fără clipare per-canal
     // păstrează raportul R/G/B → cerul rămâne albastru, florile roz, apa verde-închis
