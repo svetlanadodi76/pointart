@@ -160,12 +160,12 @@ export async function generateSchema(
 
   // ─── FACES: ajustări specifice pe pixeli (după pipeline Sharp) ──────────────
   if (profile.pipelineMode === 'faces') {
-    // Warm shift: +4R, -3B → reduce tonurile verzui/reci din umbrele pielii
+    // Warm shift subtil: +2R, -2B — reduce tonurile verzui fără a crea roșu pe obraji
     for (let i = 0; i < pixels.length; i += 3) {
-      pixels[i]     = Math.min(255, pixels[i]     + 4)
-      pixels[i + 2] = Math.max(0,   pixels[i + 2] - 3)
+      pixels[i]     = Math.min(255, pixels[i]     + 2)
+      pixels[i + 2] = Math.max(0,   pixels[i + 2] - 2)
     }
-    // Saturație adaptivă pe pixeli cu ton de piele (Kovac + g>b pentru a exclude flori roz)
+    // Saturație adaptivă subtilă pe tonuri de piele (boost 5%, nu 8% — evită benzi roșii)
     for (let i = 0; i < pixels.length; i += 3) {
       const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2]
       const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
@@ -173,7 +173,7 @@ export async function generateSchema(
         && mx - mn > 15 && r > g && r > b && Math.abs(r - g) > 15 && g > b && g > r * 0.45
       if (isSkin) {
         const grey = (r + g + b) / 3
-        const SKIN_SAT_BOOST = 1.08
+        const SKIN_SAT_BOOST = 1.05
         pixels[i]     = Math.max(0, Math.min(255, Math.round(grey + (r - grey) * SKIN_SAT_BOOST)))
         pixels[i + 1] = Math.max(0, Math.min(255, Math.round(grey + (g - grey) * SKIN_SAT_BOOST)))
         pixels[i + 2] = Math.max(0, Math.min(255, Math.round(grey + (b - grey) * SKIN_SAT_BOOST)))
@@ -217,7 +217,9 @@ export async function generateSchema(
       if (bonusAdded >= 3) break
       const [r, g, b] = key.split(',').map(Number)
       const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
-      if (mx < 40 || mn > 215 || mx - mn < 30) continue
+      // mn > 248: exclude doar aproape-alb pur — cerul palid/deschis e permis
+      // mx - mn < 10: exclude griul neutru fără tentă de culoare
+      if (mx < 30 || mn > 248 || mx - mn < 10) continue
       const hue = rgbToHue(r, g, b)
       const minHueDist = selectedHues.reduce((acc, sh) =>
         Math.min(acc, Math.min(Math.abs(hue - sh), 360 - Math.abs(hue - sh))), Infinity)
