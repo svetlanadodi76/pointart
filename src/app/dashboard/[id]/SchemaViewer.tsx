@@ -63,6 +63,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
   const [pdfError, setPdfError] = useState<string | null>(null)
   const [colorOverrides, setColorOverrides] = useState<Map<number, (typeof schema.colors)[0]['dmcColor']>>(new Map())
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
+  const [zoom, setZoom] = useState(1)
 
   async function downloadPdf(type: 'schema' | 'fabric') {
     setPdfLoading(type)
@@ -93,6 +94,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
   const CELL_SIZE = _totalPx > 9_000_000
     ? Math.max(5, Math.floor(Math.sqrt(9_000_000 / (schema.widthStitches * schema.heightStitches))))
     : _cell
+  const effectiveCellSize = Math.max(6, Math.min(48, Math.round(CELL_SIZE * zoom)))
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
   const isDiamond = craftType === 'diamond'
@@ -147,7 +149,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const S = CELL_SIZE
+    const S = effectiveCellSize
     const OX = 28
     const OY = 14
 
@@ -202,7 +204,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         ctx.fillText(String(y), OX - 2, py + 1)
       }
     }
-  }, [view, schema, effectiveColors, isCrossStitch, CELL_SIZE])
+  }, [view, schema, effectiveColors, isCrossStitch, effectiveCellSize])
 
   const handleSchemaClick = useCallback((_e: React.MouseEvent<HTMLCanvasElement>) => {
   }, [])
@@ -261,12 +263,34 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
 
       {/* Schema cu simboluri — canvas (previne crash Chrome la scheme mari) */}
       {view === 'schema' && (
-        <div className="overflow-auto border border-gray-200 rounded-xl bg-white p-2">
-          <canvas
-            ref={schemaCanvasRef}
-            onClick={handleSchemaClick}
-            style={{ display: 'block', maxWidth: '100%', cursor: 'crosshair' }}
-          />
+        <div className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+          {/* Bara zoom */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
+            <span className="text-xs text-gray-500 font-medium">Zoom:</span>
+            <button
+              onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
+              className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold flex items-center justify-center"
+              title="Micșorează"
+            >−</button>
+            <span className="text-xs font-mono text-gray-700 w-10 text-center">{Math.round(zoom * 100)}%</span>
+            <button
+              onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
+              className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold flex items-center justify-center"
+              title="Mărește"
+            >+</button>
+            <button
+              onClick={() => setZoom(1)}
+              className="text-xs text-violet-600 hover:text-violet-800 ml-1"
+              title="Reset zoom"
+            >Reset</button>
+          </div>
+          <div className="overflow-auto p-2">
+            <canvas
+              ref={schemaCanvasRef}
+              onClick={handleSchemaClick}
+              style={{ display: 'block', cursor: 'crosshair' }}
+            />
+          </div>
         </div>
       )}
 
@@ -352,39 +376,68 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
 
                   {/* Panou alternative (vizibil doar când se editează) */}
                   {isEditing && (
-                    <div className="bg-violet-50 rounded-lg p-3 mb-1 mx-1">
-                      <p className="text-xs font-semibold text-violet-700 mb-2">Alege culoarea de înlocuire:</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {/* Opțiunea originală (dacă e suprascrisă) */}
-                        {isOverridden && (
-                          <button
-                            onClick={() => {
-                              setColorOverrides(prev => { const n = new Map(prev); n.delete(color._idx); return n })
-                              setEditingIdx(null)
-                            }}
-                            className="flex items-center gap-1 px-2 py-1 bg-white border-2 border-gray-300 rounded-lg text-xs hover:border-violet-400 transition-colors"
-                            title="Restaurează culoarea originală"
-                          >
-                            <span className="w-4 h-4 rounded border border-gray-200 inline-block" style={{ backgroundColor: schema.colors[color._idx]?.dmcColor?.hex }} />
-                            <span className="text-gray-500">↩ Original</span>
-                          </button>
-                        )}
-                        {/* Alternativele pre-calculate */}
-                        {(schema.colors[color._idx]?.alternatives ?? []).map((alt, ai) => (
-                          <button
-                            key={ai}
-                            onClick={() => {
-                              setColorOverrides(prev => new Map(prev).set(color._idx, alt))
-                              setEditingIdx(null)
-                            }}
-                            className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs hover:border-violet-400 hover:bg-violet-50 transition-colors"
-                            title={`${alt.name} (DMC ${alt.code})`}
-                          >
-                            <span className="w-4 h-4 rounded border border-gray-200 flex-shrink-0 inline-block" style={{ backgroundColor: alt.hex }} />
-                            <span className="font-mono text-gray-600">{alt.code}</span>
-                            <span className="text-gray-400 hidden sm:inline truncate max-w-[80px]">{alt.name}</span>
-                          </button>
-                        ))}
+                    <div className="bg-violet-50 rounded-lg p-3 mb-1 mx-1 space-y-3">
+                      {/* Restaurare original */}
+                      {isOverridden && (
+                        <button
+                          onClick={() => {
+                            setColorOverrides(prev => { const n = new Map(prev); n.delete(color._idx); return n })
+                            setEditingIdx(null)
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 bg-white border-2 border-gray-300 rounded-lg text-xs hover:border-violet-400 transition-colors"
+                        >
+                          <span className="w-4 h-4 rounded border border-gray-200 inline-block" style={{ backgroundColor: schema.colors[color._idx]?.dmcColor?.hex }} />
+                          <span className="text-gray-500">↩ Restaurează originalul</span>
+                        </button>
+                      )}
+
+                      {/* Alternativele pre-calculate (cele mai apropiate DMC) */}
+                      {(schema.colors[color._idx]?.alternatives ?? []).length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-violet-700 mb-1.5">Nuanțe apropiate:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(schema.colors[color._idx]?.alternatives ?? []).map((alt, ai) => (
+                              <button
+                                key={ai}
+                                onClick={() => {
+                                  setColorOverrides(prev => new Map(prev).set(color._idx, alt))
+                                  setEditingIdx(null)
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs hover:border-violet-400 hover:bg-violet-50 transition-colors"
+                                title={`${alt.name} (DMC ${alt.code})`}
+                              >
+                                <span className="w-4 h-4 rounded border border-gray-200 flex-shrink-0 inline-block" style={{ backgroundColor: alt.hex }} />
+                                <span className="font-mono text-gray-600">{alt.code}</span>
+                                <span className="text-gray-400 hidden sm:inline truncate max-w-[80px]">{alt.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Toate celelalte culori din paleta schemei */}
+                      <div>
+                        <p className="text-xs font-semibold text-violet-700 mb-1.5">Din paleta schemei:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {effectiveColors
+                            .filter(c => c._idx !== color._idx)
+                            .sort((a, b) => b.count - a.count)
+                            .map((c) => (
+                              <button
+                                key={c._idx}
+                                onClick={() => {
+                                  setColorOverrides(prev => new Map(prev).set(color._idx, c.dmcColor))
+                                  setEditingIdx(null)
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs hover:border-violet-400 hover:bg-violet-50 transition-colors"
+                                title={`${c.dmcColor.name} (DMC ${c.dmcColor.code})`}
+                              >
+                                <span className="w-4 h-4 rounded border border-gray-200 flex-shrink-0 inline-block" style={{ backgroundColor: c.dmcColor.hex }} />
+                                <span className="font-mono text-gray-600">{c.dmcColor.code}</span>
+                                <span className="text-gray-400 hidden sm:inline truncate max-w-[80px]">{c.dmcColor.name}</span>
+                              </button>
+                            ))}
+                        </div>
                       </div>
                     </div>
                   )}
