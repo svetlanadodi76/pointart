@@ -64,6 +64,10 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
   const [colorOverrides, setColorOverrides] = useState<Map<number, (typeof schema.colors)[0]['dmcColor']>>(new Map())
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [zoom, setZoom] = useState(1)
+  type DmcColorEntry = (typeof schema.colors)[0]['dmcColor']
+  const [cellOverrides, setCellOverrides] = useState<Map<string, DmcColorEntry>>(new Map())
+  const [selectedRegion, setSelectedRegion] = useState<Set<string> | null>(null)
+  const [regionSrcIdx, setRegionSrcIdx] = useState<number | null>(null)
 
   async function downloadPdf(type: 'schema' | 'fabric') {
     setPdfLoading(type)
@@ -136,12 +140,13 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     canvas.height = schema.heightStitches * scale
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
-        const colorIdx = schema.grid[y][x]
-        ctx.fillStyle = effectiveColors[colorIdx].dmcColor.hex
+        const cellKey = `${y},${x}`
+        const cellDmc = cellOverrides.get(cellKey)
+        ctx.fillStyle = cellDmc ? cellDmc.hex : effectiveColors[schema.grid[y][x]].dmcColor.hex
         ctx.fillRect(x * scale, y * scale, scale, scale)
       }
     }
-  }, [view, schema, effectiveColors])
+  }, [view, schema, effectiveColors, cellOverrides])
 
   useEffect(() => {
     if (view !== 'schema' || !schemaCanvasRef.current) return
@@ -161,23 +166,35 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
 
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
+        const cellKey = `${y},${x}`
+        const cellDmc = cellOverrides.get(cellKey)
         const color = effectiveColors[schema.grid[y][x]]
+        const displayHex = cellDmc ? cellDmc.hex : color.dmcColor.hex
         const px = OX + x * S
         const py = OY + y * S
 
         ctx.fillStyle = isCrossStitch
           ? (color.isSolid ? (color.catColor ?? '#cccccc') : '#ffffff')
-          : color.dmcColor.hex
+          : displayHex
         ctx.fillRect(px, py, S, S)
 
         const sym = isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol
         if (sym) {
-          ctx.fillStyle = isCrossStitch ? (color.catColor ?? '#cccccc') : contrastColor(color.dmcColor.hex)
+          ctx.fillStyle = isCrossStitch ? (color.catColor ?? '#cccccc') : contrastColor(displayHex)
           ctx.font = `bold ${Math.max(S * 0.78, 8)}px monospace`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillText(sym, px + S / 2, py + S / 2)
         }
+      }
+    }
+
+    // Evidențiere regiune selectată
+    if (selectedRegion) {
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.30)'
+      for (const key of selectedRegion) {
+        const [ky, kx] = key.split(',').map(Number)
+        ctx.fillRect(OX + kx * S, OY + ky * S, S, S)
       }
     }
 
@@ -204,10 +221,42 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         ctx.fillText(String(y), OX - 2, py + 1)
       }
     }
-  }, [view, schema, effectiveColors, isCrossStitch, effectiveCellSize])
+  }, [view, schema, effectiveColors, isCrossStitch, effectiveCellSize, cellOverrides, selectedRegion])
 
-  const handleSchemaClick = useCallback((_e: React.MouseEvent<HTMLCanvasElement>) => {
-  }, [])
+  function floodFill(startY: number, startX: number): Set<string> {
+    const srcIdx = schema.grid[startY][startX]
+    const region = new Set<string>()
+    const stack: [number, number][] = [[startY, startX]]
+    const H = schema.heightStitches, W = schema.widthStitches
+    while (stack.length) {
+      const [y, x] = stack.pop()!
+      const key = `${y},${x}`
+      if (region.has(key) || y < 0 || y >= H || x < 0 || x >= W) continue
+      if (schema.grid[y][x] !== srcIdx) continue
+      region.add(key)
+      stack.push([y + 1, x], [y - 1, x], [y, x + 1], [y, x - 1])
+    }
+    return region
+  }
+
+  const handleSchemaClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = schemaCanvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const OX = 28, OY = 14
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const clickX = (e.clientX - rect.left) * scaleX
+    const clickY = (e.clientY - rect.top) * scaleY
+    const cellX = Math.floor((clickX - OX) / effectiveCellSize)
+    const cellY = Math.floor((clickY - OY) / effectiveCellSize)
+    if (cellX < 0 || cellX >= schema.widthStitches || cellY < 0 || cellY >= schema.heightStitches) return
+    const srcIdx = schema.grid[cellY][cellX]
+    const region = floodFill(cellY, cellX)
+    setSelectedRegion(region)
+    setRegionSrcIdx(srcIdx)
+    setEditingIdx(null)
+  }, [schema, effectiveCellSize])
 
   return (
     <div className="space-y-6">
@@ -288,7 +337,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
             <canvas
               ref={schemaCanvasRef}
               onClick={handleSchemaClick}
-              style={{ display: 'block', cursor: 'crosshair' }}
+              style={{ display: 'block', cursor: 'cell' }}
             />
           </div>
         </div>
@@ -307,6 +356,62 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         </div>
       )}
 
+      {/* Panou editare regiune (apare după click pe canvas) */}
+      {selectedRegion && regionSrcIdx !== null && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-semibold text-indigo-800">
+                Regiune selectată — {selectedRegion.size} celule
+              </p>
+              <p className="text-xs text-indigo-600 mt-0.5">
+                Culoare curentă: DMC {effectiveColors[regionSrcIdx]?.dmcColor?.code} · {effectiveColors[regionSrcIdx]?.dmcColor?.name}
+              </p>
+            </div>
+            <button
+              onClick={() => { setSelectedRegion(null); setRegionSrcIdx(null) }}
+              className="text-xs text-indigo-500 hover:text-indigo-800 px-2 py-1 rounded-lg hover:bg-indigo-100"
+            >✕ Anulează</button>
+          </div>
+          <p className="text-xs font-medium text-indigo-700 mb-2">Alege culoarea nouă din paleta schemei:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {[...effectiveColors]
+              .sort((a, b) => b.count - a.count)
+              .map(c => (
+                <button
+                  key={c._idx}
+                  onClick={() => {
+                    const newDmc = c.dmcColor
+                    setCellOverrides(prev => {
+                      const next = new Map(prev)
+                      for (const key of selectedRegion) next.set(key, newDmc)
+                      return next
+                    })
+                    setSelectedRegion(null)
+                    setRegionSrcIdx(null)
+                  }}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs border transition-colors ${
+                    c._idx === regionSrcIdx
+                      ? 'bg-indigo-200 border-indigo-400 text-indigo-800'
+                      : 'bg-white border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
+                  }`}
+                  title={`${c.dmcColor.name} (DMC ${c.dmcColor.code})`}
+                >
+                  <span className="w-4 h-4 rounded border border-gray-200 flex-shrink-0 inline-block" style={{ backgroundColor: c.dmcColor.hex }} />
+                  <span className="font-mono text-gray-700">{c.dmcColor.code}</span>
+                  <span className="text-gray-400 hidden sm:inline truncate max-w-[90px]">{c.dmcColor.name}</span>
+                </button>
+              ))}
+          </div>
+          {cellOverrides.size > 0 && (
+            <button
+              onClick={() => setCellOverrides(new Map())}
+              className="mt-3 text-xs text-red-500 hover:text-red-700"
+            >↩ Resetează toate modificările de regiuni</button>
+          )}
+        </div>
+      )}
+
       {/* Legendă culori */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h3 className="font-semibold text-gray-800 mb-4">
@@ -320,7 +425,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
           <span className="text-[10px] font-semibold text-gray-400 text-right">Cantitate</span>
         </div>
 
-        <p className="text-xs text-gray-400 mb-3">Click pe culoare pentru a o schimba</p>
+        <p className="text-xs text-gray-400 mb-3">✏️ Click pe ✏️ pentru a schimba o culoare din paletă · Click direct pe schemă pentru a schimba o singură regiune</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
           {[...effectiveColors]
             .sort((a, b) => b.count - a.count)
