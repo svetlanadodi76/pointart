@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react'
 import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS, GEOMETRIC_SYMBOLS } from '@/lib/dmc/categoricalColors'
 
@@ -61,6 +61,8 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const [pdfLoading, setPdfLoading] = useState<'schema' | 'fabric' | null>(null)
   const [pdfError, setPdfError] = useState<string | null>(null)
+  const [colorOverrides, setColorOverrides] = useState<Map<number, (typeof schema.colors)[0]['dmcColor']>>(new Map())
+  const [editingIdx, setEditingIdx] = useState<number | null>(null)
 
   async function downloadPdf(type: 'schema' | 'fabric') {
     setPdfLoading(type)
@@ -113,6 +115,15 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     }))
   })()
 
+  // Culori efective: suprascrie culorile schimbate de utilizator
+  const effectiveColors = useMemo(() =>
+    colors.map(c => ({
+      ...c,
+      dmcColor: colorOverrides.get(c._idx) ?? c.dmcColor,
+    })),
+    [colors, colorOverrides]
+  )
+
   useEffect(() => {
     if (view !== 'final' || !canvasRef.current) return
     const canvas = canvasRef.current
@@ -124,11 +135,11 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
         const colorIdx = schema.grid[y][x]
-        ctx.fillStyle = colors[colorIdx].dmcColor.hex
+        ctx.fillStyle = effectiveColors[colorIdx].dmcColor.hex
         ctx.fillRect(x * scale, y * scale, scale, scale)
       }
     }
-  }, [view, schema])
+  }, [view, schema, effectiveColors])
 
   useEffect(() => {
     if (view !== 'schema' || !schemaCanvasRef.current) return
@@ -148,7 +159,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
 
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
-        const color = colors[schema.grid[y][x]]
+        const color = effectiveColors[schema.grid[y][x]]
         const px = OX + x * S
         const py = OY + y * S
 
@@ -191,7 +202,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         ctx.fillText(String(y), OX - 2, py + 1)
       }
     }
-  }, [view, schema, colors, isCrossStitch, CELL_SIZE])
+  }, [view, schema, effectiveColors, isCrossStitch, CELL_SIZE])
 
   const handleSchemaClick = useCallback((_e: React.MouseEvent<HTMLCanvasElement>) => {
   }, [])
@@ -285,67 +296,101 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
           <span className="text-[10px] font-semibold text-gray-400 text-right">Cantitate</span>
         </div>
 
+        <p className="text-xs text-gray-400 mb-3">Click pe culoare pentru a o schimba</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
-          {[...colors]
+          {[...effectiveColors]
             .sort((a, b) => b.count - a.count)
-            .map((color, i) => (
-              <div key={i} className={`grid ${isCrossStitch ? 'grid-cols-[28px_52px_1fr_auto]' : 'grid-cols-[28px_28px_1fr_auto]'} items-center gap-x-3 py-1.5 border-b border-gray-50`}>
-                {/* Număr ordine */}
-                <span className="text-xs font-bold text-gray-400 text-center">{i + 1}</span>
+            .map((color, i) => {
+              const isEditing = editingIdx === color._idx
+              const isOverridden = colorOverrides.has(color._idx)
+              return (
+                <div key={i} className="border-b border-gray-50">
+                  {/* Rândul principal */}
+                  <div className={`grid ${isCrossStitch ? 'grid-cols-[28px_52px_1fr_auto_28px]' : 'grid-cols-[28px_28px_1fr_auto_28px]'} items-center gap-x-3 py-1.5`}>
+                    <span className="text-xs font-bold text-gray-400 text-center">{i + 1}</span>
 
-                {/* Simbol + culoare */}
-                {isCrossStitch ? (
-                  <div className="flex items-center gap-1">
-                    {color.isSolid ? (
-                      /* Culoare plină — fără simbol */
-                      <div
-                        className="w-7 h-7 rounded border border-gray-300 flex-shrink-0"
-                        style={{ backgroundColor: color.catColor }}
-                      />
+                    {isCrossStitch ? (
+                      <div className="flex items-center gap-1">
+                        {color.isSolid ? (
+                          <div className="w-7 h-7 rounded border border-gray-300 flex-shrink-0" style={{ backgroundColor: color.catColor }} />
+                        ) : (
+                          <div className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-sm font-bold font-mono bg-white" style={{ color: color.catColor }}>
+                            {GEOMETRIC_SYMBOLS.has(color.symbol) ? renderShapeSvg(color.symbol, color.catColor, 20) : color.symbol}
+                          </div>
+                        )}
+                        <div className="w-4 h-7 rounded border border-gray-300 flex-shrink-0" style={{ backgroundColor: color.dmcColor.hex }} title={`Culoare reală: ${color.dmcColor.name}`} />
+                      </div>
                     ) : (
-                      /* Celulă albă cu simbol colorat simplu sau formă geometrică */
-                      <div
-                        className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-sm font-bold font-mono bg-white"
-                        style={{ color: color.catColor }}
-                      >
-                        {GEOMETRIC_SYMBOLS.has(color.symbol)
-                          ? renderShapeSvg(color.symbol, color.catColor, 20)
-                          : color.symbol}
+                      <div className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono" style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}>
+                        {GEOMETRIC_SYMBOLS.has(color.symbol) ? renderShapeSvg(color.symbol, contrastColor(color.dmcColor.hex), 20) : color.symbol}
                       </div>
                     )}
-                    {/* Culoarea reală DMC (pentru alegerea aței) */}
-                    <div
-                      className="w-4 h-7 rounded border border-gray-300 flex-shrink-0"
-                      style={{ backgroundColor: color.dmcColor.hex }}
-                      title={`Culoare reală: ${color.dmcColor.name}`}
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className="w-7 h-7 rounded border border-gray-300 flex-shrink-0 flex items-center justify-center text-xs font-bold font-mono"
-                    style={{ backgroundColor: color.dmcColor.hex, color: contrastColor(color.dmcColor.hex) }}
-                  >
-                    {GEOMETRIC_SYMBOLS.has(color.symbol)
-                      ? renderShapeSvg(color.symbol, contrastColor(color.dmcColor.hex), 20)
-                      : color.symbol}
-                  </div>
-                )}
 
-                {/* DMC cod + nume */}
-                <div className="min-w-0">
-                  <p className="text-xs font-mono font-semibold text-gray-700">DMC {color.dmcColor.code}</p>
-                  <p className="text-xs text-gray-400 truncate">{color.dmcColor.name}</p>
-                </div>
+                    <div className="min-w-0">
+                      <p className={`text-xs font-mono font-semibold ${isOverridden ? 'text-violet-700' : 'text-gray-700'}`}>DMC {color.dmcColor.code}</p>
+                      <p className="text-xs text-gray-400 truncate">{color.dmcColor.name}</p>
+                    </div>
 
-                {/* Cantitate */}
-                <div className="text-right shrink-0">
-                  <p className="text-xs font-semibold text-gray-700">
-                    {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'}
-                  </p>
-                  <p className="text-xs text-gray-400">{color.count} pct.</p>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-semibold text-gray-700">
+                        {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'}
+                      </p>
+                      <p className="text-xs text-gray-400">{color.count} pct.</p>
+                    </div>
+
+                    {/* Buton editare */}
+                    <button
+                      onClick={() => setEditingIdx(isEditing ? null : color._idx)}
+                      className={`w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${
+                        isEditing ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+                      }`}
+                      title="Schimbă culoarea"
+                    >
+                      ✏️
+                    </button>
+                  </div>
+
+                  {/* Panou alternative (vizibil doar când se editează) */}
+                  {isEditing && (
+                    <div className="bg-violet-50 rounded-lg p-3 mb-1 mx-1">
+                      <p className="text-xs font-semibold text-violet-700 mb-2">Alege culoarea de înlocuire:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {/* Opțiunea originală (dacă e suprascrisă) */}
+                        {isOverridden && (
+                          <button
+                            onClick={() => {
+                              setColorOverrides(prev => { const n = new Map(prev); n.delete(color._idx); return n })
+                              setEditingIdx(null)
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 bg-white border-2 border-gray-300 rounded-lg text-xs hover:border-violet-400 transition-colors"
+                            title="Restaurează culoarea originală"
+                          >
+                            <span className="w-4 h-4 rounded border border-gray-200 inline-block" style={{ backgroundColor: schema.colors[color._idx]?.dmcColor?.hex }} />
+                            <span className="text-gray-500">↩ Original</span>
+                          </button>
+                        )}
+                        {/* Alternativele pre-calculate */}
+                        {(schema.colors[color._idx]?.alternatives ?? []).map((alt, ai) => (
+                          <button
+                            key={ai}
+                            onClick={() => {
+                              setColorOverrides(prev => new Map(prev).set(color._idx, alt))
+                              setEditingIdx(null)
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs hover:border-violet-400 hover:bg-violet-50 transition-colors"
+                            title={`${alt.name} (DMC ${alt.code})`}
+                          >
+                            <span className="w-4 h-4 rounded border border-gray-200 flex-shrink-0 inline-block" style={{ backgroundColor: alt.hex }} />
+                            <span className="font-mono text-gray-600">{alt.code}</span>
+                            <span className="text-gray-400 hidden sm:inline truncate max-w-[80px]">{alt.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
         </div>
         <p className="text-xs text-gray-400 mt-4 pt-3 border-t border-gray-100">
           Total: {schema.widthStitches * schema.heightStitches} puncte • {colors.length} culori DMC
