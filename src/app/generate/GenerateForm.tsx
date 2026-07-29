@@ -591,7 +591,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     onClick={() => {
                       const next = !portraitMode
                       setPortraitMode(next)
-                      setImgSaturation(next ? 0.78 : 1.0)
+                      setImgSaturation(next ? 0.90 : 1.0)
                       if (result) setSettingsChanged(true)
                     }}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full ${
@@ -603,7 +603,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     <span className="text-base">👤</span>
                     <div className="text-left flex-1">
                       <div className="leading-tight">Mod portret</div>
-                      <div className="text-xs font-normal opacity-60 leading-tight">Saturație redusă pentru ten deschis</div>
+                      <div className="text-xs font-normal opacity-60 leading-tight">Tranziții mai fine între culori</div>
                     </div>
                     <div className={`w-8 h-5 rounded-full transition-colors flex items-center px-0.5 ${
                       portraitMode ? 'bg-violet-600 justify-end' : 'bg-gray-300 justify-start'
