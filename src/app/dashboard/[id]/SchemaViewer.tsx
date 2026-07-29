@@ -253,8 +253,13 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     if (cellX < 0 || cellX >= schema.widthStitches || cellY < 0 || cellY >= schema.heightStitches) return
     const srcIdx = schema.grid[cellY][cellX]
     const region = floodFill(cellY, cellX)
-    setSelectedRegion(region)
-    setRegionSrcIdx(srcIdx)
+    setSelectedRegion(prev => {
+      if (!prev) return region
+      const next = new Set(prev)
+      for (const key of region) next.add(key)
+      return next
+    })
+    setRegionSrcIdx(prev => prev ?? srcIdx)
     setEditingIdx(null)
   }, [schema, effectiveCellSize])
 
@@ -362,10 +367,10 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-sm font-semibold text-indigo-800">
-                Regiune selectată — {selectedRegion.size} celule
+                {selectedRegion.size} celule selectate
               </p>
               <p className="text-xs text-indigo-600 mt-0.5">
-                Culoare curentă: DMC {effectiveColors[regionSrcIdx]?.dmcColor?.code} · {effectiveColors[regionSrcIdx]?.dmcColor?.name}
+                Click pe alte zone din schemă pentru a adăuga la selecție
               </p>
             </div>
             <button
@@ -425,7 +430,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
           <span className="text-[10px] font-semibold text-gray-400 text-right">Cantitate</span>
         </div>
 
-        <p className="text-xs text-gray-400 mb-3">✏️ Click pe ✏️ pentru a schimba o culoare din paletă · Click direct pe schemă pentru a schimba o singură regiune</p>
+        <p className="text-xs text-gray-400 mb-3">Click pe schemă pentru a selecta o regiune · Click pe mai multe zone pentru a le acumula · Apoi alege culoarea nouă</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
           {[...effectiveColors]
             .sort((a, b) => b.count - a.count)
