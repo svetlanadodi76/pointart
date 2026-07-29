@@ -112,10 +112,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Detectare fețe pentru selecția profilului de generare (FACES vs NATURE)
+    // Condiție dublă: fețe detectate + orientare portret (înălțime > lățime)
+    // Motivul orientării: detecția prin culoare are fals-pozitive în peisaje complexe
+    // (pod de lemn, flori roșii → culori similare pielii). Imaginile cu fețe ca subiect
+    // principal sunt aproape întotdeauna verticale (heightCm > widthCm).
     let hasFaces = false
     try {
       const analysis = await analyzeImage(imageBuffer)
-      hasFaces = analysis.faceCount > 0
+      hasFaces = analysis.faceCount > 0 && heightCm > widthCm
     } catch { /* fallback: tratăm ca nature */ }
 
     // AI preprocessing pentru utilizatorii Premium

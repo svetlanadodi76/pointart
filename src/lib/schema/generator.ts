@@ -100,6 +100,7 @@ const FACES_PROFILE = {
   maxErr:            15,                // difuzie mare → gradiente fine pe piele
   diffuse:           0.25,
   hueDiversityBonus: false,             // paleta pielii nu are nevoie de protecție ton
+  smoothPasses:      1,                 // elimină puncte izolate (sigur: fără bonus albastru)
 }
 
 const NATURE_PROFILE = {
@@ -108,6 +109,7 @@ const NATURE_PROFILE = {
   maxErr:            10,                // difuzie redusă → blocuri uniforme (cer, iarbă)
   diffuse:           0.15,
   hueDiversityBonus: true,              // protejează culori cu ton distinct (cer albastru)
+  smoothPasses:      0,
 }
 
 export async function generateSchema(
@@ -145,6 +147,9 @@ export async function generateSchema(
   if (profile.pipelineMode === 'faces') {
     // normalize per-canal: fiecare canal R/G/B e întins independent → tonuri piele mai vii
     pipeline.normalize({ lower: 2, upper: 98 })
+    // gamma(1.1): deschide umbrele pe față fără a supraexpune luminile
+    // Formula nonliniară: umbra 50→56 (+6), mid 180→186 (+6), lumini 240→241 (aproape neschimbat)
+    pipeline.gamma(1.1)
   } else {
     // gamma(1.3): luminează uniform fără clipare per-canal
     // păstrează raportul R/G/B → cerul rămâne albastru, florile roz, apa verde-închis
@@ -307,8 +312,9 @@ export async function generateSchema(
         addErr(x + 1, y + 1, 1 / 16)
       }
     }
-    // smoothIsolatedPixels nu se aplică la portrete: amplifică patch-urile de culoare
-    // rece din fundal (elimină zgomotul warm din interiorul lor → devin vizibil albastre)
+    // smooth controlat de profil: FACES=1 pas (sigur — fără bonus albastru în paletă)
+    // NATURE=0 pași (peisajele nu au nevoie, blocurile mari sunt deja uniforme)
+    if (profile.smoothPasses > 0) finalGrid = smoothIsolatedPixels(finalGrid, profile.smoothPasses)
   } else {
     // Scheme mici: nearest-neighbor simplu (dithering nu e vizibil la dimensiuni mici)
     finalGrid = []
