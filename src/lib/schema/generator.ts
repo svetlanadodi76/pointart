@@ -96,9 +96,9 @@ function rgbToHue(r: number, g: number, b: number): number {
 // ─────────────────────────────────────────────────────────────────────────────
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,  // normalize per-canal: accentuează tonurile pielii
-  qFactor:           16,                // bucketuri fine → mai multe tonuri intermediare de piele
+  qFactor:           24,                // bucketuri moderate → pași fini fără a captura zgomot foto
   maxErr:            15,
-  diffuse:           0.08,              // difuzie minimă → blocuri curate, fără zgomot
+  diffuse:           0.13,             // difuzie moderată → tranziții fluide fără granulație
   hueDiversityBonus: false,
   smoothPasses:      0,
 }
