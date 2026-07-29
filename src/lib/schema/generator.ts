@@ -98,7 +98,7 @@ const FACES_PROFILE = {
   pipelineMode:      'faces' as const,  // normalize per-canal: accentuează tonurile pielii
   qFactor:           32,
   maxErr:            15,                // difuzie mare → gradiente fine pe piele
-  diffuse:           0.25,
+  diffuse:           0.18,
   hueDiversityBonus: false,             // paleta pielii nu are nevoie de protecție ton
   smoothPasses:      0,                 // fără smooth: amplifică patch-uri reci din fundal
 }
@@ -162,10 +162,10 @@ export async function generateSchema(
 
   // ─── FACES: ajustări specifice pe pixeli (după pipeline Sharp) ──────────────
   if (profile.pipelineMode === 'faces') {
-    // Warm shift subtil: +2R, -2B — reduce tonurile verzui fără a crea roșu pe obraji
+    // Warm shift subtil: +1R, -1B — reduce tonurile verzui fără a crea roșu pe obraji
     for (let i = 0; i < pixels.length; i += 3) {
-      pixels[i]     = Math.min(255, pixels[i]     + 2)
-      pixels[i + 2] = Math.max(0,   pixels[i + 2] - 2)
+      pixels[i]     = Math.min(255, pixels[i]     + 1)
+      pixels[i + 2] = Math.max(0,   pixels[i + 2] - 1)
     }
     // Saturație adaptivă subtilă pe tonuri de piele (boost 5%, nu 8% — evită benzi roșii)
     for (let i = 0; i < pixels.length; i += 3) {
