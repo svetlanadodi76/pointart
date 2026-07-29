@@ -59,8 +59,8 @@ export async function smartFocus(imageBuffer: Buffer): Promise<SmartFocusResult>
 
       // Fundal blurat + desaturat (mai puțin zgomot de culori în schemă)
       const blurredBg = await sharp(imageBuffer)
-        .blur(25)
-        .modulate({ saturation: 0.3 })
+        .blur(45)
+        .modulate({ saturation: 0.15 })
         .raw()
         .toBuffer()
 
