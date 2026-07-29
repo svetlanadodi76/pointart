@@ -121,7 +121,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     }))
   })()
 
-  // Culori efective: suprascrie culorile schimbate de utilizator
+  // Culori efective: suprascrie culorile schimbate de utilizator (palette-level)
   const effectiveColors = useMemo(() =>
     colors.map(c => ({
       ...c,
@@ -129,6 +129,22 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     })),
     [colors, colorOverrides]
   )
+
+  // Recalculează count + skeins pe baza cellOverrides (region-level)
+  const effectiveCounts = useMemo(() => {
+    const counts = new Map<number, number>()
+    for (const c of colors) counts.set(c._idx, c.count)
+
+    for (const [key, overrideDmc] of cellOverrides) {
+      const [y, x] = key.split(',').map(Number)
+      const originalIdx = schema.grid[y][x]
+      counts.set(originalIdx, (counts.get(originalIdx) ?? 1) - 1)
+      const targetColor = colors.find(c => c.dmcColor.code === overrideDmc.code)
+      if (targetColor) counts.set(targetColor._idx, (counts.get(targetColor._idx) ?? 0) + 1)
+    }
+
+    return counts
+  }, [colors, cellOverrides, schema.grid])
 
   useEffect(() => {
     if (view !== 'final' || !canvasRef.current) return
@@ -466,10 +482,22 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                     </div>
 
                     <div className="text-right shrink-0">
-                      <p className="text-xs font-semibold text-gray-700">
-                        {color.skeins} {color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'}
-                      </p>
-                      <p className="text-xs text-gray-400">{color.count} pct.</p>
+                      {(() => {
+                        const effCount = effectiveCounts.get(color._idx) ?? color.count
+                        const effSkeins = effCount === 0 ? 0 : Math.max(1, Math.ceil(effCount * color.skeins / Math.max(1, color.count)))
+                        const changed = effCount !== color.count
+                        const unitLabel = color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'
+                        return (
+                          <>
+                            <p className={`text-xs font-semibold ${changed ? 'text-indigo-600' : 'text-gray-700'}`}>
+                              {effSkeins} {unitLabel}
+                            </p>
+                            <p className={`text-xs ${changed ? 'text-indigo-400' : 'text-gray-400'}`}>
+                              {effCount} pct.
+                            </p>
+                          </>
+                        )
+                      })()}
                     </div>
 
                     {/* Buton editare */}
