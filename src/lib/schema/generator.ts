@@ -162,12 +162,7 @@ export async function generateSchema(
 
   // ─── FACES: ajustări specifice pe pixeli (după pipeline Sharp) ──────────────
   if (profile.pipelineMode === 'faces') {
-    // Warm shift subtil: +1R, -1B — reduce tonurile verzui fără a crea roșu pe obraji
-    for (let i = 0; i < pixels.length; i += 3) {
-      pixels[i]     = Math.min(255, pixels[i]     + 1)
-      pixels[i + 2] = Math.max(0,   pixels[i + 2] - 1)
-    }
-    // Saturație adaptivă subtilă pe tonuri de piele (boost 5%, nu 8% — evită benzi roșii)
+    // Saturație adaptivă subtilă pe tonuri de piele (boost 5%)
     for (let i = 0; i < pixels.length; i += 3) {
       const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2]
       const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
