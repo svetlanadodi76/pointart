@@ -68,6 +68,21 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
   const [cellOverrides, setCellOverrides] = useState<Map<string, DmcColorEntry>>(new Map())
   const [selectedRegion, setSelectedRegion] = useState<Set<string> | null>(null)
   const [regionSrcIdx, setRegionSrcIdx] = useState<number | null>(null)
+  const [undoStack, setUndoStack] = useState<Array<{ cell: Map<string, DmcColorEntry>; palette: Map<number, DmcColorEntry> }>>([])
+
+  function pushUndo() {
+    setUndoStack(prev => [...prev.slice(-19), { cell: new Map(cellOverrides), palette: new Map(colorOverrides) }])
+  }
+
+  function handleUndo() {
+    setUndoStack(prev => {
+      if (prev.length === 0) return prev
+      const last = prev[prev.length - 1]
+      setCellOverrides(last.cell)
+      setColorOverrides(last.palette)
+      return prev.slice(0, -1)
+    })
+  }
 
   async function downloadPdf(type: 'schema' | 'fabric') {
     setPdfLoading(type)
@@ -353,6 +368,12 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               className="text-xs text-violet-600 hover:text-violet-800 ml-1"
               title="Reset zoom"
             >Reset</button>
+            <button
+              onClick={handleUndo}
+              disabled={undoStack.length === 0}
+              className="text-xs text-orange-600 hover:text-orange-800 ml-2 disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Anulează ultima modificare de culoare"
+            >↩ Anulează</button>
           </div>
           <div className="overflow-auto p-2">
             <canvas
@@ -402,6 +423,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                 <button
                   key={c._idx}
                   onClick={() => {
+                    pushUndo()
                     const newDmc = c.dmcColor
                     setCellOverrides(prev => {
                       const next = new Map(prev)
@@ -519,6 +541,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                       {isOverridden && (
                         <button
                           onClick={() => {
+                            pushUndo()
                             setColorOverrides(prev => { const n = new Map(prev); n.delete(color._idx); return n })
                             setEditingIdx(null)
                           }}
@@ -538,6 +561,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                               <button
                                 key={ai}
                                 onClick={() => {
+                                  pushUndo()
                                   setColorOverrides(prev => new Map(prev).set(color._idx, alt))
                                   setEditingIdx(null)
                                 }}
@@ -564,6 +588,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                               <button
                                 key={c._idx}
                                 onClick={() => {
+                                  pushUndo()
                                   setColorOverrides(prev => new Map(prev).set(color._idx, c.dmcColor))
                                   setEditingIdx(null)
                                 }}
