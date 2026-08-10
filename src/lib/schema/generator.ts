@@ -145,6 +145,8 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
+    // blur subtil după resize: netezește micro-textura pielii fără a distruge contururile (ochi, buze)
+    pipeline.blur(0.5)
     // normalize per-canal: fiecare canal R/G/B e întins independent → tonuri piele mai vii
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
