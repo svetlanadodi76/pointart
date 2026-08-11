@@ -145,6 +145,13 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     [colors, colorOverrides]
   )
 
+  // Lookup rapid: cod DMC → intrare din paletă (pentru simboluri după cellOverride)
+  const dmcCodeToColor = useMemo(() => {
+    const m = new Map<string, typeof effectiveColors[0]>()
+    for (const c of effectiveColors) m.set(c.dmcColor.code, c)
+    return m
+  }, [effectiveColors])
+
   // Recalculează count + skeins pe baza cellOverrides (region-level)
   const effectiveCounts = useMemo(() => {
     const counts = new Map<number, number>()
@@ -207,18 +214,20 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         const cellKey = `${y},${x}`
         const cellDmc = cellOverrides.get(cellKey)
         const color = effectiveColors[schema.grid[y][x]]
+        // Dacă celula e modificată, folosim simbolul și categoria noii culori din paletă
+        const displayColor = cellDmc ? (dmcCodeToColor.get(cellDmc.code) ?? color) : color
         const displayHex = cellDmc ? cellDmc.hex : color.dmcColor.hex
         const px = OX + x * S
         const py = OY + y * S
 
         ctx.fillStyle = isCrossStitch
-          ? (color.isSolid ? (color.catColor ?? '#cccccc') : '#ffffff')
+          ? (displayColor.isSolid ? (displayColor.catColor ?? '#cccccc') : '#ffffff')
           : displayHex
         ctx.fillRect(px, py, S, S)
 
-        const sym = isCrossStitch ? (color.isSolid ? '' : color.symbol) : color.symbol
+        const sym = isCrossStitch ? (displayColor.isSolid ? '' : displayColor.symbol) : displayColor.symbol
         if (sym) {
-          ctx.fillStyle = isCrossStitch ? (color.catColor ?? '#cccccc') : contrastColor(displayHex)
+          ctx.fillStyle = isCrossStitch ? (displayColor.catColor ?? '#cccccc') : contrastColor(displayHex)
           ctx.font = `bold ${Math.max(S * 0.78, 8)}px monospace`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
@@ -259,7 +268,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         ctx.fillText(String(y), OX - 2, py + 1)
       }
     }
-  }, [view, schema, effectiveColors, isCrossStitch, effectiveCellSize, cellOverrides, selectedRegion])
+  }, [view, schema, effectiveColors, dmcCodeToColor, isCrossStitch, effectiveCellSize, cellOverrides, selectedRegion])
 
   function floodFill(startY: number, startX: number): Set<string> {
     const srcIdx = schema.grid[startY][startX]
