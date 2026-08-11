@@ -270,6 +270,18 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     return region
   }
 
+  useEffect(() => {
+    if (!selectedRegion || selectedRegion.size === 0) setRegionSrcIdx(null)
+  }, [selectedRegion])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setSelectedRegion(null); setRegionSrcIdx(null) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const handleSchemaClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = schemaCanvasRef.current
     if (!canvas) return
@@ -283,9 +295,16 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     const cellY = Math.floor((clickY - OY) / effectiveCellSize)
     if (cellX < 0 || cellX >= schema.widthStitches || cellY < 0 || cellY >= schema.heightStitches) return
     const srcIdx = schema.grid[cellY][cellX]
+    const cellKey = `${cellY},${cellX}`
     const region = floodFill(cellY, cellX)
     setSelectedRegion(prev => {
       if (!prev) return region
+      if (prev.has(cellKey)) {
+        // Click pe zonă deja selectată → elimină zona conectată din selecție
+        const next = new Set(prev)
+        for (const key of region) next.delete(key)
+        return next.size === 0 ? null : next
+      }
       const next = new Set(prev)
       for (const key of region) next.add(key)
       return next
@@ -407,7 +426,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                 {selectedRegion.size} celule selectate
               </p>
               <p className="text-xs text-indigo-600 mt-0.5">
-                Click pe alte zone din schemă pentru a adăuga la selecție
+                Click pe zonă nouă = adaugă • Click pe zonă selectată = elimină • Esc = anulează
               </p>
             </div>
             <button
