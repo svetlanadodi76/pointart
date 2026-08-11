@@ -117,6 +117,7 @@ export default async function SchemaDetailPage({ params }: Props) {
           canDownloadPdf={canDownloadPdf}
           craftType={schema.craft_type}
           canvasType={schema.canvas_type}
+          savedOverrides={schema.color_overrides ?? null}
         />
       </div>
     </div>

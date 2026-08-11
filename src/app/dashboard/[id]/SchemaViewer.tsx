@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react'
-import type { GeneratedSchema, CraftType, CanvasType } from '@/types'
+import type { GeneratedSchema, CraftType, CanvasType, DmcColor } from '@/types'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS, GEOMETRIC_SYMBOLS } from '@/lib/dmc/categoricalColors'
+
+interface SavedOverrides {
+  cell?: Record<string, DmcColor>
+  palette?: Record<string, DmcColor>
+}
 
 interface Props {
   schema: GeneratedSchema
@@ -11,6 +16,7 @@ interface Props {
   canDownloadPdf: boolean
   craftType: CraftType
   canvasType: CanvasType | null
+  savedOverrides?: SavedOverrides | null
 }
 
 function contrastColor(hex: string): string {
@@ -57,18 +63,45 @@ function renderShapeSvg(symbol: string, color: string, size: number) {
   return <svg width={size} height={size} style={{ display: 'block', overflow: 'visible' }}>{shape}</svg>
 }
 
-export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType, canvasType }: Props) {
+export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType, canvasType, savedOverrides }: Props) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const [pdfLoading, setPdfLoading] = useState<'schema' | 'fabric' | null>(null)
   const [pdfError, setPdfError] = useState<string | null>(null)
-  const [colorOverrides, setColorOverrides] = useState<Map<number, (typeof schema.colors)[0]['dmcColor']>>(new Map())
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [zoom, setZoom] = useState(1)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   type DmcColorEntry = (typeof schema.colors)[0]['dmcColor']
-  const [cellOverrides, setCellOverrides] = useState<Map<string, DmcColorEntry>>(new Map())
+  const [colorOverrides, setColorOverrides] = useState<Map<number, DmcColorEntry>>(() => {
+    if (!savedOverrides?.palette) return new Map()
+    return new Map(Object.entries(savedOverrides.palette).map(([k, v]) => [Number(k), v]))
+  })
+  const [cellOverrides, setCellOverrides] = useState<Map<string, DmcColorEntry>>(() => {
+    if (!savedOverrides?.cell) return new Map()
+    return new Map(Object.entries(savedOverrides.cell))
+  })
   const [selectedRegion, setSelectedRegion] = useState<Set<string> | null>(null)
   const [regionSrcIdx, setRegionSrcIdx] = useState<number | null>(null)
   const [undoStack, setUndoStack] = useState<Array<{ cell: Map<string, DmcColorEntry>; palette: Map<number, DmcColorEntry> }>>([])
+
+  async function handleSave() {
+    setSaving(true)
+    setSaved(false)
+    const body: SavedOverrides = {
+      cell: Object.fromEntries(cellOverrides),
+      palette: Object.fromEntries([...colorOverrides.entries()].map(([k, v]) => [String(k), v])),
+    }
+    const res = await fetch(`/api/schemas/${schemaId}/overrides`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    setSaving(false)
+    if (res.ok) {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    }
+  }
 
   function pushUndo() {
     setUndoStack(prev => [...prev.slice(-19), { cell: new Map(cellOverrides), palette: new Map(colorOverrides) }])
@@ -439,6 +472,12 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               className="text-xs text-orange-600 hover:text-orange-800 ml-2 disabled:opacity-30 disabled:cursor-not-allowed"
               title="Anulează ultima modificare de culoare"
             >↩ Anulează</button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="text-xs font-medium ml-auto px-2.5 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Salvează modificările de culoare în cont"
+            >{saving ? '⏳ Salvez...' : saved ? '✓ Salvat' : '💾 Salvează'}</button>
           </div>
           <div className="overflow-auto p-2">
             <canvas
@@ -476,6 +515,12 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               className="text-xs text-orange-600 hover:text-orange-800 ml-2 disabled:opacity-30 disabled:cursor-not-allowed"
               title="Anulează ultima modificare de culoare"
             >↩ Anulează</button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="text-xs font-medium ml-auto px-2.5 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Salvează modificările de culoare în cont"
+            >{saving ? '⏳ Salvez...' : saved ? '✓ Salvat' : '💾 Salvează'}</button>
           </div>
           <div className="overflow-auto p-2">
             <canvas
