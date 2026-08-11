@@ -114,6 +114,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     ? Math.max(5, Math.floor(Math.sqrt(9_000_000 / (schema.widthStitches * schema.heightStitches))))
     : _cell
   const effectiveCellSize = Math.max(6, Math.min(48, Math.round(CELL_SIZE * zoom)))
+  const finalCellSize = Math.round(Math.max(2, Math.floor(700 / schema.widthStitches)) * zoom)
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
   const isDiamond = craftType === 'diamond'
@@ -173,7 +174,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const scale = Math.max(2, Math.floor(700 / schema.widthStitches))
+    const scale = finalCellSize
     canvas.width = schema.widthStitches * scale
     canvas.height = schema.heightStitches * scale
     for (let y = 0; y < schema.heightStitches; y++) {
@@ -191,7 +192,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         ctx.fillRect(kx * scale, ky * scale, scale, scale)
       }
     }
-  }, [view, schema, effectiveColors, cellOverrides, selectedRegion])
+  }, [view, schema, effectiveColors, cellOverrides, selectedRegion, finalCellSize])
 
   useEffect(() => {
     if (view !== 'schema' || !schemaCanvasRef.current) return
@@ -333,13 +334,12 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
-    const scale = Math.max(2, Math.floor(700 / schema.widthStitches))
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
     const clickX = (e.clientX - rect.left) * scaleX
     const clickY = (e.clientY - rect.top) * scaleY
-    const cellX = Math.floor(clickX / scale)
-    const cellY = Math.floor(clickY / scale)
+    const cellX = Math.floor(clickX / finalCellSize)
+    const cellY = Math.floor(clickY / finalCellSize)
     if (cellX < 0 || cellX >= schema.widthStitches || cellY < 0 || cellY >= schema.heightStitches) return
     const srcIdx = schema.grid[cellY][cellX]
     const cellKey = `${cellY},${cellX}`
@@ -357,7 +357,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     })
     setRegionSrcIdx(prev => prev ?? srcIdx)
     setEditingIdx(null)
-  }, [schema])
+  }, [schema, finalCellSize])
 
   return (
     <div className="space-y-6">
@@ -453,23 +453,36 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
       {view === 'final' && (
         <div className="border border-gray-200 rounded-xl bg-white overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
-            <span className="text-xs text-gray-500">Click pe o zonă de culoare pentru a o modifica</span>
+            <span className="text-xs text-gray-500 font-medium">Zoom:</span>
+            <button
+              onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
+              className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold flex items-center justify-center"
+              title="Micșorează"
+            >−</button>
+            <span className="text-xs font-mono text-gray-700 w-10 text-center">{Math.round(zoom * 100)}%</span>
+            <button
+              onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
+              className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold flex items-center justify-center"
+              title="Mărește"
+            >+</button>
+            <button
+              onClick={() => setZoom(1)}
+              className="text-xs text-violet-600 hover:text-violet-800 ml-1"
+              title="Reset zoom"
+            >Reset</button>
             <button
               onClick={handleUndo}
               disabled={undoStack.length === 0}
-              className="text-xs text-orange-600 hover:text-orange-800 ml-auto disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Anulează ultima modificare"
+              className="text-xs text-orange-600 hover:text-orange-800 ml-2 disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Anulează ultima modificare de culoare"
             >↩ Anulează</button>
           </div>
           <div className="overflow-auto p-2">
             <canvas
               ref={canvasRef}
               onClick={handleFinalClick}
-              style={{ display: 'block', imageRendering: 'pixelated', maxWidth: '100%', cursor: 'crosshair' }}
+              style={{ display: 'block', imageRendering: 'pixelated', cursor: 'crosshair' }}
             />
-            <p className="text-xs text-gray-400 text-center py-2">
-              Click pe o zonă pentru a-i modifica culoarea DMC • Culorile reale ale aței
-            </p>
           </div>
         </div>
       )}
