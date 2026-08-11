@@ -177,7 +177,14 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         ctx.fillRect(x * scale, y * scale, scale, scale)
       }
     }
-  }, [view, schema, effectiveColors, cellOverrides])
+    if (selectedRegion) {
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.40)'
+      for (const key of selectedRegion) {
+        const [ky, kx] = key.split(',').map(Number)
+        ctx.fillRect(kx * scale, ky * scale, scale, scale)
+      }
+    }
+  }, [view, schema, effectiveColors, cellOverrides, selectedRegion])
 
   useEffect(() => {
     if (view !== 'schema' || !schemaCanvasRef.current) return
@@ -313,6 +320,36 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     setEditingIdx(null)
   }, [schema, effectiveCellSize])
 
+  const handleFinalClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const scale = Math.max(2, Math.floor(700 / schema.widthStitches))
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const clickX = (e.clientX - rect.left) * scaleX
+    const clickY = (e.clientY - rect.top) * scaleY
+    const cellX = Math.floor(clickX / scale)
+    const cellY = Math.floor(clickY / scale)
+    if (cellX < 0 || cellX >= schema.widthStitches || cellY < 0 || cellY >= schema.heightStitches) return
+    const srcIdx = schema.grid[cellY][cellX]
+    const cellKey = `${cellY},${cellX}`
+    const region = floodFill(cellY, cellX)
+    setSelectedRegion(prev => {
+      if (!prev) return region
+      if (prev.has(cellKey)) {
+        const next = new Set(prev)
+        for (const key of region) next.delete(key)
+        return next.size === 0 ? null : next
+      }
+      const next = new Set(prev)
+      for (const key of region) next.add(key)
+      return next
+    })
+    setRegionSrcIdx(prev => prev ?? srcIdx)
+    setEditingIdx(null)
+  }, [schema])
+
   return (
     <div className="space-y-6">
       {/* Toggle + PDF */}
@@ -397,8 +434,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
           <div className="overflow-auto p-2">
             <canvas
               ref={schemaCanvasRef}
-              onClick={handleSchemaClick}
-              style={{ display: 'block', cursor: 'cell' }}
+              style={{ display: 'block' }}
             />
           </div>
         </div>
@@ -406,14 +442,26 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
 
       {/* Preview final canvas */}
       {view === 'final' && (
-        <div className="overflow-auto border border-gray-200 rounded-xl bg-white p-2">
-          <canvas
-            ref={canvasRef}
-            style={{ display: 'block', imageRendering: 'pixelated', maxWidth: '100%' }}
-          />
-          <p className="text-xs text-gray-400 text-center py-2">
-            Cum va arăta lucrarea terminată cu culorile DMC selectate
-          </p>
+        <div className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
+            <span className="text-xs text-gray-500">Click pe o zonă de culoare pentru a o modifica</span>
+            <button
+              onClick={handleUndo}
+              disabled={undoStack.length === 0}
+              className="text-xs text-orange-600 hover:text-orange-800 ml-auto disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Anulează ultima modificare"
+            >↩ Anulează</button>
+          </div>
+          <div className="overflow-auto p-2">
+            <canvas
+              ref={canvasRef}
+              onClick={handleFinalClick}
+              style={{ display: 'block', imageRendering: 'pixelated', maxWidth: '100%', cursor: 'crosshair' }}
+            />
+            <p className="text-xs text-gray-400 text-center py-2">
+              Click pe o zonă pentru a-i modifica culoarea DMC • Culorile reale ale aței
+            </p>
+          </div>
         </div>
       )}
 
