@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
     const imgContrast = parseFloat(formData.get('imgContrast') as string) || 1.0
     const imgSaturation = parseFloat(formData.get('imgSaturation') as string) || 1.0
     const threadType = (formData.get('threadType') as 'wool' | 'silk' | 'cotton') || 'wool'
+    const removeBackground = formData.get('removeBackground') === 'true'
 
     if (!file || !craftType || !widthCm || !heightCm) {
       return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
@@ -148,6 +149,7 @@ export async function POST(request: NextRequest) {
       imgContrast,
       imgSaturation,
       threadType,
+      removeBackground,
     })
 
     // Salvează imaginea originală în Supabase Storage (admin client — bypass RLS)

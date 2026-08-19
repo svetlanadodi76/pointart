@@ -86,6 +86,7 @@ export async function generateFabricPdf(
   for (let row = 0; row < heightStitches; row++) {
     for (let col = 0; col < widthStitches; col++) {
       const colorIdx = grid[row][col]
+      if (colorIdx < 0) continue  // celulă goală (fundal exclus)
       const color = colors[colorIdx]
       const meta = colorMeta[colorIdx]
 

@@ -194,6 +194,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     for (const [key, overrideDmc] of cellOverrides) {
       const [y, x] = key.split(',').map(Number)
       const originalIdx = schema.grid[y][x]
+      if (originalIdx < 0) continue
       counts.set(originalIdx, (counts.get(originalIdx) ?? 1) - 1)
       const targetColor = colors.find(c => c.dmcColor.code === overrideDmc.code)
       if (targetColor) counts.set(targetColor._idx, (counts.get(targetColor._idx) ?? 0) + 1)
@@ -213,8 +214,10 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
         const cellKey = `${y},${x}`
+        const gridVal = schema.grid[y][x]
+        if (gridVal < 0) continue  // celulă goală (fundal exclus)
         const cellDmc = cellOverrides.get(cellKey)
-        ctx.fillStyle = cellDmc ? cellDmc.hex : effectiveColors[schema.grid[y][x]].dmcColor.hex
+        ctx.fillStyle = cellDmc ? cellDmc.hex : effectiveColors[gridVal].dmcColor.hex
         ctx.fillRect(x * scale, y * scale, scale, scale)
       }
     }
@@ -246,6 +249,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
         const cellKey = `${y},${x}`
+        if (schema.grid[y][x] < 0) continue  // celulă goală (fundal exclus) — rămâne albă
         const cellDmc = cellOverrides.get(cellKey)
         const color = effectiveColors[schema.grid[y][x]]
         // Dacă celula e modificată, folosim simbolul și categoria noii culori din paletă
@@ -306,6 +310,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
 
   function floodFill(startY: number, startX: number): Set<string> {
     const srcIdx = schema.grid[startY][startX]
+    if (srcIdx < 0) return new Set()  // celulă goală — nu se selectează
     const region = new Set<string>()
     const stack: [number, number][] = [[startY, startX]]
     const H = schema.heightStitches, W = schema.widthStitches
@@ -375,6 +380,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     const cellY = Math.floor(clickY / finalCellSize)
     if (cellX < 0 || cellX >= schema.widthStitches || cellY < 0 || cellY >= schema.heightStitches) return
     const srcIdx = schema.grid[cellY][cellX]
+    if (srcIdx < 0) return  // celulă goală — nu se selectează
     const cellKey = `${cellY},${cellX}`
     const region = floodFill(cellY, cellX)
     setSelectedRegion(prev => {

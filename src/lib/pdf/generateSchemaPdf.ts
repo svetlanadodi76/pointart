@@ -131,6 +131,7 @@ export async function generateSchemaPdf(
       for (let colOff = 0; colOff < secW; colOff++) {
         const absCol = tile.startCol + colOff
         const colorIdx = grid[absRow][absCol]
+        if (colorIdx < 0) continue  // celulă goală (fundal exclus)
         const color = colors[colorIdx]
         const meta = colorMeta[colorIdx]
 

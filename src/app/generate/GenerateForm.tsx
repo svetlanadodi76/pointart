@@ -10,7 +10,9 @@ import { t } from '@/lib/i18n/translations'
 import type { Lang } from '@/lib/i18n/translations'
 
 const SIZE_PRESETS = [
-  { label: '20×15 cm (mic)', width: 20, height: 15 },
+  { label: '5×5 cm (mini)', width: 5, height: 5 },
+  { label: '10×10 cm (mic)', width: 10, height: 10 },
+  { label: '20×15 cm', width: 20, height: 15 },
   { label: '30×25 cm (mediu)', width: 30, height: 25 },
   { label: '40×30 cm (mare)', width: 40, height: 30 },
   { label: '50×40 cm (foarte mare)', width: 50, height: 40 },
@@ -47,6 +49,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [preprocessedSteps, setPreprocessedSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
   const [preprocessing, setPreprocessing] = useState(false)
   const [usePreprocessed, setUsePreprocessed] = useState(false)
+  const [removeBackground, setRemoveBackground] = useState(false)
   // Smart Focus Premium
   const [smartFocusBlob, setSmartFocusBlob] = useState<Blob | null>(null)
   const [smartFocusPreview, setSmartFocusPreview] = useState<string | null>(null)
@@ -149,6 +152,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     fd.append('imgContrast', imgContrast.toString())
     fd.append('imgSaturation', imgSaturation.toString())
     fd.append('threadType', threadType)
+    fd.append('removeBackground', removeBackground.toString())
     return fd
   }
 
@@ -970,6 +974,27 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               <div className="flex justify-between text-xs text-gray-400 mt-1">
                 <span>5 (simplu)</span><span>50 (detaliat)</span><span>100 (fotografic)</span>
               </div>
+            </div>
+
+            {/* Opțiuni avansate */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h2 className="font-semibold text-gray-900 mb-3">6. Opțiuni avansate</h2>
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={removeBackground}
+                  onChange={e => changeSetting(() => setRemoveBackground(e.target.checked))}
+                  className="mt-0.5 accent-violet-600 w-4 h-4 flex-shrink-0"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-800 group-hover:text-violet-700 transition-colors">
+                    Excludeți fundalul din schemă
+                  </span>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Fundalul conectat cu marginile imaginii nu va fi cusut. Ideal pentru imagini cu subiect pe fundal alb/uniform (fluturi, icoane, clipart).
+                  </p>
+                </div>
+              </label>
             </div>
 
             {/* Buton generare */}

@@ -112,6 +112,34 @@ const NATURE_PROFILE = {
   smoothPasses:      0,
 }
 
+function removeBackgroundFromGrid(grid: number[][], H: number, W: number): number[][] {
+  // Detectează culoarea de fundal: cea mai frecventă la colțuri
+  const corners = [grid[0][0], grid[0][W - 1], grid[H - 1][0], grid[H - 1][W - 1]]
+  const freq = new Map<number, number>()
+  for (const c of corners) freq.set(c, (freq.get(c) ?? 0) + 1)
+  const bgIdx = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0]
+
+  // Flood-fill din toate colțurile cu culoarea de fundal
+  const visited = Array.from({ length: H }, () => new Array(W).fill(false))
+  const stack: [number, number][] = []
+  for (const [cy, cx] of [[0, 0], [0, W - 1], [H - 1, 0], [H - 1, W - 1]] as [number, number][]) {
+    if (grid[cy][cx] === bgIdx) stack.push([cy, cx])
+  }
+  while (stack.length > 0) {
+    const [y, x] = stack.pop()!
+    if (y < 0 || y >= H || x < 0 || x >= W || visited[y][x] || grid[y][x] !== bgIdx) continue
+    visited[y][x] = true
+    stack.push([y + 1, x], [y - 1, x], [y, x + 1], [y, x - 1])
+  }
+
+  // Celulele de fundal devin -1 (goale, nu se cos)
+  const result = grid.map(row => [...row])
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++)
+      if (visited[y][x]) result[y][x] = -1
+  return result
+}
+
 export async function generateSchema(
   imageBuffer: Buffer,
   settings: {
@@ -125,6 +153,7 @@ export async function generateSchema(
     imgContrast?: number
     threadType?: 'wool' | 'silk' | 'cotton'
     imgSaturation?: number
+    removeBackground?: boolean       // exclude fundalul conectat cu colțurile
   }
 ): Promise<GeneratedSchema> {
   const sharp = (await import('sharp')).default
@@ -331,14 +360,19 @@ export async function generateSchema(
     if (minDim >= 50) finalGrid = smoothIsolatedPixels(finalGrid, 1)
   }
 
-  // Recalculează numărul real de puncte per culoare
+  // Excludere fundal (celulele conectate cu colțurile → -1)
+  if (settings.removeBackground) {
+    finalGrid = removeBackgroundFromGrid(finalGrid, heightStitches, widthStitches)
+  }
+
+  // Recalculează numărul real de puncte per culoare (sare celulele goale -1)
   const stitchCounts = new Array(colorGroups.length).fill(0)
   for (const row of finalGrid) {
-    for (const idx of row) stitchCounts[idx]++
+    for (const idx of row) if (idx >= 0) stitchCounts[idx]++
   }
 
   // Elimină culorile sub prag: 0 puncte sau < 0.3% din total (min 2 puncte)
-  const totalStitches = widthStitches * heightStitches
+  const totalStitches = stitchCounts.reduce((a: number, b: number) => a + b, 0)
   const minStitches = Math.max(2, Math.floor(totalStitches * 0.003))
   const validMask = stitchCounts.map((c: number) => c >= minStitches)
 
@@ -361,10 +395,10 @@ export async function generateSchema(
       oldToNew[i] = findNearestByLab(bL, ba, bb, validWithLab).idx
     }
 
-    // Reindexează grid cu noile valori
+    // Reindexează grid cu noile valori (sare celulele goale -1)
     for (let y = 0; y < finalGrid.length; y++)
       for (let x = 0; x < finalGrid[y].length; x++)
-        finalGrid[y][x] = oldToNew[finalGrid[y][x]]
+        if (finalGrid[y][x] >= 0) finalGrid[y][x] = oldToNew[finalGrid[y][x]]
 
     // Recalculează count-uri după remap
     const validCount = validMask.filter(Boolean).length
