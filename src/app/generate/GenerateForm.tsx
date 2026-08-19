@@ -1191,6 +1191,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
         const colorIdx = schema.grid[y][x]
+        if (colorIdx < 0) continue
         ctx.fillStyle = effectiveColors[colorIdx].dmcColor.hex
         ctx.fillRect(x * scale, y * scale, scale, scale)
       }
@@ -1218,6 +1219,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
     for (let y = 0; y < schema.heightStitches; y++) {
       for (let x = 0; x < schema.widthStitches; x++) {
         const colorIdx = schema.grid[y][x]
+        if (colorIdx < 0) continue
         const color = effectiveColors[colorIdx]
         const px = OX + x * S
         const py = OY + y * S
