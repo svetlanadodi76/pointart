@@ -169,12 +169,16 @@ export async function generateSchema(
   // Selecție profil bazat pe CONȚINUT (fețe detectate), nu pe orientare (vertical/orizontal)
   const profile = settings.hasFaces ? FACES_PROFILE : NATURE_PROFILE
 
+  // FACES: median(2) — kernel 5×5 pe full-res elimină textura fină de perete înainte de resize
+  // NATURE: median(1) — kernel 3×3, suficient pentru reflexii speculare
   const pipeline = sharp(imageBuffer)
-    .median(1)
+    .median(profile.pipelineMode === 'faces' ? 2 : 1)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    pipeline.blur(0.5)
+    // blur(1.2): sigma dublu față de 0.5 — netezește variațiile fine amplificate de normalize
+    // (perete texturat, reflexii mici pe haine) fără a distruge contururi mari (față, margini haine)
+    pipeline.blur(1.2)
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
     pipeline.gamma(1.3)
