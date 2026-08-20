@@ -97,7 +97,7 @@ function rgbToHue(r: number, g: number, b: number): number {
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
   qFactor:           32,
-  maxErr:            22,    // mărit de la 15 — merge mai multe culori similare (fundal uniform)
+  maxErr:            15,
   diffuse:           0.10,
   hueDiversityBonus: false,
   smoothPasses:      1,
@@ -180,19 +180,15 @@ export async function generateSchema(
   const rgba = image.bitmap.data
   const totalPx = widthStitches * heightStitches
 
-  // Normalize per-canal (percentilă 2-98) — DOAR pentru NATURE
-  // Pentru FACES este omis: normalize per-canal amplifică variațiile minuscule din fundalul
-  // near-white al portretelor → fundal zgomotos cu zeci de tonuri de gri/albastru distincte
-  if (profile.pipelineMode === 'nature') {
-    for (const ch of [0, 1, 2]) {
-      const vals = new Uint8Array(totalPx)
-      for (let i = 0; i < totalPx; i++) vals[i] = rgba[i * 4 + ch]
-      const sorted = new Uint8Array(vals).sort()
-      const low = sorted[Math.floor(totalPx * 0.02)], high = sorted[Math.ceil(totalPx * 0.98) - 1]
-      if (high <= low) continue
-      for (let i = 0; i < totalPx; i++)
-        rgba[i * 4 + ch] = Math.max(0, Math.min(255, Math.round((rgba[i * 4 + ch] - low) / (high - low) * 255)))
-    }
+  // Normalize per-canal (percentilă 2-98) — ambele profiluri
+  for (const ch of [0, 1, 2]) {
+    const vals = new Uint8Array(totalPx)
+    for (let i = 0; i < totalPx; i++) vals[i] = rgba[i * 4 + ch]
+    const sorted = new Uint8Array(vals).sort()
+    const low = sorted[Math.floor(totalPx * 0.02)], high = sorted[Math.ceil(totalPx * 0.98) - 1]
+    if (high <= low) continue
+    for (let i = 0; i < totalPx; i++)
+      rgba[i * 4 + ch] = Math.max(0, Math.min(255, Math.round((rgba[i * 4 + ch] - low) / (high - low) * 255)))
   }
 
   // Construiește buffer RGB cu toate ajustările de culoare aplicate
