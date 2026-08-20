@@ -173,26 +173,23 @@ export async function generateSchema(
   // Jimp auto-normalizează orientarea EXIF la citire
   const image = await Jimp.read(imageBuffer)
   image.resize(widthStitches, heightStitches)  // bicubic implicit
-
-  if (profile.pipelineMode === 'faces') {
-    image.blur(1)  // blur subtil post-resize (Jimp acceptă doar valori întregi)
-  }
+  // Fără blur post-resize — Jimp blur(1) e 3×3 box (media cu toți 9 vecini),
+  // mult mai agresiv decât Sharp blur(0.5) Gaussian. Estompează tranziții de culoare.
 
   // Extrage RGBA din Jimp
   const rgba = image.bitmap.data
   const totalPx = widthStitches * heightStitches
 
-  // FACES: normalize per-canal (2-98 percentilă) — tonuri piele mai vii
-  if (profile.pipelineMode === 'faces') {
-    for (const ch of [0, 1, 2]) {
-      const vals = new Uint8Array(totalPx)
-      for (let i = 0; i < totalPx; i++) vals[i] = rgba[i * 4 + ch]
-      const sorted = new Uint8Array(vals).sort()
-      const low = sorted[Math.floor(totalPx * 0.02)], high = sorted[Math.ceil(totalPx * 0.98) - 1]
-      if (high <= low) continue
-      for (let i = 0; i < totalPx; i++)
-        rgba[i * 4 + ch] = Math.max(0, Math.min(255, Math.round((rgba[i * 4 + ch] - low) / (high - low) * 255)))
-    }
+  // Normalize per-canal (percentilă 2-98) — aplică pentru ambele profiluri
+  // Echivalent Sharp .normalize({ lower: 2, upper: 98 }), dar per-canal
+  for (const ch of [0, 1, 2]) {
+    const vals = new Uint8Array(totalPx)
+    for (let i = 0; i < totalPx; i++) vals[i] = rgba[i * 4 + ch]
+    const sorted = new Uint8Array(vals).sort()
+    const low = sorted[Math.floor(totalPx * 0.02)], high = sorted[Math.ceil(totalPx * 0.98) - 1]
+    if (high <= low) continue
+    for (let i = 0; i < totalPx; i++)
+      rgba[i * 4 + ch] = Math.max(0, Math.min(255, Math.round((rgba[i * 4 + ch] - low) / (high - low) * 255)))
   }
 
   // Construiește buffer RGB cu toate ajustările de culoare aplicate
