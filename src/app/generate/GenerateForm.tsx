@@ -1135,6 +1135,7 @@ function contrastColor(hex: string): string {
 
 function buildColors(colors: GeneratedSchema['colors'], craftType = 'cross_stitch') {
   const isGoblene = craftType === 'goblene'
+  const isDiamond = craftType === 'diamond'
   const withIdx = colors.map((c, i) => ({ ...c, _idx: i }))
   const sorted = [...withIdx].sort((a, b) => b.count - a.count)
   const byRank = new Map<number, { symbol: string; catColor: string; isSolid: boolean }>()
@@ -1147,9 +1148,9 @@ function buildColors(colors: GeneratedSchema['colors'], craftType = 'cross_stitc
   }))
   return withIdx.map(c => ({
     ...c,
-    symbol: isGoblene ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
+    symbol: (isGoblene || isDiamond) ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
     catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
-    isSolid: isGoblene ? false : (byRank.get(c._idx)?.isSolid ?? false),
+    isSolid: (isGoblene || isDiamond) ? false : (byRank.get(c._idx)?.isSolid ?? false),
   }))
 }
 
