@@ -97,10 +97,10 @@ function rgbToHue(r: number, g: number, b: number): number {
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
   qFactor:           32,
-  maxErr:            15,
+  maxErr:            18,   // 15→18: fuzionează nuanțe similare de fundal fără pierdere detalii faciale
   diffuse:           0.10,
   hueDiversityBonus: false,
-  smoothPasses:      1,
+  smoothPasses:      2,    // 1→2: al doilea pas elimină petele rămase după primul
 }
 
 const NATURE_PROFILE = {
@@ -187,23 +187,8 @@ export async function generateSchema(
     .raw()
     .toBuffer({ resolveWithObject: true })
 
-  // ─── FACES: ajustări specifice pe pixeli (după pipeline Sharp) ──────────────
-  if (profile.pipelineMode === 'faces') {
-    // Saturație adaptivă subtilă pe tonuri de piele (boost 5%)
-    for (let i = 0; i < pixels.length; i += 3) {
-      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2]
-      const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
-      const isSkin = r > 95 && g > 40 && b > 20
-        && mx - mn > 15 && r > g && r > b && Math.abs(r - g) > 15 && g > b && g > r * 0.45
-      if (isSkin) {
-        const grey = (r + g + b) / 3
-        const SKIN_SAT_BOOST = 1.05
-        pixels[i]     = Math.max(0, Math.min(255, Math.round(grey + (r - grey) * SKIN_SAT_BOOST)))
-        pixels[i + 1] = Math.max(0, Math.min(255, Math.round(grey + (g - grey) * SKIN_SAT_BOOST)))
-        pixels[i + 2] = Math.max(0, Math.min(255, Math.round(grey + (b - grey) * SKIN_SAT_BOOST)))
-      }
-    }
-  }
+  // Skin sat boost dezactivat: normalize per-canal cu zone foarte închise (pantaloni negri)
+  // produce deja contrast ridicat pe piele → boost suplimentar = efect „portocaliu"
 
   const dmcColors = await loadDmcColors()
   // Precomputăm LAB o singură dată pentru toată paleta DMC (~500 culori)
