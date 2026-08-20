@@ -98,9 +98,9 @@ const FACES_PROFILE = {
   pipelineMode:      'faces' as const,  // normalize per-canal: accentuează tonurile pielii
   qFactor:           32,
   maxErr:            15,
-  diffuse:           0.25,
+  diffuse:           0.10,   // redus de la 0.25 — mai puțin stippling pe piele și fundal
   hueDiversityBonus: false,
-  smoothPasses:      0,
+  smoothPasses:      1,      // 1 pas de curățare pixeli izolați (fundal, margini)
 }
 
 const NATURE_PROFILE = {
