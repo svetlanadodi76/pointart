@@ -34,8 +34,9 @@ export async function POST(request: NextRequest) {
 
     const fname = (file.name || '').toLowerCase()
     if (fname.endsWith('.heic') || fname.endsWith('.heif')) {
-      const sharp = (await import('sharp')).default
-      imageBuffer = await sharp(imageBuffer).jpeg({ quality: 92 }).toBuffer() as Buffer
+      return NextResponse.json({
+        error: 'Formatul HEIC nu este suportat. Convertește poza în JPG sau PNG (iPhone: Setări → Poze → Format → Cel mai compatibil).'
+      }, { status: 400 })
     }
 
     const result = await analyzeImage(imageBuffer)

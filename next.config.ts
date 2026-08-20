@@ -10,7 +10,7 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['sharp', '@react-pdf/renderer'],
+  serverExternalPackages: ['@react-pdf/renderer'],
   async headers() {
     return [
       {

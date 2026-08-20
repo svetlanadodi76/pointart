@@ -21,18 +21,13 @@ export async function POST(request: NextRequest) {
 
     let imageBuffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer)
 
-    // Normalizează orientarea EXIF + resize max 2500px
+    // Jimp auto-normalizează EXIF la citire; resize dacă > 2500px
     {
-      const sharp = (await import('sharp')).default
-      const meta = await sharp(imageBuffer).metadata()
-      const needsRotate = (meta.orientation ?? 1) !== 1
-      const needsResize = (meta.width ?? 0) > 2500 || (meta.height ?? 0) > 2500
-      if (needsRotate || needsResize) {
-        imageBuffer = await sharp(imageBuffer)
-          .rotate()
-          .resize(2500, 2500, { fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 90 })
-          .toBuffer()
+      const Jimp = (await import('jimp')).default
+      const img = await Jimp.read(imageBuffer)
+      if (img.getWidth() > 2500 || img.getHeight() > 2500) {
+        img.scaleToFit(2500, 2500).quality(90)
+        imageBuffer = Buffer.from(await img.getBufferAsync(Jimp.MIME_JPEG))
       }
     }
 

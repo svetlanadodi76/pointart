@@ -156,7 +156,7 @@ export async function generateSchema(
     removeBackground?: boolean       // exclude fundalul conectat cu colțurile
   }
 ): Promise<GeneratedSchema> {
-  const sharp = (await import('sharp')).default
+  const Jimp = (await import('jimp')).default
   const config = CANVAS_CONFIG[settings.canvasType]
   const widthStitches = Math.round(settings.widthCm * config.stitchesPerCm)
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
@@ -169,27 +169,69 @@ export async function generateSchema(
   // Selecție profil bazat pe CONȚINUT (fețe detectate), nu pe orientare (vertical/orizontal)
   const profile = settings.hasFaces ? FACES_PROFILE : NATURE_PROFILE
 
-  const pipeline = sharp(imageBuffer)
-    .median(1)
-    .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
+  // Decodifică + resize cu Jimp (JavaScript pur — fără binare native)
+  // Jimp auto-normalizează orientarea EXIF la citire
+  const image = await Jimp.read(imageBuffer)
+  image.resize(widthStitches, heightStitches)  // bicubic implicit
 
   if (profile.pipelineMode === 'faces') {
-    // blur subtil după resize: netezește micro-textura pielii fără a distruge contururile (ochi, buze)
-    pipeline.blur(0.5)
-    // normalize per-canal: fiecare canal R/G/B e întins independent → tonuri piele mai vii
-    pipeline.normalize({ lower: 2, upper: 98 })
-  } else {
-    // gamma(1.3): luminează uniform fără clipare per-canal
-    // păstrează raportul R/G/B → cerul rămâne albastru, florile roz, apa verde-închis
-    pipeline.gamma(1.3)
+    image.blur(1)  // blur subtil post-resize (Jimp acceptă doar valori întregi)
   }
 
-  const { data: pixels } = await pipeline
-    .modulate({ saturation, brightness })
-    .linear(contrast, Math.round(128 * (1 - contrast)))
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true })
+  // Extrage RGBA din Jimp
+  const rgba = image.bitmap.data
+  const totalPx = widthStitches * heightStitches
+
+  // FACES: normalize per-canal (2-98 percentilă) — tonuri piele mai vii
+  if (profile.pipelineMode === 'faces') {
+    for (const ch of [0, 1, 2]) {
+      const vals = new Uint8Array(totalPx)
+      for (let i = 0; i < totalPx; i++) vals[i] = rgba[i * 4 + ch]
+      const sorted = new Uint8Array(vals).sort()
+      const low = sorted[Math.floor(totalPx * 0.02)], high = sorted[Math.ceil(totalPx * 0.98) - 1]
+      if (high <= low) continue
+      for (let i = 0; i < totalPx; i++)
+        rgba[i * 4 + ch] = Math.max(0, Math.min(255, Math.round((rgba[i * 4 + ch] - low) / (high - low) * 255)))
+    }
+  }
+
+  // Construiește buffer RGB cu toate ajustările de culoare aplicate
+  const pixels = Buffer.allocUnsafe(totalPx * 3)
+  const contrastOffset = Math.round(128 * (1 - contrast))
+  for (let i = 0; i < totalPx; i++) {
+    let r = rgba[i * 4], g = rgba[i * 4 + 1], b = rgba[i * 4 + 2]
+
+    // NATURE: gamma(1.3) — luminează uniform, păstrează raportul R/G/B
+    if (profile.pipelineMode !== 'faces') {
+      r = Math.round(Math.pow(r / 255, 1 / 1.3) * 255)
+      g = Math.round(Math.pow(g / 255, 1 / 1.3) * 255)
+      b = Math.round(Math.pow(b / 255, 1 / 1.3) * 255)
+    }
+
+    // Saturație (amestec luminanță, echivalent Sharp modulate)
+    if (saturation !== 1.0) {
+      const grey = 0.299 * r + 0.587 * g + 0.114 * b
+      r = Math.max(0, Math.min(255, Math.round(grey + (r - grey) * saturation)))
+      g = Math.max(0, Math.min(255, Math.round(grey + (g - grey) * saturation)))
+      b = Math.max(0, Math.min(255, Math.round(grey + (b - grey) * saturation)))
+    }
+
+    // Luminozitate (multiplicare)
+    if (brightness !== 1.0) {
+      r = Math.max(0, Math.min(255, Math.round(r * brightness)))
+      g = Math.max(0, Math.min(255, Math.round(g * brightness)))
+      b = Math.max(0, Math.min(255, Math.round(b * brightness)))
+    }
+
+    // Contrast liniar: a*x + b
+    if (contrast !== 1.0) {
+      r = Math.max(0, Math.min(255, Math.round(r * contrast + contrastOffset)))
+      g = Math.max(0, Math.min(255, Math.round(g * contrast + contrastOffset)))
+      b = Math.max(0, Math.min(255, Math.round(b * contrast + contrastOffset)))
+    }
+
+    pixels[i * 3] = r; pixels[i * 3 + 1] = g; pixels[i * 3 + 2] = b
+  }
 
   // ─── FACES: ajustări specifice pe pixeli (după pipeline Sharp) ──────────────
   if (profile.pipelineMode === 'faces') {

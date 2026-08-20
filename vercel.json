@@ -1,5 +1,4 @@
 {
-  "installCommand": "npm install --include=optional",
   "functions": {
     "src/app/api/generate/route.ts": {
       "maxDuration": 120,

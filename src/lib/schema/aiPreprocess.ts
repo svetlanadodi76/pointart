@@ -8,14 +8,27 @@ export interface PreprocessResult {
 }
 
 export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResult> {
-  const sharp = (await import('sharp')).default
+  const Jimp = (await import('jimp')).default
   const steps = { upscaled: false, faceEnhanced: false, sharpened: false }
 
   if (!process.env.REPLICATE_API_TOKEN) {
-    const enhanced = await sharp(imageBuffer)
-      .sharpen({ sigma: 1.2 })
-      .modulate({ saturation: 1.15 })
-      .toBuffer()
+    const img = await Jimp.read(imageBuffer)
+    // Sharpen via unsharp-mask simplificat (convolve 3x3) + saturation boost
+    img.convolute([
+      [0, -0.5, 0],
+      [-0.5, 3, -0.5],
+      [0, -0.5, 0],
+    ])
+    const rgba = img.bitmap.data
+    for (let i = 0; i < rgba.length; i += 4) {
+      const r = rgba[i], g = rgba[i+1], b = rgba[i+2]
+      const grey = 0.299 * r + 0.587 * g + 0.114 * b
+      rgba[i]   = Math.max(0, Math.min(255, Math.round(grey + (r - grey) * 1.15)))
+      rgba[i+1] = Math.max(0, Math.min(255, Math.round(grey + (g - grey) * 1.15)))
+      rgba[i+2] = Math.max(0, Math.min(255, Math.round(grey + (b - grey) * 1.15)))
+    }
+    img.quality(82)
+    const enhanced = Buffer.from(await img.getBufferAsync(Jimp.MIME_JPEG))
     return { buffer: enhanced, steps: { ...steps, sharpened: true } }
   }
 
@@ -23,16 +36,15 @@ export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResul
 
   // Step 1: AI Upscaling — Real-ESRGAN (doar dacă < 1 megapixel)
   try {
-    const meta = await sharp(buf).metadata()
-    const pixels = (meta.width ?? 0) * (meta.height ?? 0)
+    const probe = await Jimp.read(buf)
+    const pixels = probe.getWidth() * probe.getHeight()
     if (pixels < 1_000_000 && pixels > 0) {
       const Replicate = (await import('replicate')).default
       const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN })
       const base64 = buf.toString('base64')
-      const mimeType = meta.format === 'png' ? 'image/png' : 'image/jpeg'
       const output = await Promise.race([
         replicate.run('nightmareai/real-esrgan:42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b', {
-          input: { image: `data:${mimeType};base64,${base64}`, scale: 4, face_enhance: false },
+          input: { image: `data:image/jpeg;base64,${base64}`, scale: 4, face_enhance: false },
         }),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 45000)),
       ]) as unknown as string
@@ -46,8 +58,8 @@ export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResul
 
   // Step 2: Face enhancement — GFPGAN (doar portrete: înălțime > lățime)
   try {
-    const meta = await sharp(buf).metadata()
-    if ((meta.height ?? 0) > (meta.width ?? 0)) {
+    const probe = await Jimp.read(buf)
+    if (probe.getHeight() > probe.getWidth()) {
       const Replicate = (await import('replicate')).default
       const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN })
       const base64 = buf.toString('base64')
@@ -65,20 +77,32 @@ export async function aiPreprocess(imageBuffer: Buffer): Promise<PreprocessResul
     console.error('[AI] face enhancement error:', e)
   }
 
-  // Step 3: Sharp postprocessing final + limitare dimensiune output (max 2500px, JPEG 82%)
-  // Fără resize, Real-ESRGAN 4× poate returna imagini de 10-20MB care depășesc limita Vercel
+  // Step 3: postprocessing final — Jimp auto-rotates EXIF, resize max 2500px, JPEG 82%
   try {
-    buf = await sharp(buf)
-      .rotate()
-      .resize(2500, 2500, { fit: 'inside', withoutEnlargement: true })
-      .sharpen({ sigma: 1.2 })
-      .median(1)
-      .modulate({ saturation: 1.15 })
-      .jpeg({ quality: 82 })
-      .toBuffer()
+    const img = await Jimp.read(buf)
+    const w = img.getWidth(), h = img.getHeight()
+    if (w > 2500 || h > 2500) {
+      img.scaleToFit(2500, 2500)
+    }
+    // Sharpen ușor + saturation boost
+    img.convolute([
+      [0, -0.5, 0],
+      [-0.5, 3, -0.5],
+      [0, -0.5, 0],
+    ])
+    const rgba = img.bitmap.data
+    for (let i = 0; i < rgba.length; i += 4) {
+      const r = rgba[i], g = rgba[i+1], b = rgba[i+2]
+      const grey = 0.299 * r + 0.587 * g + 0.114 * b
+      rgba[i]   = Math.max(0, Math.min(255, Math.round(grey + (r - grey) * 1.15)))
+      rgba[i+1] = Math.max(0, Math.min(255, Math.round(grey + (g - grey) * 1.15)))
+      rgba[i+2] = Math.max(0, Math.min(255, Math.round(grey + (b - grey) * 1.15)))
+    }
+    img.quality(82)
+    buf = Buffer.from(await img.getBufferAsync(Jimp.MIME_JPEG))
     steps.sharpened = true
   } catch {
-    // fallback
+    // fallback: returnăm buf nemodificat
   }
 
   return { buffer: buf, steps }
