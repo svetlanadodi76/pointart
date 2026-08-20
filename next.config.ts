@@ -10,7 +10,14 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['@react-pdf/renderer'],
+  // sharp: exclude din bundle webpack, încărcat din node_modules la runtime
+  // @react-pdf/renderer: idem — conține WASM care nu poate fi bundled
+  serverExternalPackages: ['sharp', '@react-pdf/renderer'],
+  // Forțează includerea binarelor native @img în Lambda bundle Vercel
+  // Fără aceasta, outputFileTracing omite fișierele .node și .so ale Sharp
+  outputFileTracingIncludes: {
+    '/**': ['./node_modules/sharp/**', './node_modules/@img/**'],
+  },
   async headers() {
     return [
       {

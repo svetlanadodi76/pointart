@@ -35,21 +35,24 @@ const CANVAS_CONFIG = [
 ]
 
 export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult> {
-  const Jimp = (await import('jimp')).default
+  const sharp = (await import('sharp')).default
 
-  // Jimp auto-normalizează EXIF la citire — dimensiunile reflect imaginea rotită corect
-  const srcImage = await Jimp.read(imageBuffer)
-  const origW = srcImage.getWidth(), origH = srcImage.getHeight()
+  const meta = await sharp(imageBuffer).metadata()
+  // EXIF orientation 5-8 = rotit 90°/270° — swap dimensiuni pentru aspect ratio corect
+  const swapDims = (meta.orientation ?? 1) >= 5
+  const origW = swapDims ? (meta.height ?? 600) : (meta.width ?? 800)
+  const origH = swapDims ? (meta.width ?? 800) : (meta.height ?? 600)
   const aspectRatio = origW / origH
 
   // Detectare margini via kernel Laplacian pe imagine greyscale redusă
-  const edgeImage = srcImage.clone().resize(200, 200).greyscale()
-  const W = 200, H = 200
-  const edgeRgba = edgeImage.bitmap.data
-  // Jimp greyscale returnează RGBA — extragem canalul R (= G = B după greyscale)
-  const pixels = new Uint8Array(W * H)
-  for (let i = 0; i < W * H; i++) pixels[i] = edgeRgba[i * 4]
+  const { data: pixels, info } = await sharp(imageBuffer)
+    .resize(200, 200, { fit: 'fill' })
+    .greyscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
 
+  const W = info.width
+  const H = info.height
   let edgeSum = 0
 
   for (let y = 1; y < H - 1; y++) {
@@ -68,15 +71,11 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
   const edgeScore = Math.min(10, edgeMean / 18)
 
   // Diversitate culori pe imagine redusă la 100×100, cuantizată în pași de 32
-  const colorImage = srcImage.clone().resize(100, 100)
-  const colorRgba = colorImage.bitmap.data
-  // Extrage RGB (3 canale) din RGBA Jimp
-  const colorPixels = new Uint8Array(100 * 100 * 3)
-  for (let i = 0; i < 100 * 100; i++) {
-    colorPixels[i * 3] = colorRgba[i * 4]
-    colorPixels[i * 3 + 1] = colorRgba[i * 4 + 1]
-    colorPixels[i * 3 + 2] = colorRgba[i * 4 + 2]
-  }
+  const { data: colorPixels } = await sharp(imageBuffer)
+    .resize(100, 100, { fit: 'fill' })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
 
   const colorSet = new Set<string>()
   for (let i = 0; i < colorPixels.length; i += 3) {

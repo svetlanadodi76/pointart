@@ -84,21 +84,31 @@ export async function POST(request: NextRequest) {
     // Hash primii 8KB din imagine — identificator unic pentru a grupa versiunile aceleiași poze
     const imageHash = crypto.createHash('sha256').update(imageBuffer.slice(0, 8192)).digest('hex').slice(0, 16)
 
-    // HEIC nu este suportat fără Sharp — cerem utilizatorului să convertească
+    // Convertește HEIC/HEIF la JPEG (Sharp 0.35 suportă HEIC dacă libheif e disponibil)
     const fname = (file.name || '').toLowerCase()
     if (fname.endsWith('.heic') || fname.endsWith('.heif')) {
-      return NextResponse.json({
-        error: 'Formatul HEIC nu este suportat. Te rugăm să convertești poza în JPG sau PNG înainte de upload (iPhone: Setări → Poze → Format → Cel mai compatibil).'
-      }, { status: 400 })
+      try {
+        const sharp = (await import('sharp')).default
+        imageBuffer = await sharp(imageBuffer).jpeg({ quality: 92 }).toBuffer()
+      } catch {
+        return NextResponse.json({
+          error: 'Formatul HEIC nu este suportat. Te rugăm să convertești poza în JPG sau PNG înainte de upload (iPhone: Setări → Poze → Format → Cel mai compatibil).'
+        }, { status: 400 })
+      }
     }
 
-    // Jimp auto-normalizează EXIF la citire; resize dacă > 2500px
+    // Normalizează orientarea EXIF + resize max 2500px
     {
-      const Jimp = (await import('jimp')).default
-      const img = await Jimp.read(imageBuffer)
-      if (img.getWidth() > 2500 || img.getHeight() > 2500) {
-        img.scaleToFit(2500, 2500).quality(90)
-        imageBuffer = Buffer.from(await img.getBufferAsync(Jimp.MIME_JPEG))
+      const sharp = (await import('sharp')).default
+      const meta = await sharp(imageBuffer).metadata()
+      const needsRotate = (meta.orientation ?? 1) !== 1
+      const needsResize = (meta.width ?? 0) > 2500 || (meta.height ?? 0) > 2500
+      if (needsRotate || needsResize) {
+        imageBuffer = await sharp(imageBuffer)
+          .rotate()
+          .resize(2500, 2500, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 90 })
+          .toBuffer()
       }
     }
 
