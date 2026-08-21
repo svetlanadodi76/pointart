@@ -96,11 +96,11 @@ function rgbToHue(r: number, g: number, b: number): number {
 // ─────────────────────────────────────────────────────────────────────────────
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
-  qFactor:           24,   // ca iulie 13: cuantizare fină = gradiente de piele detaliate
-  maxErr:            15,   // ca iulie 13: clamp precis = dithering de calitate
-  diffuse:           0.20, // 0.10→0.20: mai mult dithering = detalii fine la tranziții (iulie 13 era 0.25)
+  qFactor:           24,   // cuantizare fină = gradiente de piele detaliate
+  maxErr:            15,   // clamp precis
+  diffuse:           0.12, // 0.20→0.12: mai puțin scatter = fețe clare la plan depărtat
   hueDiversityBonus: false,
-  smoothPasses:      1,    // 2→1: eliminăm pixeli izolați dar mai puțin agresiv
+  smoothPasses:      1,
 }
 
 const NATURE_PROFILE = {
@@ -178,9 +178,9 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // normalize: contrast puternic + saturație naturală (ca iulie 13)
-    // median(3) înainte de resize protejează fundalul de zgomot amplificat de normalize
-    pipeline.normalize({ lower: 2, upper: 98 })
+    // normalize({5,95}): mai puțin agresiv decât {2,98} — reduce amplificarea texturii de fundal
+    // median(3) înainte de resize protejează suplimentar fundalul
+    pipeline.normalize({ lower: 5, upper: 95 })
   } else {
     pipeline.gamma(1.3)
   }
