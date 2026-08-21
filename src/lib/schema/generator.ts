@@ -190,6 +190,7 @@ export async function generateSchema(
   const { data: pixels } = await pipeline
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
+    .linear(1.0, 8)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
