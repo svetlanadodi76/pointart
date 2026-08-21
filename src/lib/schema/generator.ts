@@ -161,13 +161,15 @@ export async function generateSchema(
   const widthStitches = Math.round(settings.widthCm * config.stitchesPerCm)
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
 
-  // Valorile utilizatorului se combină cu corecțiile noastre de bază
-  const brightness = 1.0  * (settings.imgBrightness ?? 1.0)
-  const saturation = 1.08 * (settings.imgSaturation ?? 1.0)
-  const contrast   = settings.imgContrast ?? 1.0
-
   // Selecție profil bazat pe CONȚINUT (fețe detectate), nu pe orientare (vertical/orizontal)
   const profile = settings.hasFaces ? FACES_PROFILE : NATURE_PROFILE
+
+  // FACES: saturation 1.22 compensează lipsa normalize (care dădea "pop" de culoare via stretch per-canal)
+  // NATURE: saturation 1.08 — peisajele nu au nevoie de boost atât de mare
+  const satBoost = profile.pipelineMode === 'faces' ? 1.22 : 1.08
+  const brightness = 1.0 * (settings.imgBrightness ?? 1.0)
+  const saturation = satBoost * (settings.imgSaturation ?? 1.0)
+  const contrast   = settings.imgContrast ?? 1.0
 
   // FACES: median(2) — kernel 5×5 pe full-res elimină textura fină de perete înainte de resize
   // NATURE: median(1) — kernel 3×3, suficient pentru reflexii speculare
@@ -177,9 +179,10 @@ export async function generateSchema(
 
   if (profile.pipelineMode === 'faces') {
     // blur(0.8): netezește artefactele de resize, păstrează contururi faciale
-    // gamma(1.1): luminează ușor uniform — fără stretch per-canal (normalize cauza zgomot de fundal)
+    // gamma(1.2): luminează uniform — mai puternic decât 1.1 pentru a compensa lipsa normalize
+    // fără normalize = fără stretch per-canal = fără amplificare zgomot de perete
     pipeline.blur(0.8)
-    pipeline.gamma(1.1)
+    pipeline.gamma(1.2)
   } else {
     pipeline.gamma(1.3)
   }
