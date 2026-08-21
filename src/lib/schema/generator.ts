@@ -100,7 +100,7 @@ const FACES_PROFILE = {
   maxErr:            15,
   diffuse:           0.25, // restaurat pre-19: dithering complet = detalii fine, tranziții naturale
   hueDiversityBonus: false,
-  smoothPasses:      0,    // restaurat pre-19: blur(0.5) pre-normalize înlocuiește nevoia de smooth
+  smoothPasses:      1,    // 1 pas: elimină pixeli izolați (puncte roșii pe piele) fără a afecta dithering-ul
 }
 
 const NATURE_PROFILE = {
