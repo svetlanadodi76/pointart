@@ -96,11 +96,11 @@ function rgbToHue(r: number, g: number, b: number): number {
 // ─────────────────────────────────────────────────────────────────────────────
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
-  qFactor:           32,
-  maxErr:            20,   // 18→20: mai permisiv pentru fundaluri — fără normalize = valori mai grupate
-  diffuse:           0.10,
+  qFactor:           24,   // ca iulie 13: cuantizare fină = gradiente de piele detaliate
+  maxErr:            15,   // ca iulie 13: clamp precis = dithering de calitate
+  diffuse:           0.20, // 0.10→0.20: mai mult dithering = detalii fine la tranziții (iulie 13 era 0.25)
   hueDiversityBonus: false,
-  smoothPasses:      2,
+  smoothPasses:      1,    // 2→1: eliminăm pixeli izolați dar mai puțin agresiv
 }
 
 const NATURE_PROFILE = {
@@ -164,9 +164,8 @@ export async function generateSchema(
   // Selecție profil bazat pe CONȚINUT (fețe detectate), nu pe orientare (vertical/orizontal)
   const profile = settings.hasFaces ? FACES_PROFILE : NATURE_PROFILE
 
-  // FACES: saturation 1.22 compensează lipsa normalize (care dădea "pop" de culoare via stretch per-canal)
-  // NATURE: saturation 1.08 — peisajele nu au nevoie de boost atât de mare
-  const satBoost = profile.pipelineMode === 'faces' ? 1.22 : 1.08
+  // normalize pentru FACES dă deja contrast și saturație → satBoost 1.08 ca iulie 13
+  const satBoost = 1.08
   const brightness = 1.0 * (settings.imgBrightness ?? 1.0)
   const saturation = satBoost * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
@@ -179,10 +178,9 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // blur(1.0): mai mult decât 0.8 — merge variațiile reziduale post-resize din perete texturat
-    // gamma(1.2): luminează uniform fără stretch per-canal (normalize cauza zgomot)
-    pipeline.blur(1.0)
-    pipeline.gamma(1.2)
+    // normalize: contrast puternic + saturație naturală (ca iulie 13)
+    // median(3) înainte de resize protejează fundalul de zgomot amplificat de normalize
+    pipeline.normalize({ lower: 2, upper: 98 })
   } else {
     pipeline.gamma(1.3)
   }
