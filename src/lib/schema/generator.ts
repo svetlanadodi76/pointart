@@ -98,9 +98,9 @@ const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
   qFactor:           24,   // cuantizare fină = gradiente de piele detaliate
   maxErr:            15,   // clamp precis
-  diffuse:           0.12, // 0.20→0.12: mai puțin scatter = fețe clare la plan depărtat
+  diffuse:           0.10, // 0.12→0.10: mai puțin scatter = fețe și mai clare
   hueDiversityBonus: false,
-  smoothPasses:      1,
+  smoothPasses:      2,    // 1→2: al doilea pas elimină mai mulți pixeli izolați din fundal complex
 }
 
 const NATURE_PROFILE = {
@@ -178,9 +178,9 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // normalize({5,95}): mai puțin agresiv decât {2,98} — reduce amplificarea texturii de fundal
-    // median(3) înainte de resize protejează suplimentar fundalul
-    pipeline.normalize({ lower: 5, upper: 95 })
+    // normalize asimetric: lower:2 păstrează umbrele (pantaloni negri), upper:90 clipează
+    // mai agresiv zonele deschise (perete bej) → reduce amplificarea texturii de fundal
+    pipeline.normalize({ lower: 2, upper: 90 })
   } else {
     pipeline.gamma(1.3)
   }
