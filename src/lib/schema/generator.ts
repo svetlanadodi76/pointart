@@ -178,9 +178,9 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // normalize asimetric: lower:2 păstrează umbrele (pantaloni negri), upper:90 clipează
-    // mai agresiv zonele deschise (perete bej) → reduce amplificarea texturii de fundal
-    pipeline.normalize({ lower: 2, upper: 90 })
+    // normalize {2,98}: bounds originale iulie 13 — contrast maxim fără să spele luminile
+    // protecția fundalului vine din median(3) pre-resize + smoothPasses(2) post-generare
+    pipeline.normalize({ lower: 2, upper: 98 })
   } else {
     pipeline.gamma(1.3)
   }
