@@ -97,10 +97,10 @@ function rgbToHue(r: number, g: number, b: number): number {
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
   qFactor:           32,
-  maxErr:            18,   // 15→18: fuzionează nuanțe similare de fundal fără pierdere detalii faciale
+  maxErr:            20,   // 18→20: mai permisiv pentru fundaluri — fără normalize = valori mai grupate
   diffuse:           0.10,
   hueDiversityBonus: false,
-  smoothPasses:      2,    // 1→2: al doilea pas elimină petele rămase după primul
+  smoothPasses:      2,
 }
 
 const NATURE_PROFILE = {
@@ -176,10 +176,10 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // blur(1.2): sigma dublu față de 0.5 — netezește variațiile fine amplificate de normalize
-    // (perete texturat, reflexii mici pe haine) fără a distruge contururi mari (față, margini haine)
-    pipeline.blur(1.2)
-    pipeline.normalize({ lower: 2, upper: 98 })
+    // blur(0.8): netezește artefactele de resize, păstrează contururi faciale
+    // gamma(1.1): luminează ușor uniform — fără stretch per-canal (normalize cauza zgomot de fundal)
+    pipeline.blur(0.8)
+    pipeline.gamma(1.1)
   } else {
     pipeline.gamma(1.3)
   }
