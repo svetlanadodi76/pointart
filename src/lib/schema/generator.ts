@@ -171,17 +171,17 @@ export async function generateSchema(
   const saturation = satBoost * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
-  // FACES: median(2) — kernel 5×5 pe full-res elimină textura fină de perete înainte de resize
+  // FACES: median(3) — kernel 7×7 pe full-res elimină textura de perete la scară mai mare
+  //        (tencuială, gradienți de lumină) fără a afecta fețele (7px < 2.5% din lățimea feței)
   // NATURE: median(1) — kernel 3×3, suficient pentru reflexii speculare
   const pipeline = sharp(imageBuffer)
-    .median(profile.pipelineMode === 'faces' ? 2 : 1)
+    .median(profile.pipelineMode === 'faces' ? 3 : 1)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // blur(0.8): netezește artefactele de resize, păstrează contururi faciale
-    // gamma(1.2): luminează uniform — mai puternic decât 1.1 pentru a compensa lipsa normalize
-    // fără normalize = fără stretch per-canal = fără amplificare zgomot de perete
-    pipeline.blur(0.8)
+    // blur(1.0): mai mult decât 0.8 — merge variațiile reziduale post-resize din perete texturat
+    // gamma(1.2): luminează uniform fără stretch per-canal (normalize cauza zgomot)
+    pipeline.blur(1.0)
     pipeline.gamma(1.2)
   } else {
     pipeline.gamma(1.3)
