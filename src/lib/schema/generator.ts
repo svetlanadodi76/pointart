@@ -110,7 +110,7 @@ const FACES_PROFILE = {
   maxErr:            15,
   diffuse:           0.20, // 0.25→0.20: reduce acumularea erorii pe pielea închisă/caldă → mai puțin portocaliu
   hueDiversityBonus: false,
-  smoothPasses:      1,    // 1 pas: elimină clustere portocalii izolate fără să afecteze dithering-ul
+  smoothPasses:      0,
   skinColorRatio:    0,    // dezactivat: 19 iulie mergea fără, reactivăm dacă e nevoie
 }
 
