@@ -108,7 +108,7 @@ const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
   qFactor:           32,
   maxErr:            15,
-  diffuse:           0.18, // 0.15→0.18: tranziții mai fine între culorile de piele rezervate
+  diffuse:           0.15, // valoare stabilă: suficient dithering fără scatter excesiv
   hueDiversityBonus: false,
   smoothPasses:      2,
   skinColorRatio:    0.35, // 35% din bugetul de culori rezervat tonurilor de piele
@@ -190,8 +190,9 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // fără blur post-resize: la schema ~165px, blur(0.8) distruge fețele mici (30-35px)
-    // median(3) pe full-res + Lanczos3 resize sunt suficiente pentru pre-smoothing
+    // blur(0.5): valoarea pre-19 care funcționa — suficient să amortizeze zgomotul pentru
+    // normalize fără să distrugă fețele mici (sigma 0.5 = raza ~1.5px pe schema redusă)
+    pipeline.blur(0.5)
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
     pipeline.gamma(1.3)
