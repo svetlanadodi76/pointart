@@ -79,6 +79,16 @@ function averageColors(colors: [number, number, number][]): [number, number, num
   return [Math.round(sum[0] / colors.length), Math.round(sum[1] / colors.length), Math.round(sum[2] / colors.length)]
 }
 
+// Detectează tonuri calde (piele, inclusiv piele închisă/bronzată)
+// Excluede: roșu/portocaliu intens (haine), gri, negru, albastru
+function isSkinTone(r: number, g: number, b: number): boolean {
+  return r > 60              // nu prea întunecat (umbră/păr)
+    && r > g && g >= b       // direcție caldă: R > G ≥ B
+    && (r - b) > 15          // separare clară față de gri/albastru
+    && (r - b) < 160         // nu portocaliu intens (haine portocalii)
+    && (r - g) < 90          // nu roșu viu (haine roșii)
+}
+
 function rgbToHue(r: number, g: number, b: number): number {
   const rn = r / 255, gn = g / 255, bn = b / 255
   const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn)
@@ -98,18 +108,20 @@ const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
   qFactor:           32,
   maxErr:            15,
-  diffuse:           0.15, // 0.25→0.15: reduce propagarea erorii F-S = mai puțini pixeli "aruncați" pe roșu
+  diffuse:           0.15,
   hueDiversityBonus: false,
-  smoothPasses:      2,    // 2 pași: elimină și clustere mici (2-3 celule) nu doar pixeli izolați
+  smoothPasses:      2,
+  skinColorRatio:    0.35, // 35% din bugetul de culori rezervat tonurilor de piele
 }
 
 const NATURE_PROFILE = {
-  pipelineMode:      'nature' as const, // gamma(1.3): luminează uniform fără clipare canal
+  pipelineMode:      'nature' as const,
   qFactor:           32,
-  maxErr:            10,                // difuzie redusă → blocuri uniforme (cer, iarbă)
+  maxErr:            10,
   diffuse:           0.15,
-  hueDiversityBonus: true,              // protejează culori cu ton distinct (cer albastru)
+  hueDiversityBonus: true,
   smoothPasses:      0,
+  skinColorRatio:    0,    // peisaje: fără rezervare piele
 }
 
 function removeBackgroundFromGrid(grid: number[][], H: number, W: number): number[][] {
@@ -215,9 +227,24 @@ export async function generateSchema(
     entry.pixels.push([pixels[i], pixels[i + 1], pixels[i + 2]])
   }
 
-  // Sortează după frecvență și ia top N culori
+  // Sortează după frecvență
   const allSorted = [...colorFreq.entries()].sort((a, b) => b[1].count - a[1].count)
-  const sortedColors = allSorted.slice(0, settings.maxColors)
+
+  // Selecție culori cu rezervare piele pentru FACES
+  // Fără rezervare, fundalul (cel mai frecvent) consumă 40-50% din buget → fețele primesc
+  // prea puține nuanțe → tranziții dure, fețe neclare (mai ales portrete de grup)
+  let sortedColors: typeof allSorted
+  if (profile.skinColorRatio > 0) {
+    const skinBudget  = Math.round(settings.maxColors * profile.skinColorRatio)
+    const otherBudget = settings.maxColors - skinBudget
+
+    const skinColors  = allSorted.filter(([k]) => { const [r,g,b] = k.split(',').map(Number); return isSkinTone(r,g,b) })
+    const otherColors = allSorted.filter(([k]) => { const [r,g,b] = k.split(',').map(Number); return !isSkinTone(r,g,b) })
+
+    sortedColors = [...skinColors.slice(0, skinBudget), ...otherColors.slice(0, otherBudget)]
+  } else {
+    sortedColors = allSorted.slice(0, settings.maxColors)
+  }
 
   // Bonus diversitate ton — activ doar în profilul NATURE (profile.hueDiversityBonus)
   // Protejează culori cu ton distinct (cer albastru ~210°) care pierd competiția de
