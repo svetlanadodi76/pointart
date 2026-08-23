@@ -190,9 +190,8 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // blur(0.8): netezește micro-textura și atenuează vividitatea buzelor/contururilor
-    // înainte de normalize — reduce patch-urile de contrast de pe față
-    pipeline.blur(0.8)
+    // fără blur post-resize: la schema ~165px, blur(0.8) distruge fețele mici (30-35px)
+    // median(3) pe full-res + Lanczos3 resize sunt suficiente pentru pre-smoothing
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
     pipeline.gamma(1.3)
