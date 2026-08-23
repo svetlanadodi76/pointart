@@ -108,7 +108,7 @@ const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
   qFactor:           32,
   maxErr:            15,
-  diffuse:           0.15,
+  diffuse:           0.18, // 0.15→0.18: tranziții mai fine între culorile de piele rezervate
   hueDiversityBonus: false,
   smoothPasses:      2,
   skinColorRatio:    0.35, // 35% din bugetul de culori rezervat tonurilor de piele
@@ -190,9 +190,9 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // blur(0.5): era prezent pre-19 — netezește micro-textura înainte de normalize
-    // fără el, normalize amplifică variații pixel-level de pe piele și fundal
-    pipeline.blur(0.5)
+    // blur(0.8): netezește micro-textura și atenuează vividitatea buzelor/contururilor
+    // înainte de normalize — reduce patch-urile de contrast de pe față
+    pipeline.blur(0.8)
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
     pipeline.gamma(1.3)
