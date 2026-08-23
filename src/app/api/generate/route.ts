@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -194,6 +195,10 @@ export async function POST(request: NextRequest) {
         schemas_remaining: Math.max(0, (subscription.schemas_remaining ?? 0) - 1)
       }).eq('user_id', user.id)
     }
+
+    // Invalidează cache-ul dashboard — fără asta, Next.js servește versiunea cached
+    // (fără schema nouă) până la un refresh manual al paginii
+    revalidatePath('/dashboard')
 
     return NextResponse.json({ schema, schemaId: savedSchema?.id, aiSteps })
 
