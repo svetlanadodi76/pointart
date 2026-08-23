@@ -101,17 +101,34 @@ function rgbToHue(r: number, g: number, b: number): number {
 }
 
 // ─── Profiluri de generare ────────────────────────────────────────────────────
-// FACES: imagini cu fețe umane — piele netedă, gradiente fine, fără bonus cer
-// NATURE: peisaje, flori, animale — blocuri curate, cer albastru protejat
+// FACES_SINGLE: close-up (bebeluș, portret) — față = 60%+ din imagine
+// FACES_GROUP:  portret de grup (cuplu, familie) — fețe mici, fundal complex
+// NATURE:       peisaje, flori, animale
 // ─────────────────────────────────────────────────────────────────────────────
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
-  qFactor:           24,   // restaurat 19 iulie: cuantizare fină = gradiente naturale
+  qFactor:           24,
   maxErr:            15,
-  diffuse:           0.20, // 0.25→0.20: reduce acumularea erorii pe pielea închisă/caldă → mai puțin portocaliu
+  diffuse:           0.20,
+  normLower:         2,
+  normUpper:         98,
   hueDiversityBonus: false,
   smoothPasses:      0,
-  skinColorRatio:    0,    // dezactivat: 19 iulie mergea fără, reactivăm dacă e nevoie
+  skinColorRatio:    0,
+}
+
+// Portrete grup: fețe mai mici → stretch mai puțin agresiv (5/95 vs 2/98),
+// diffuse mai mic (0.15 vs 0.20) pentru mai puțin portocaliu pe pielea bronzată
+const FACES_GROUP_PROFILE = {
+  pipelineMode:      'faces' as const,
+  qFactor:           20,
+  maxErr:            12,
+  diffuse:           0.15,
+  normLower:         5,
+  normUpper:         95,
+  hueDiversityBonus: false,
+  smoothPasses:      0,
+  skinColorRatio:    0,
 }
 
 const NATURE_PROFILE = {
@@ -119,9 +136,11 @@ const NATURE_PROFILE = {
   qFactor:           32,
   maxErr:            10,
   diffuse:           0.15,
+  normLower:         2,
+  normUpper:         98,
   hueDiversityBonus: true,
   smoothPasses:      0,
-  skinColorRatio:    0,    // peisaje: fără rezervare piele
+  skinColorRatio:    0,
 }
 
 function removeBackgroundFromGrid(grid: number[][], H: number, W: number): number[][] {
@@ -161,6 +180,7 @@ export async function generateSchema(
     heightCm: number
     maxColors: number
     hasFaces?: boolean               // true = fețe umane detectate → profil FACES
+    faceCount?: number               // numărul de fețe detectate (1=close-up, 2+=grup)
     imgBrightness?: number
     imgContrast?: number
     threadType?: 'wool' | 'silk' | 'cotton'
@@ -173,8 +193,12 @@ export async function generateSchema(
   const widthStitches = Math.round(settings.widthCm * config.stitchesPerCm)
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
 
-  // Selecție profil bazat pe CONȚINUT (fețe detectate), nu pe orientare (vertical/orizontal)
-  const profile = settings.hasFaces ? FACES_PROFILE : NATURE_PROFILE
+  // Selecție profil: fețe grup (2+) → FACES_GROUP (less aggressive); single → FACES; altfel NATURE
+  const profile = !settings.hasFaces
+    ? NATURE_PROFILE
+    : (settings.faceCount ?? 1) >= 2
+      ? FACES_GROUP_PROFILE
+      : FACES_PROFILE
 
   // normalize pentru FACES dă deja contrast și saturație → satBoost 1.08 ca iulie 13
   const satBoost = 1.08
@@ -188,8 +212,7 @@ export async function generateSchema(
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // fără blur înainte de normalize — exact ca 19 iulie (pipeline direct median→resize→normalize)
-    pipeline.normalize({ lower: 2, upper: 98 })
+    pipeline.normalize({ lower: profile.normLower, upper: profile.normUpper })
   } else {
     pipeline.gamma(1.3)
   }

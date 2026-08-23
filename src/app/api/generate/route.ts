@@ -119,9 +119,11 @@ export async function POST(request: NextRequest) {
     // (pod de lemn, flori roșii → culori similare pielii). Imaginile cu fețe ca subiect
     // principal sunt aproape întotdeauna verticale (heightCm > widthCm).
     let hasFaces = false
+    let faceCount = 0
     try {
       const analysis = await analyzeImage(imageBuffer)
-      hasFaces = analysis.faceCount > 0 && heightCm > widthCm
+      faceCount = analysis.faceCount
+      hasFaces = faceCount > 0 && heightCm > widthCm
     } catch { /* fallback: tratăm ca nature */ }
 
     // AI preprocessing pentru utilizatorii Premium
@@ -146,6 +148,7 @@ export async function POST(request: NextRequest) {
       heightCm,
       maxColors: maxColors || 30,
       hasFaces,
+      faceCount,
       imgBrightness,
       imgContrast,
       imgSaturation,
