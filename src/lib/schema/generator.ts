@@ -121,9 +121,9 @@ const FACES_PROFILE = {
 // diffuse mai mic (0.15 vs 0.20) pentru mai puțin portocaliu pe pielea bronzată
 const FACES_GROUP_PROFILE = {
   pipelineMode:      'faces' as const,
-  qFactor:           20,
+  qFactor:           24,   // 20→24: blocuri mai curate pe rochie/haine (zone mari de culoare)
   maxErr:            12,
-  diffuse:           0.15,
+  diffuse:           0.10, // 0.15→0.10: mai puțin noise pe suprafețe uniforme (rochie, mâini)
   normLower:         5,
   normUpper:         95,
   hueDiversityBonus: false,
