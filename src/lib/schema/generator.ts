@@ -106,12 +106,12 @@ function rgbToHue(r: number, g: number, b: number): number {
 // ─────────────────────────────────────────────────────────────────────────────
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
-  qFactor:           32,
+  qFactor:           24,   // restaurat 19 iulie: cuantizare fină = gradiente naturale
   maxErr:            15,
-  diffuse:           0.15, // valoare stabilă: suficient dithering fără scatter excesiv
+  diffuse:           0.25, // restaurat 19 iulie: dithering complet = tranziții fine
   hueDiversityBonus: false,
-  smoothPasses:      2,
-  skinColorRatio:    0.35, // 35% din bugetul de culori rezervat tonurilor de piele
+  smoothPasses:      0,    // restaurat 19 iulie: fără post-processing
+  skinColorRatio:    0,    // dezactivat: 19 iulie mergea fără, reactivăm dacă e nevoie
 }
 
 const NATURE_PROFILE = {
@@ -182,17 +182,13 @@ export async function generateSchema(
   const saturation = satBoost * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
-  // FACES: median(3) — kernel 7×7 pe full-res elimină textura de perete la scară mai mare
-  //        (tencuială, gradienți de lumină) fără a afecta fețele (7px < 2.5% din lățimea feței)
-  // NATURE: median(1) — kernel 3×3, suficient pentru reflexii speculare
+  // median(1) = kernel 3×3 pentru toți — exact ca 19 iulie
   const pipeline = sharp(imageBuffer)
-    .median(profile.pipelineMode === 'faces' ? 3 : 1)
+    .median(1)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
   if (profile.pipelineMode === 'faces') {
-    // blur(0.5): valoarea pre-19 care funcționa — suficient să amortizeze zgomotul pentru
-    // normalize fără să distrugă fețele mici (sigma 0.5 = raza ~1.5px pe schema redusă)
-    pipeline.blur(0.5)
+    // fără blur înainte de normalize — exact ca 19 iulie (pipeline direct median→resize→normalize)
     pipeline.normalize({ lower: 2, upper: 98 })
   } else {
     pipeline.gamma(1.3)
