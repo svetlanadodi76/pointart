@@ -96,11 +96,11 @@ function rgbToHue(r: number, g: number, b: number): number {
 // ─────────────────────────────────────────────────────────────────────────────
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
-  qFactor:           32,   // ca pre-19: blur(0.5) înainte de normalize grupează culorile natural
+  qFactor:           32,
   maxErr:            15,
-  diffuse:           0.25, // restaurat pre-19: dithering complet = detalii fine, tranziții naturale
+  diffuse:           0.15, // 0.25→0.15: reduce propagarea erorii F-S = mai puțini pixeli "aruncați" pe roșu
   hueDiversityBonus: false,
-  smoothPasses:      1,    // 1 pas: elimină pixeli izolați (puncte roșii pe piele) fără a afecta dithering-ul
+  smoothPasses:      2,    // 2 pași: elimină și clustere mici (2-3 celule) nu doar pixeli izolați
 }
 
 const NATURE_PROFILE = {
