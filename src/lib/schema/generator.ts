@@ -108,9 +108,9 @@ const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
   qFactor:           24,   // restaurat 19 iulie: cuantizare fină = gradiente naturale
   maxErr:            15,
-  diffuse:           0.25, // restaurat 19 iulie: dithering complet = tranziții fine
+  diffuse:           0.20, // 0.25→0.20: reduce acumularea erorii pe pielea închisă/caldă → mai puțin portocaliu
   hueDiversityBonus: false,
-  smoothPasses:      0,    // restaurat 19 iulie: fără post-processing
+  smoothPasses:      1,    // 1 pas: elimină clustere portocalii izolate fără să afecteze dithering-ul
   skinColorRatio:    0,    // dezactivat: 19 iulie mergea fără, reactivăm dacă e nevoie
 }
 
