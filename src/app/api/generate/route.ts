@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
     let aiSteps = null
     const skipAI = formData.get('skipAI') === 'true'
 
-    if (skipAI) {
-      // Userul a ales explicit (imaginea e deja în imageBuffer — originală sau preprocesată)
+    // mini_cross = clipart/pixel-art → AI preprocessing (GFPGAN) nu e relevant și distorsionează culorile
+    if (skipAI || craftType === 'mini_cross') {
       const stepsRaw = formData.get('aiSteps') as string | null
       aiSteps = stepsRaw ? JSON.parse(stepsRaw) : null
     } else if (subscription.plan === 'premium') {
