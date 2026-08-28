@@ -715,17 +715,17 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                             )
                           })}
                           {/* Separator + opțiuni Mini Cros */}
-                          <tr><td colSpan={5} className="px-3 pt-3 pb-1"><span className="text-xs font-semibold text-pink-600">🌸 Mini Cros — bijuterii handmade</span></td></tr>
+                          <tr><td colSpan={5} className="px-3 pt-3 pb-1"><span className="text-xs font-semibold text-pink-600">🌸 Mini Cros</span></td></tr>
                           {[
-                            { sizeCm: 2.5, label: 'Broșă / agrafă de păr', stitches: Math.round(2.5 * 7.1) },
-                            { sizeCm: 3.5, label: 'Breloc / pandantiv',     stitches: Math.round(3.5 * 7.1) },
-                            { sizeCm: 5.0, label: 'Ornament / cadou',       stitches: Math.round(5.0 * 7.1) },
+                            { sizeCm: 2.5, timeLabel: '~40 min' },
+                            { sizeCm: 3.5, timeLabel: '~1.5 ore' },
+                            { sizeCm: 5.0, timeLabel: '~3 ore' },
                           ].map(m => (
                             <tr key={m.sizeCm} className="hover:bg-pink-50 transition-colors">
                               <td className="px-3 py-2 font-medium text-gray-800"><span className="mr-1">🌸</span>18CT</td>
                               <td className="px-3 py-2 text-center text-gray-700">10</td>
                               <td className="px-3 py-2 text-center text-gray-700">{m.sizeCm}×{m.sizeCm} cm</td>
-                              <td className="px-3 py-2 text-center text-gray-500 text-xs">{m.label}</td>
+                              <td className="px-3 py-2 text-center text-gray-500 text-xs">{m.timeLabel}</td>
                               <td className="px-3 py-2 text-right">
                                 <button
                                   onClick={() => applyMiniRecommendation(m.sizeCm)}

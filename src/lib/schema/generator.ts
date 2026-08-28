@@ -224,27 +224,36 @@ export async function generateSchema(
   const saturation = satBoost * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
-  // median(1) = kernel 3×3 pentru toți — exact ca 19 iulie
-  // mini_cross: fit:'contain' → păstrează proporțiile clipart-ului cu padding alb
-  const pipeline = sharp(imageBuffer)
-    .flatten({ background: { r: 255, g: 255, b: 255 } })  // PNG transparent → fundal alb (nu negru)
-    .median(1)
-    .resize(widthStitches, heightStitches, {
-      fit: settings.craftType === 'mini_cross' ? 'contain' : 'fill',
-      background: { r: 255, g: 255, b: 255 },
-      kernel: 'lanczos3',
-    })
+  const isMini = settings.craftType === 'mini_cross'
 
-  if (profile.pipelineMode === 'faces' || profile.pipelineMode === 'mini') {
-    pipeline.normalize({ lower: profile.normLower, upper: profile.normUpper })
-  } else {
-    pipeline.gamma(1.3)
+  const pipeline = sharp(imageBuffer)
+    .flatten({ background: { r: 255, g: 255, b: 255 } })  // PNG transparent → fundal alb
+
+  if (!isMini) {
+    // median(1) = kernel 3×3 — exact ca 19 iulie (nu pentru mini: distruge marginile nete ale clipart-ului)
+    pipeline.median(1)
+  }
+
+  pipeline.resize(widthStitches, heightStitches, {
+    fit: isMini ? 'contain' : 'fill',
+    background: { r: 255, g: 255, b: 255 },
+    // mini: nearest → margini nete fără anti-aliasing (lanczos3 ar amesteca culorile clipart-ului)
+    kernel: isMini ? 'nearest' : 'lanczos3',
+  })
+
+  if (!isMini) {
+    // Normalize/gamma doar pentru portrete și peisaje — clipart-ul mini are deja culorile corecte
+    if (profile.pipelineMode === 'faces') {
+      pipeline.normalize({ lower: profile.normLower, upper: profile.normUpper })
+    } else {
+      pipeline.gamma(1.3)
+    }
   }
 
   const { data: pixels } = await pipeline
-    .modulate({ saturation, brightness })
-    .linear(contrast, Math.round(128 * (1 - contrast)))
-    .linear(1.0, 8)
+    .modulate({ saturation: isMini ? 1.0 : saturation, brightness: isMini ? 1.0 : brightness })
+    .linear(isMini ? 1.0 : contrast, isMini ? 0 : Math.round(128 * (1 - contrast)))
+    .linear(1.0, isMini ? 0 : 8)  // warmth bump scos pentru mini: clipart-ul are deja culorile corecte
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
