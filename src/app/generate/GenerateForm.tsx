@@ -232,6 +232,16 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
     }
   }
 
+  function applyMiniRecommendation(sizeCm: number) {
+    setCraftType('mini_cross')
+    setCanvasType('18CT')
+    setWidthCm(sizeCm)
+    setHeightCm(sizeCm)
+    setMaxColors(10)
+    setOrientation('landscape')
+    if (result) setSettingsChanged(true)
+  }
+
   function applyRecommendation(rec: AnalysisResult['recommendations'][0]) {
     const isDiamond = rec.isDiamond
     const craft = isDiamond ? 'diamond' : rec.isGoblene ? 'goblene' : 'cross_stitch'
@@ -704,10 +714,32 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                               </tr>
                             )
                           })}
+                          {/* Separator + opțiuni Mini Cros */}
+                          <tr><td colSpan={5} className="px-3 pt-3 pb-1"><span className="text-xs font-semibold text-pink-600">🌸 Mini Cros — bijuterii handmade</span></td></tr>
+                          {[
+                            { sizeCm: 2.5, label: 'Broșă / agrafă de păr', stitches: Math.round(2.5 * 7.1) },
+                            { sizeCm: 3.5, label: 'Breloc / pandantiv',     stitches: Math.round(3.5 * 7.1) },
+                            { sizeCm: 5.0, label: 'Ornament / cadou',       stitches: Math.round(5.0 * 7.1) },
+                          ].map(m => (
+                            <tr key={m.sizeCm} className="hover:bg-pink-50 transition-colors">
+                              <td className="px-3 py-2 font-medium text-gray-800"><span className="mr-1">🌸</span>18CT</td>
+                              <td className="px-3 py-2 text-center text-gray-700">10</td>
+                              <td className="px-3 py-2 text-center text-gray-700">{m.sizeCm}×{m.sizeCm} cm</td>
+                              <td className="px-3 py-2 text-center text-gray-500 text-xs">{m.label}</td>
+                              <td className="px-3 py-2 text-right">
+                                <button
+                                  onClick={() => applyMiniRecommendation(m.sizeCm)}
+                                  className="text-xs bg-pink-100 text-pink-700 hover:bg-pink-200 px-2 py-1 rounded-lg font-medium transition-colors"
+                                >
+                                  Aplică
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">★ Recomandat · <span className="text-rose-500 font-semibold">✕</span> Cross Stitch · 💎 Diamante · 🧵 Goblen · Click <strong>Aplică</strong> pentru a completa automat setările</p>
+                    <p className="text-xs text-gray-400 mt-2">★ Recomandat · <span className="text-rose-500 font-semibold">✕</span> Cross Stitch · 💎 Diamante · 🧵 Goblen · 🌸 Mini Cros · Click <strong>Aplică</strong> pentru a completa automat setările</p>
                   </div>
                 )}
               </div>

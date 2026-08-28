@@ -225,9 +225,15 @@ export async function generateSchema(
   const contrast   = settings.imgContrast ?? 1.0
 
   // median(1) = kernel 3×3 pentru toți — exact ca 19 iulie
+  // mini_cross: fit:'contain' → păstrează proporțiile clipart-ului cu padding alb
   const pipeline = sharp(imageBuffer)
+    .flatten({ background: { r: 255, g: 255, b: 255 } })  // PNG transparent → fundal alb (nu negru)
     .median(1)
-    .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
+    .resize(widthStitches, heightStitches, {
+      fit: settings.craftType === 'mini_cross' ? 'contain' : 'fill',
+      background: { r: 255, g: 255, b: 255 },
+      kernel: 'lanczos3',
+    })
 
   if (profile.pipelineMode === 'faces' || profile.pipelineMode === 'mini') {
     pipeline.normalize({ lower: profile.normLower, upper: profile.normUpper })
