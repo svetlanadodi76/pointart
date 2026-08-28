@@ -1,6 +1,6 @@
 export type PlanType = 'free_trial' | 'starter' | 'pro' | 'premium'
 
-export type CraftType = 'cross_stitch' | 'goblene' | 'diamond'
+export type CraftType = 'cross_stitch' | 'goblene' | 'diamond' | 'mini_cross'
 
 export type CanvasType = '11CT' | '14CT' | '16CT' | '18CT' | '2.5mm' | '2.8mm' | '3.0mm' | '10mesh' | '12mesh' | '14mesh' | '18mesh'
 

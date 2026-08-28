@@ -63,6 +63,12 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       if (!['2.5mm', '2.8mm', '3.0mm'].includes(canvasType)) setCanvasType('2.5mm')
     } else if (craftType === 'goblene') {
       if (!['10mesh', '12mesh', '14mesh', '18mesh'].includes(canvasType)) setCanvasType('14mesh')
+    } else if (craftType === 'mini_cross') {
+      if (!['14CT', '16CT', '18CT'].includes(canvasType)) setCanvasType('18CT')
+      // Dimensiuni implicite mini: 3×3 cm
+      setWidthCm(3)
+      setHeightCm(3)
+      setMaxColors(10)
     } else {
       if (!['11CT', '14CT', '16CT', '18CT'].includes(canvasType)) setCanvasType('14CT')
     }
@@ -710,11 +716,12 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {/* Tip lucrare */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h2 className="font-semibold text-gray-900 mb-4">{image ? '3.' : '2.'} Tip de lucrare</h2>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { value: 'cross_stitch', label: 'Cross Stitch', icon: '✕', iconClass: 'text-rose-500 font-bold' },
+                  { value: 'cross_stitch', label: 'Cross Stitch', icon: '✕',  iconClass: 'text-rose-500 font-bold' },
                   { value: 'goblene',      label: 'Goblene',      icon: '🧵', iconClass: '' },
                   { value: 'diamond',      label: 'Diamante',     icon: '💎', iconClass: '' },
+                  { value: 'mini_cross',   label: 'Mini Cros',    icon: '🌸', iconClass: '' },
                 ].map(t => (
                   <button
                     key={t.value}
@@ -851,11 +858,38 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               </div>
             )}
 
+            {/* Canvas mini cros */}
+            {craftType === 'mini_cross' && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 className="font-semibold text-gray-900 mb-1">3. Canvas Aida (mini)</h2>
+                <p className="text-xs text-gray-400 mb-4">Pentru miniaturi se recomandă 18CT — cel mai fin detaliu</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { ct: '14CT', strands: '2 fire', desc: '5.5 pt/cm' },
+                    { ct: '16CT', strands: '2 fire', desc: '6.3 pt/cm' },
+                    { ct: '18CT', strands: '1 fir',  desc: '7.1 pt/cm ★' },
+                  ] as const).map(({ ct, strands, desc }) => (
+                    <button
+                      key={ct}
+                      onClick={() => changeSetting(() => setCanvasType(ct))}
+                      className={`p-3 rounded-xl border-2 text-center transition-colors ${
+                        canvasType === ct ? 'border-violet-500 bg-violet-50' : 'border-gray-200 hover:border-violet-300'
+                      }`}
+                    >
+                      <div className="font-bold text-gray-900">{ct}</div>
+                      <div className="text-xs text-violet-600">{strands}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Dimensiune */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <h2 className="font-semibold text-gray-900">4. Dimensiunea lucrării</h2>
-                <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
+                <div className={`flex bg-gray-100 rounded-lg p-0.5 gap-0.5 ${craftType === 'mini_cross' ? 'hidden' : ''}`}>
                   <button
                     onClick={() => handleOrientation('landscape')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -878,38 +912,68 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {SIZE_PRESETS.map(p => {
-                  const [pw, ph] = orientation === 'portrait'
-                    ? [Math.min(p.width, p.height), Math.max(p.width, p.height)]
-                    : [p.width, p.height]
-                  const isActive = widthCm === pw && heightCm === ph
-                  return (
-                  <button
-                    key={p.label}
-                    onClick={() => handlePreset(p.width, p.height)}
-                    className={`p-2 rounded-lg border text-sm transition-colors ${
-                      isActive
-                        ? 'border-violet-500 bg-violet-50 text-violet-700'
-                        : 'border-gray-200 text-gray-600 hover:border-violet-300'
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                  )
-                })}
-              </div>
+              {craftType === 'mini_cross' ? (
+                <>
+                  <p className="text-xs text-gray-400 mb-3">Dimensiunea finală a broderiei (pentru bijuterii, brose, agrafe)</p>
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    {[2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(cm => {
+                      const isActive = widthCm === cm && heightCm === cm
+                      return (
+                        <button
+                          key={cm}
+                          onClick={() => { changeSetting(() => { setWidthCm(cm); setHeightCm(cm) }) }}
+                          className={`p-2 rounded-lg border text-sm font-medium transition-colors ${
+                            isActive
+                              ? 'border-violet-500 bg-violet-50 text-violet-700'
+                              : 'border-gray-200 text-gray-600 hover:border-violet-300'
+                          }`}
+                        >
+                          {cm} cm
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {SIZE_PRESETS.map(p => {
+                    const [pw, ph] = orientation === 'portrait'
+                      ? [Math.min(p.width, p.height), Math.max(p.width, p.height)]
+                      : [p.width, p.height]
+                    const isActive = widthCm === pw && heightCm === ph
+                    return (
+                    <button
+                      key={p.label}
+                      onClick={() => handlePreset(p.width, p.height)}
+                      className={`p-2 rounded-lg border text-sm transition-colors ${
+                        isActive
+                          ? 'border-violet-500 bg-violet-50 text-violet-700'
+                          : 'border-gray-200 text-gray-600 hover:border-violet-300'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                    )
+                  })}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Lățime (cm)</label>
-                  <input type="number" value={widthCm} min={5} max={200}
+                  <input type="number" value={widthCm}
+                    min={craftType === 'mini_cross' ? 2 : 5}
+                    max={craftType === 'mini_cross' ? 5 : 200}
+                    step={craftType === 'mini_cross' ? 0.5 : 1}
                     onChange={e => changeSetting(() => setWidthCm(Number(e.target.value)))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Înălțime (cm)</label>
-                  <input type="number" value={heightCm} min={5} max={200}
+                  <input type="number" value={heightCm}
+                    min={craftType === 'mini_cross' ? 2 : 5}
+                    max={craftType === 'mini_cross' ? 5 : 200}
+                    step={craftType === 'mini_cross' ? 0.5 : 1}
                     onChange={e => changeSetting(() => setHeightCm(Number(e.target.value)))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
@@ -942,10 +1006,19 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 const minWidthCm = fc >= 3 ? Math.ceil(fc * 8 / 0.12 / density) : 0
                 const showWarning = fc >= 3 && stitchesPerEye < 8
 
+                const miniLabel = total <= 100
+                  ? 'broșă, agrafă de păr, bentiță'
+                  : total <= 200
+                  ? 'breloc, pandantiv, broșă'
+                  : 'ornament, magnet, cadou handmade'
+
                 return (
                   <>
                     <p className="text-xs text-gray-400 mt-2">
-                      → {w} × {h} {unit} · {timeLabel}
+                      → {w} × {h} {unit}
+                      {craftType === 'mini_cross'
+                        ? ` · ${total} puncte · ideal pentru: ${miniLabel}`
+                        : ` · ${timeLabel}`}
                     </p>
                     {showWarning && (
                       <div className="mt-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2.5 text-xs text-orange-700">
@@ -963,16 +1036,29 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {/* Culori */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h2 className="font-semibold text-gray-900 mb-1">5. Număr culori DMC</h2>
-              <p className="text-xs text-gray-400 mb-4">Mai puține = mai simplu de brodat</p>
+              <p className="text-xs text-gray-400 mb-4">
+                {craftType === 'mini_cross'
+                  ? 'Miniatura — maxim 15 culori pentru lizibilitate optimă'
+                  : 'Mai puține = mai simplu de brodat'}
+              </p>
               <div className="flex items-center gap-4">
-                <input type="range" min={5} max={100} value={maxColors}
+                <input
+                  type="range"
+                  min={5}
+                  max={craftType === 'mini_cross' ? 15 : 100}
+                  value={craftType === 'mini_cross' ? Math.min(maxColors, 15) : maxColors}
                   onChange={e => changeSetting(() => setMaxColors(Number(e.target.value)))}
                   className="flex-1 accent-violet-600"
                 />
-                <span className="text-violet-700 font-bold w-8 text-center">{maxColors}</span>
+                <span className="text-violet-700 font-bold w-8 text-center">
+                  {craftType === 'mini_cross' ? Math.min(maxColors, 15) : maxColors}
+                </span>
               </div>
               <div className="flex justify-between text-xs text-gray-400 mt-1">
-                <span>5 (simplu)</span><span>50 (detaliat)</span><span>100 (fotografic)</span>
+                {craftType === 'mini_cross'
+                  ? <><span>5 (simplu)</span><span>10 (recomandat)</span><span>15 (maxim)</span></>
+                  : <><span>5 (simplu)</span><span>50 (detaliat)</span><span>100 (fotografic)</span></>
+                }
               </div>
             </div>
 
@@ -1136,6 +1222,7 @@ function contrastColor(hex: string): string {
 function buildColors(colors: GeneratedSchema['colors'], craftType = 'cross_stitch') {
   const isGoblene = craftType === 'goblene'
   const isDiamond = craftType === 'diamond'
+  const isMini    = craftType === 'mini_cross'
   const withIdx = colors.map((c, i) => ({ ...c, _idx: i }))
   const sorted = [...withIdx].sort((a, b) => b.count - a.count)
   const byRank = new Map<number, { symbol: string; catColor: string; isSolid: boolean }>()
@@ -1148,9 +1235,10 @@ function buildColors(colors: GeneratedSchema['colors'], craftType = 'cross_stitc
   }))
   return withIdx.map(c => ({
     ...c,
-    symbol: (isGoblene || isDiamond) ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
+    // mini_cross: simboluri pe toate celulele (schema mică trebuie să fie lizibilă)
+    symbol: (isGoblene || isDiamond || isMini) ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
     catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
-    isSolid: (isGoblene || isDiamond) ? false : (byRank.get(c._idx)?.isSolid ?? false),
+    isSolid: (isGoblene || isDiamond || isMini) ? false : (byRank.get(c._idx)?.isSolid ?? false),
   }))
 }
 

@@ -151,6 +151,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
   const isCrossStitch = craftType === 'cross_stitch'
   const isGoblene = craftType === 'goblene'
   const isDiamond = craftType === 'diamond'
+  const isMini    = craftType === 'mini_cross'
   const colors = (() => {
     const withIdx = schema.colors.map((c, i) => ({ ...c, _idx: i }))
     const sorted = [...withIdx].sort((a, b) => b.count - a.count)
@@ -164,9 +165,10 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     }))
     return withIdx.map(c => ({
       ...c,
-      symbol: (isGoblene || isDiamond) ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
+      // mini_cross: simboluri pe toate celulele (schema mică trebuie să fie lizibilă)
+      symbol: (isGoblene || isDiamond || isMini) ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
       catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
-      isSolid: (isGoblene || isDiamond) ? false : (byRank.get(c._idx)?.isSolid ?? false),
+      isSolid: (isGoblene || isDiamond || isMini) ? false : (byRank.get(c._idx)?.isSolid ?? false),
     }))
   })()
 

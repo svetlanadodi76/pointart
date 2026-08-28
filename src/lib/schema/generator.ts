@@ -143,6 +143,22 @@ const NATURE_PROFILE = {
   skinColorRatio:    0,
 }
 
+// Mini cross-stitch: miniaturi 2–5 cm pentru bijuterii handmade
+// Schema mică → nearest-neighbor automat (< 80px pe latura mică)
+// qFactor mare → mai puține grupuri de culoare → zone curate
+// smoothPasses: 1 → forțat chiar și la dimensiuni sub 50px
+const MINI_PROFILE = {
+  pipelineMode:      'mini' as const,
+  qFactor:           40,
+  maxErr:            15,
+  diffuse:           0,    // nu se aplică pe nearest-neighbor, dar 0 pentru claritate
+  normLower:         2,
+  normUpper:         98,
+  hueDiversityBonus: true,  // asigură diversitate de culori la paleta mică (5–15 culori)
+  smoothPasses:      1,     // esențial: curăță pixeli izolați la scară de 14–35 puncte
+  skinColorRatio:    0,
+}
+
 function removeBackgroundFromGrid(grid: number[][], H: number, W: number): number[][] {
   // Detectează culoarea de fundal: cea mai frecventă la colțuri
   const corners = [grid[0][0], grid[0][W - 1], grid[H - 1][0], grid[H - 1][W - 1]]
@@ -193,12 +209,14 @@ export async function generateSchema(
   const widthStitches = Math.round(settings.widthCm * config.stitchesPerCm)
   const heightStitches = Math.round(settings.heightCm * config.stitchesPerCm)
 
-  // Selecție profil: fețe grup (2+) → FACES_GROUP (less aggressive); single → FACES; altfel NATURE
-  const profile = !settings.hasFaces
-    ? NATURE_PROFILE
-    : (settings.faceCount ?? 1) >= 2
-      ? FACES_GROUP_PROFILE
-      : FACES_PROFILE
+  // Selecție profil: mini_cross → MINI; fețe grup → FACES_GROUP; single → FACES; altfel NATURE
+  const profile = settings.craftType === 'mini_cross'
+    ? MINI_PROFILE
+    : !settings.hasFaces
+      ? NATURE_PROFILE
+      : (settings.faceCount ?? 1) >= 2
+        ? FACES_GROUP_PROFILE
+        : FACES_PROFILE
 
   // normalize pentru FACES dă deja contrast și saturație → satBoost 1.08 ca iulie 13
   const satBoost = 1.08
@@ -211,7 +229,7 @@ export async function generateSchema(
     .median(1)
     .resize(widthStitches, heightStitches, { fit: 'fill', kernel: 'lanczos3' })
 
-  if (profile.pipelineMode === 'faces') {
+  if (profile.pipelineMode === 'faces' || profile.pipelineMode === 'mini') {
     pipeline.normalize({ lower: profile.normLower, upper: profile.normUpper })
   } else {
     pipeline.gamma(1.3)
@@ -390,8 +408,10 @@ export async function generateSchema(
       }
       finalGrid.push(row)
     }
-    // Smoothing ușor doar pentru scheme mici (nearest-neighbor)
-    if (minDim >= 50) finalGrid = smoothIsolatedPixels(finalGrid, 1)
+    // Smoothing: forțat pentru mini_cross (pixeli izolați la 14–35pt = nefuncțional)
+    if (minDim >= 50 || settings.craftType === 'mini_cross') {
+      finalGrid = smoothIsolatedPixels(finalGrid, 1)
+    }
   }
 
   // Excludere fundal (celulele conectate cu colțurile → -1)
