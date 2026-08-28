@@ -226,37 +226,157 @@ export async function generateSchema(
 
   const isMini = settings.craftType === 'mini_cross'
 
-  const pipeline = sharp(imageBuffer)
-    .flatten({ background: { r: 255, g: 255, b: 255 } })  // PNG transparent → fundal alb
-
+  // Mini Cross — pixel-art cell sampling: preservă exact grila originală de pătrățele
   if (isMini) {
-    // Trim automat: elimină marginile albe → subiectul ocupă tot gridul (nu spațiu alb pierdut)
-    pipeline.trim({ background: '#ffffff', threshold: 10 })
-  } else {
-    // median(1) = kernel 3×3 — exact ca 19 iulie (nu pentru mini: distruge marginile nete ale clipart-ului)
-    pipeline.median(1)
+    const SCALE = 10
+    const bigW = widthStitches * SCALE
+    const bigH = heightStitches * SCALE
+
+    const { data: bigPx } = await sharp(imageBuffer)
+      .flatten({ background: { r: 255, g: 255, b: 255 } })
+      .trim({ background: '#ffffff', threshold: 10 })
+      .resize(bigW, bigH, { fit: 'contain', background: { r: 255, g: 255, b: 255 }, kernel: 'nearest' })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+
+    const miniDmcColors = await loadDmcColors()
+    const miniDmcWithLab = addLabToColors(miniDmcColors)
+
+    // Eșantionează culoarea predominantă din fiecare celulă SCALE×SCALE
+    const cellColors: string[][] = []
+    for (let y = 0; y < heightStitches; y++) {
+      const row: string[] = []
+      for (let x = 0; x < widthStitches; x++) {
+        const freq = new Map<string, number>()
+        for (let cy = y * SCALE; cy < (y + 1) * SCALE; cy++) {
+          for (let cx = x * SCALE; cx < (x + 1) * SCALE; cx++) {
+            const i = (cy * bigW + cx) * 3
+            const k = `${bigPx[i]},${bigPx[i+1]},${bigPx[i+2]}`
+            freq.set(k, (freq.get(k) ?? 0) + 1)
+          }
+        }
+        let best = '255,255,255', bestC = 0
+        for (const [k, c] of freq) if (c > bestC) { bestC = c; best = k }
+        row.push(best)
+      }
+      cellColors.push(row)
+    }
+
+    const cellFreq = new Map<string, number>()
+    for (const row of cellColors) for (const k of row) cellFreq.set(k, (cellFreq.get(k) ?? 0) + 1)
+    const miniSorted = [...cellFreq.entries()].sort((a, b) => b[1] - a[1]).slice(0, settings.maxColors)
+
+    const miniUsedCodes = new Set<string>()
+    const miniColorGroups: Array<{ qKey: string; dmc: DmcColor; count: number }> = []
+    const keyToIdx = new Map<string, number>()
+
+    for (const [key, count] of miniSorted) {
+      const [r, g, b] = key.split(',').map(Number)
+      let dmc = findNearestDmc(r, g, b, miniDmcWithLab)
+      if (miniUsedCodes.has(dmc.code)) {
+        const rem = miniDmcWithLab.filter(c => !miniUsedCodes.has(c.code))
+        if (rem.length > 0) dmc = findNearestDmc(r, g, b, rem)
+      }
+      miniUsedCodes.add(dmc.code)
+      keyToIdx.set(key, miniColorGroups.length)
+      miniColorGroups.push({ qKey: key, dmc, count })
+    }
+
+    const miniGroupsWithLab: DmcColorWithLab[] = miniColorGroups.map(g =>
+      miniDmcWithLab.find(d => d.code === g.dmc.code) ?? { ...g.dmc, lab: rgbToLab(g.dmc.r, g.dmc.g, g.dmc.b) }
+    )
+
+    let miniGrid: number[][] = cellColors.map(row =>
+      row.map(key => {
+        if (keyToIdx.has(key)) return keyToIdx.get(key)!
+        const [r, g, b] = key.split(',').map(Number)
+        const [L, a, bb] = rgbToLab(r, g, b)
+        return findNearestByLab(L, a, bb, miniGroupsWithLab).idx
+      })
+    )
+
+    miniGrid = smoothIsolatedPixels(miniGrid, 1)
+
+    if (settings.removeBackground) {
+      miniGrid = removeBackgroundFromGrid(miniGrid, heightStitches, widthStitches)
+    }
+
+    const miniStitchCounts = new Array(miniColorGroups.length).fill(0)
+    for (const row of miniGrid) for (const idx of row) if (idx >= 0) miniStitchCounts[idx]++
+
+    const miniTotal = miniStitchCounts.reduce((a: number, b: number) => a + b, 0)
+    const miniMinStitches = Math.max(1, Math.floor(miniTotal * 0.003))
+    const miniValidMask = miniStitchCounts.map((c: number) => c >= miniMinStitches)
+
+    let miniActiveGroups = [...miniColorGroups]
+    let miniActiveWithLab = [...miniGroupsWithLab]
+    let miniActiveCounts = [...miniStitchCounts]
+
+    if (miniValidMask.some((v: boolean) => !v)) {
+      const oldToNew = new Array(miniActiveGroups.length).fill(-1)
+      let ni = 0
+      for (let i = 0; i < miniActiveGroups.length; i++) if (miniValidMask[i]) oldToNew[i] = ni++
+      const validWithLab = miniActiveWithLab.filter((_, i) => miniValidMask[i])
+      for (let i = 0; i < miniActiveGroups.length; i++) {
+        if (miniValidMask[i]) continue
+        const [bL, ba, bb] = miniActiveWithLab[i].lab
+        oldToNew[i] = findNearestByLab(bL, ba, bb, validWithLab).idx
+      }
+      for (let y = 0; y < miniGrid.length; y++)
+        for (let x = 0; x < miniGrid[y].length; x++)
+          if (miniGrid[y][x] >= 0) miniGrid[y][x] = oldToNew[miniGrid[y][x]]
+      const validCount = miniValidMask.filter(Boolean).length
+      const newCounts = new Array(validCount).fill(0)
+      for (const row of miniGrid) for (const idx of row) if (idx >= 0) newCounts[idx]++
+      miniActiveGroups = miniActiveGroups.filter((_, i) => miniValidMask[i])
+      miniActiveWithLab = miniActiveWithLab.filter((_, i) => miniValidMask[i])
+      miniActiveCounts = newCounts
+    }
+
+    const miniSymbols = assignSymbols(miniActiveGroups.length)
+    const miniColors: ColorUsage[] = miniActiveGroups.map((group, i) => ({
+      dmcColor: group.dmc,
+      symbol: miniSymbols[i],
+      count: miniActiveCounts[i],
+      skeins: Math.max(1, Math.ceil((miniActiveCounts[i] * config.strands * CM_PER_STITCH) / CM_PER_SKEIN)),
+      unit: 'skeins' as const,
+    }))
+
+    const miniUsedSet = new Set(miniColors.map(c => c.dmcColor.code))
+    const miniUnused = miniDmcWithLab.filter(c => !miniUsedSet.has(c.code))
+    for (const cu of miniColors) {
+      const [rL, ra, rb] = rgbToLab(cu.dmcColor.r, cu.dmcColor.g, cu.dmcColor.b)
+      cu.alternatives = miniUnused
+        .map(c => { const [cL, ca, cb] = c.lab; return { c, dist: ciede2000(rL, ra, rb, cL, ca, cb) } })
+        .sort((a, b) => a.dist - b.dist)
+        .slice(0, 8)
+        .map(({ c }) => c)
+    }
+
+    return { grid: miniGrid, colors: miniColors, widthStitches, heightStitches, widthCm: settings.widthCm, heightCm: settings.heightCm }
   }
 
+  const pipeline = sharp(imageBuffer)
+    .flatten({ background: { r: 255, g: 255, b: 255 } })  // PNG transparent → fundal alb
+    .median(1)  // kernel 3×3 — elimină reflexii speculare pe full-res
+
   pipeline.resize(widthStitches, heightStitches, {
-    fit: isMini ? 'contain' : 'fill',
+    fit: 'fill',
     background: { r: 255, g: 255, b: 255 },
-    // mini: nearest → margini nete fără anti-aliasing (lanczos3 ar amesteca culorile clipart-ului)
-    kernel: isMini ? 'nearest' : 'lanczos3',
+    kernel: 'lanczos3',
   })
 
-  if (!isMini) {
-    // Normalize/gamma doar pentru portrete și peisaje — clipart-ul mini are deja culorile corecte
-    if (profile.pipelineMode === 'faces') {
-      pipeline.normalize({ lower: profile.normLower, upper: profile.normUpper })
-    } else {
-      pipeline.gamma(1.3)
-    }
+  if (profile.pipelineMode === 'faces') {
+    pipeline.normalize({ lower: profile.normLower, upper: profile.normUpper })
+  } else {
+    pipeline.gamma(1.3)
   }
 
   const { data: pixels } = await pipeline
-    .modulate({ saturation: isMini ? 1.0 : saturation, brightness: isMini ? 1.0 : brightness })
-    .linear(isMini ? 1.0 : contrast, isMini ? 0 : Math.round(128 * (1 - contrast)))
-    .linear(1.0, isMini ? 0 : 8)  // warmth bump scos pentru mini: clipart-ul are deja culorile corecte
+    .modulate({ saturation, brightness })
+    .linear(contrast, Math.round(128 * (1 - contrast)))
+    .linear(1.0, 8)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
@@ -426,8 +546,7 @@ export async function generateSchema(
       }
       finalGrid.push(row)
     }
-    // Smoothing: forțat pentru mini_cross (pixeli izolați la 14–35pt = nefuncțional)
-    if (minDim >= 50 || settings.craftType === 'mini_cross') {
+    if (minDim >= 50) {
       finalGrid = smoothIsolatedPixels(finalGrid, 1)
     }
   }

@@ -68,6 +68,7 @@ export function SchemaCard({ schema, existingFolders, variants = [], imageUrl }:
   const craftLabel =
     schema.craft_type === 'cross_stitch' ? 'Cross Stitch'
     : schema.craft_type === 'goblene' ? 'Goblene'
+    : schema.craft_type === 'mini_cross' ? '🌸 Mini Cros'
     : 'Diamante'
 
   return (

@@ -42,6 +42,7 @@ export default async function SchemaDetailPage({ params }: Props) {
   const craftLabel =
     schema.craft_type === 'cross_stitch' ? 'Cross Stitch'
     : schema.craft_type === 'goblene' ? 'Goblene'
+    : schema.craft_type === 'mini_cross' ? '🌸 Mini Cros'
     : 'Diamante'
 
   return (

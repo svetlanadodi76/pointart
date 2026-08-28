@@ -65,10 +65,11 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       if (!['10mesh', '12mesh', '14mesh', '18mesh'].includes(canvasType)) setCanvasType('14mesh')
     } else if (craftType === 'mini_cross') {
       if (!['14CT', '16CT', '18CT'].includes(canvasType)) setCanvasType('18CT')
-      // Dimensiuni implicite mini: 3×3 cm
-      setWidthCm(3)
-      setHeightCm(3)
-      setMaxColors(10)
+      // Reset dimensiuni doar dacă sunt în afara intervalului valid mini (2–5 cm)
+      // Nu resetăm dacă userul a apăsat "Aplică" care deja a setat valoarea corectă
+      if (widthCm < 2 || widthCm > 5) setWidthCm(3)
+      if (heightCm < 2 || heightCm > 5) setHeightCm(3)
+      if (maxColors > 15) setMaxColors(10)
     } else {
       if (!['11CT', '14CT', '16CT', '18CT'].includes(canvasType)) setCanvasType('14CT')
     }
