@@ -226,73 +226,57 @@ export async function generateSchema(
 
   const isMini = settings.craftType === 'mini_cross'
 
-  // Mini Cross — pixel-art cell sampling: preservă exact grila originală de pătrățele
+  // Mini Cross — resize direct la dimensiunea finală + matching DMC per pixel
+  // lanczos3 mediază culorile din fiecare celulă → funcționează atât pentru clipart smooth cât și pixel-art
   if (isMini) {
-    const SCALE = 10
-    const bigW = widthStitches * SCALE
-    const bigH = heightStitches * SCALE
+    const miniDmc = await loadDmcColors()
+    const miniDmcWithLab = addLabToColors(miniDmc)
 
-    const { data: bigPx } = await sharp(imageBuffer)
+    const { data: px } = await sharp(imageBuffer)
       .flatten({ background: { r: 255, g: 255, b: 255 } })
-      .trim({ background: '#ffffff', threshold: 10 })
-      .resize(bigW, bigH, { fit: 'contain', background: { r: 255, g: 255, b: 255 }, kernel: 'nearest' })
+      .trim({ background: '#ffffff', threshold: 30 })
+      .resize(widthStitches, heightStitches, {
+        fit: 'contain',
+        background: { r: 255, g: 255, b: 255 },
+        kernel: 'lanczos3',
+      })
       .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true })
 
-    const miniDmcColors = await loadDmcColors()
-    const miniDmcWithLab = addLabToColors(miniDmcColors)
+    // Matching DMC direct per pixel
+    const dmcFreq = new Map<string, { dmc: DmcColor; count: number }>()
+    const cellCodes: string[][] = []
 
-    // Eșantionează culoarea predominantă din fiecare celulă SCALE×SCALE
-    const cellColors: string[][] = []
     for (let y = 0; y < heightStitches; y++) {
       const row: string[] = []
       for (let x = 0; x < widthStitches; x++) {
-        const freq = new Map<string, number>()
-        for (let cy = y * SCALE; cy < (y + 1) * SCALE; cy++) {
-          for (let cx = x * SCALE; cx < (x + 1) * SCALE; cx++) {
-            const i = (cy * bigW + cx) * 3
-            const k = `${bigPx[i]},${bigPx[i+1]},${bigPx[i+2]}`
-            freq.set(k, (freq.get(k) ?? 0) + 1)
-          }
-        }
-        let best = '255,255,255', bestC = 0
-        for (const [k, c] of freq) if (c > bestC) { bestC = c; best = k }
-        row.push(best)
+        const i = (y * widthStitches + x) * 3
+        const dmc = findNearestDmc(px[i], px[i + 1], px[i + 2], miniDmcWithLab)
+        if (!dmcFreq.has(dmc.code)) dmcFreq.set(dmc.code, { dmc, count: 0 })
+        dmcFreq.get(dmc.code)!.count++
+        row.push(dmc.code)
       }
-      cellColors.push(row)
+      cellCodes.push(row)
     }
 
-    const cellFreq = new Map<string, number>()
-    for (const row of cellColors) for (const k of row) cellFreq.set(k, (cellFreq.get(k) ?? 0) + 1)
-    const miniSorted = [...cellFreq.entries()].sort((a, b) => b[1] - a[1]).slice(0, settings.maxColors)
+    // Top maxColors după frecvență
+    const topColors = [...dmcFreq.values()]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, settings.maxColors)
 
-    const miniUsedCodes = new Set<string>()
-    const miniColorGroups: Array<{ qKey: string; dmc: DmcColor; count: number }> = []
-    const keyToIdx = new Map<string, number>()
-
-    for (const [key, count] of miniSorted) {
-      const [r, g, b] = key.split(',').map(Number)
-      let dmc = findNearestDmc(r, g, b, miniDmcWithLab)
-      if (miniUsedCodes.has(dmc.code)) {
-        const rem = miniDmcWithLab.filter(c => !miniUsedCodes.has(c.code))
-        if (rem.length > 0) dmc = findNearestDmc(r, g, b, rem)
-      }
-      miniUsedCodes.add(dmc.code)
-      keyToIdx.set(key, miniColorGroups.length)
-      miniColorGroups.push({ qKey: key, dmc, count })
-    }
-
-    const miniGroupsWithLab: DmcColorWithLab[] = miniColorGroups.map(g =>
-      miniDmcWithLab.find(d => d.code === g.dmc.code) ?? { ...g.dmc, lab: rgbToLab(g.dmc.r, g.dmc.g, g.dmc.b) }
+    const codeToIdx = new Map<string, number>()
+    topColors.forEach(({ dmc }, i) => codeToIdx.set(dmc.code, i))
+    const topWithLab = topColors.map(({ dmc }) =>
+      miniDmcWithLab.find(d => d.code === dmc.code) ?? { ...dmc, lab: rgbToLab(dmc.r, dmc.g, dmc.b) }
     )
 
-    let miniGrid: number[][] = cellColors.map(row =>
-      row.map(key => {
-        if (keyToIdx.has(key)) return keyToIdx.get(key)!
-        const [r, g, b] = key.split(',').map(Number)
-        const [L, a, bb] = rgbToLab(r, g, b)
-        return findNearestByLab(L, a, bb, miniGroupsWithLab).idx
+    let miniGrid: number[][] = cellCodes.map(row =>
+      row.map(code => {
+        if (codeToIdx.has(code)) return codeToIdx.get(code)!
+        const { dmc } = dmcFreq.get(code)!
+        const [L, a, b] = rgbToLab(dmc.r, dmc.g, dmc.b)
+        return findNearestByLab(L, a, b, topWithLab).idx
       })
     )
 
@@ -302,56 +286,54 @@ export async function generateSchema(
       miniGrid = removeBackgroundFromGrid(miniGrid, heightStitches, widthStitches)
     }
 
-    const miniStitchCounts = new Array(miniColorGroups.length).fill(0)
-    for (const row of miniGrid) for (const idx of row) if (idx >= 0) miniStitchCounts[idx]++
+    const miniCounts = new Array(topColors.length).fill(0)
+    for (const row of miniGrid) for (const idx of row) if (idx >= 0) miniCounts[idx]++
 
-    const miniTotal = miniStitchCounts.reduce((a: number, b: number) => a + b, 0)
-    const miniMinStitches = Math.max(1, Math.floor(miniTotal * 0.003))
-    const miniValidMask = miniStitchCounts.map((c: number) => c >= miniMinStitches)
+    const miniTotal = miniCounts.reduce((a: number, b: number) => a + b, 0)
+    const miniMin = Math.max(1, Math.floor(miniTotal * 0.003))
+    const miniMask = miniCounts.map((c: number) => c >= miniMin)
 
-    let miniActiveGroups = [...miniColorGroups]
-    let miniActiveWithLab = [...miniGroupsWithLab]
-    let miniActiveCounts = [...miniStitchCounts]
+    let activeColors = [...topColors]
+    let activeWithLab = [...topWithLab]
+    let activeCounts = [...miniCounts]
 
-    if (miniValidMask.some((v: boolean) => !v)) {
-      const oldToNew = new Array(miniActiveGroups.length).fill(-1)
+    if (miniMask.some((v: boolean) => !v)) {
+      const oldToNew = new Array(activeColors.length).fill(-1)
       let ni = 0
-      for (let i = 0; i < miniActiveGroups.length; i++) if (miniValidMask[i]) oldToNew[i] = ni++
-      const validWithLab = miniActiveWithLab.filter((_, i) => miniValidMask[i])
-      for (let i = 0; i < miniActiveGroups.length; i++) {
-        if (miniValidMask[i]) continue
-        const [bL, ba, bb] = miniActiveWithLab[i].lab
+      for (let i = 0; i < activeColors.length; i++) if (miniMask[i]) oldToNew[i] = ni++
+      const validWithLab = activeWithLab.filter((_, i) => miniMask[i])
+      for (let i = 0; i < activeColors.length; i++) {
+        if (miniMask[i]) continue
+        const [bL, ba, bb] = activeWithLab[i].lab
         oldToNew[i] = findNearestByLab(bL, ba, bb, validWithLab).idx
       }
       for (let y = 0; y < miniGrid.length; y++)
         for (let x = 0; x < miniGrid[y].length; x++)
           if (miniGrid[y][x] >= 0) miniGrid[y][x] = oldToNew[miniGrid[y][x]]
-      const validCount = miniValidMask.filter(Boolean).length
-      const newCounts = new Array(validCount).fill(0)
-      for (const row of miniGrid) for (const idx of row) if (idx >= 0) newCounts[idx]++
-      miniActiveGroups = miniActiveGroups.filter((_, i) => miniValidMask[i])
-      miniActiveWithLab = miniActiveWithLab.filter((_, i) => miniValidMask[i])
-      miniActiveCounts = newCounts
+      const vc = miniMask.filter(Boolean).length
+      const nc = new Array(vc).fill(0)
+      for (const row of miniGrid) for (const idx of row) if (idx >= 0) nc[idx]++
+      activeColors = activeColors.filter((_, i) => miniMask[i])
+      activeWithLab = activeWithLab.filter((_, i) => miniMask[i])
+      activeCounts = nc
     }
 
-    const miniSymbols = assignSymbols(miniActiveGroups.length)
-    const miniColors: ColorUsage[] = miniActiveGroups.map((group, i) => ({
-      dmcColor: group.dmc,
+    const miniSymbols = assignSymbols(activeColors.length)
+    const miniColors: ColorUsage[] = activeColors.map(({ dmc }, i) => ({
+      dmcColor: dmc,
       symbol: miniSymbols[i],
-      count: miniActiveCounts[i],
-      skeins: Math.max(1, Math.ceil((miniActiveCounts[i] * config.strands * CM_PER_STITCH) / CM_PER_SKEIN)),
+      count: activeCounts[i],
+      skeins: Math.max(1, Math.ceil((activeCounts[i] * config.strands * CM_PER_STITCH) / CM_PER_SKEIN)),
       unit: 'skeins' as const,
     }))
 
-    const miniUsedSet = new Set(miniColors.map(c => c.dmcColor.code))
-    const miniUnused = miniDmcWithLab.filter(c => !miniUsedSet.has(c.code))
+    const usedSet = new Set(miniColors.map(c => c.dmcColor.code))
+    const unusedDmc = miniDmcWithLab.filter(c => !usedSet.has(c.code))
     for (const cu of miniColors) {
       const [rL, ra, rb] = rgbToLab(cu.dmcColor.r, cu.dmcColor.g, cu.dmcColor.b)
-      cu.alternatives = miniUnused
+      cu.alternatives = unusedDmc
         .map(c => { const [cL, ca, cb] = c.lab; return { c, dist: ciede2000(rL, ra, rb, cL, ca, cb) } })
-        .sort((a, b) => a.dist - b.dist)
-        .slice(0, 8)
-        .map(({ c }) => c)
+        .sort((a, b) => a.dist - b.dist).slice(0, 8).map(({ c }) => c)
     }
 
     return { grid: miniGrid, colors: miniColors, widthStitches, heightStitches, widthCm: settings.widthCm, heightCm: settings.heightCm }
