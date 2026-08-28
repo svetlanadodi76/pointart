@@ -229,7 +229,10 @@ export async function generateSchema(
   const pipeline = sharp(imageBuffer)
     .flatten({ background: { r: 255, g: 255, b: 255 } })  // PNG transparent → fundal alb
 
-  if (!isMini) {
+  if (isMini) {
+    // Trim automat: elimină marginile albe → subiectul ocupă tot gridul (nu spațiu alb pierdut)
+    pipeline.trim({ background: '#ffffff', threshold: 10 })
+  } else {
     // median(1) = kernel 3×3 — exact ca 19 iulie (nu pentru mini: distruge marginile nete ale clipart-ului)
     pipeline.median(1)
   }
