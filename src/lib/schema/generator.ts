@@ -234,7 +234,11 @@ export async function generateSchema(
 
     const { data: px } = await sharp(imageBuffer)
       .flatten({ background: { r: 255, g: 255, b: 255 } })
-      .trim({ background: '#ffffff', threshold: 30 })
+      // Separă culorile broderie de fondul pânzei Aida (crem cu găurele)
+      // Fondul crem (R~240,G~230,B~215) devine alb pur; punctele vii rămân saturate
+      .modulate({ saturation: 2.5, brightness: 1.08 })
+      .linear(1.5, -50)
+      .trim({ background: '#ffffff', threshold: 15 })
       .resize(widthStitches, heightStitches, {
         fit: 'contain',
         background: { r: 255, g: 255, b: 255 },
