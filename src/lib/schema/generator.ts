@@ -299,7 +299,9 @@ export async function generateSchema(
     // sunt "izolate" și ar fi eliminate de smooth → lăsăm gridul exact cum e
     if (isFabricPhoto) miniGrid = smoothIsolatedPixels(miniGrid, 1)
 
-    if (settings.removeBackground) {
+    // Clipart PNG: fundal alb = padding din 'contain' → eliminat automat
+    // Foto pânzăa Aida: eliminat doar dacă userul a activat opțiunea
+    if (settings.removeBackground || !isFabricPhoto) {
       miniGrid = removeBackgroundFromGrid(miniGrid, heightStitches, widthStitches)
     }
 
