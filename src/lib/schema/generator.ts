@@ -232,12 +232,20 @@ export async function generateSchema(
     const miniDmc = await loadDmcColors()
     const miniDmcWithLab = addLabToColors(miniDmc)
 
-    const { data: px } = await sharp(imageBuffer)
+    // Detectează tipul imaginii pentru preprocessing adaptat
+    const miniMeta = await sharp(imageBuffer).metadata()
+    const isFabricPhoto = !miniMeta.hasAlpha  // JPEG/PNG fără alpha = foto pe pânzăa Aida
+
+    const miniPipeline = sharp(imageBuffer)
       .flatten({ background: { r: 255, g: 255, b: 255 } })
-      // Separă culorile broderie de fondul pânzei Aida (crem cu găurele)
-      // Fondul crem (R~240,G~230,B~215) devine alb pur; punctele vii rămân saturate
-      .modulate({ saturation: 2.5, brightness: 1.08 })
-      .linear(1.5, -50)
+
+    if (isFabricPhoto) {
+      // Foto lucrare pe pânza Aida: fondul crem (R~240,G~230,B~215) → alb pur
+      // Punctele de broderie (saturate) → culori vii, matching DMC corect
+      miniPipeline.modulate({ saturation: 2.0 }).linear(1.3, -35)
+    }
+
+    const { data: px } = await miniPipeline
       .trim({ background: '#ffffff', threshold: 15 })
       .resize(widthStitches, heightStitches, {
         fit: 'contain',
