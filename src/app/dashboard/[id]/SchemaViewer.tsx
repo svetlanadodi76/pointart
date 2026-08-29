@@ -433,13 +433,15 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               >
                 {pdfLoading === 'schema' ? '⏳ Generez...' : '📄 PDF schemă'}
               </button>
-              <button
-                onClick={() => downloadPdf('fabric')}
-                disabled={pdfLoading !== null}
-                className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
-              >
-                {pdfLoading === 'fabric' ? '⏳ Generez...' : '🖨️ Tipărire pânză (1:1)'}
-              </button>
+              {!isMini && (
+                <button
+                  onClick={() => downloadPdf('fabric')}
+                  disabled={pdfLoading !== null}
+                  className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
+                >
+                  {pdfLoading === 'fabric' ? '⏳ Generez...' : '🖨️ Tipărire pânză (1:1)'}
+                </button>
+              )}
             </div>
             {pdfError && (
               <p className="text-red-600 text-xs">{pdfError}</p>

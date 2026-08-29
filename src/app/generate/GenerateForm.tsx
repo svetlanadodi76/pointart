@@ -1189,13 +1189,15 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     >
                       {pdfLoading === 'schema' ? '⏳ Generez PDF...' : '📄 Descarcă PDF schemă'}
                     </button>
-                    <button
-                      onClick={() => downloadPdf('fabric')}
-                      disabled={pdfLoading !== null}
-                      className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                      {pdfLoading === 'fabric' ? '⏳ Generez PDF...' : '🖨️ Tipărire pe pânză (1:1)'}
-                    </button>
+                    {craftType !== 'mini_cross' && (
+                      <button
+                        onClick={() => downloadPdf('fabric')}
+                        disabled={pdfLoading !== null}
+                        className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                      >
+                        {pdfLoading === 'fabric' ? '⏳ Generez PDF...' : '🖨️ Tipărire pe pânză (1:1)'}
+                      </button>
+                    )}
                   </>
                 ) : (
                   <p className="text-xs text-center text-gray-400">Generează o schemă nouă pentru a descărca PDF</p>
