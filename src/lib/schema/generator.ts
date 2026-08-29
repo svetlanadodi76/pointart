@@ -232,16 +232,17 @@ export async function generateSchema(
     const miniDmc = await loadDmcColors()
     const miniDmcWithLab = addLabToColors(miniDmc)
 
-    // Detectează tipul imaginii pentru preprocessing adaptat
+    // Detectează tipul imaginii: JPEG = fotografie pe pânzăa Aida, PNG/altele = clipart/schema
+    // hasAlpha NU e fiabil (clipart poate fi PNG cu fundal alb fără canal alpha)
     const miniMeta = await sharp(imageBuffer).metadata()
-    const isFabricPhoto = !miniMeta.hasAlpha  // JPEG/PNG fără alpha = foto pe pânzăa Aida
+    const isFabricPhoto = miniMeta.format === 'jpeg'
 
     const miniPipeline = sharp(imageBuffer)
       .flatten({ background: { r: 255, g: 255, b: 255 } })
 
     if (isFabricPhoto) {
-      // Foto lucrare pe pânza Aida: fondul crem (R~240,G~230,B~215) → alb pur
-      // Punctele de broderie (saturate) → culori vii, matching DMC corect
+      // Foto pe pânzăa Aida: fondul crem (R~240,G~230,B~215) → alb pur
+      // Punctele de broderie → culori vii, matching DMC corect
       miniPipeline.modulate({ saturation: 2.0 }).linear(1.3, -35)
     }
 
@@ -250,7 +251,9 @@ export async function generateSchema(
       .resize(widthStitches, heightStitches, {
         fit: 'contain',
         background: { r: 255, g: 255, b: 255 },
-        kernel: 'lanczos3',
+        // clipart: 'nearest' evită averaging — pixelii negri ai antenelor nu se amestecă cu roz
+        // foto: 'lanczos3' — mai bun pentru tonuri continue
+        kernel: isFabricPhoto ? 'lanczos3' : 'nearest',
       })
       .removeAlpha()
       .raw()
@@ -292,7 +295,9 @@ export async function generateSchema(
       })
     )
 
-    miniGrid = smoothIsolatedPixels(miniGrid, 1)
+    // smooth doar pentru foto pe pânzăa Aida — clipart: linii subțiri (antene, contur)
+    // sunt "izolate" și ar fi eliminate de smooth → lăsăm gridul exact cum e
+    if (isFabricPhoto) miniGrid = smoothIsolatedPixels(miniGrid, 1)
 
     if (settings.removeBackground) {
       miniGrid = removeBackgroundFromGrid(miniGrid, heightStitches, widthStitches)
