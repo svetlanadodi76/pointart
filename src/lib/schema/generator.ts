@@ -232,28 +232,16 @@ export async function generateSchema(
     const miniDmc = await loadDmcColors()
     const miniDmcWithLab = addLabToColors(miniDmc)
 
-    // Detectează tipul imaginii: JPEG = fotografie pe pânzăa Aida, PNG/altele = clipart/schema
-    // hasAlpha NU e fiabil (clipart poate fi PNG cu fundal alb fără canal alpha)
-    const miniMeta = await sharp(imageBuffer).metadata()
-    const isFabricPhoto = miniMeta.format === 'jpeg'
-
-    const miniPipeline = sharp(imageBuffer)
+    // mini_cross = bijuterie mică → inputul ideal e clipart PNG sau schema simplă
+    // 'nearest' pentru TOATE inputurile: evită averaging care transformă verde+cremă în galben
+    // Fără boost saturation: nu distorsionăm culori deja corecte
+    const { data: px } = await sharp(imageBuffer)
       .flatten({ background: { r: 255, g: 255, b: 255 } })
-
-    if (isFabricPhoto) {
-      // Foto pe pânzăa Aida: fondul crem (R~240,G~230,B~215) → alb pur
-      // Punctele de broderie → culori vii, matching DMC corect
-      miniPipeline.modulate({ saturation: 2.0 }).linear(1.3, -35)
-    }
-
-    const { data: px } = await miniPipeline
       .trim({ background: '#ffffff', threshold: 15 })
       .resize(widthStitches, heightStitches, {
         fit: 'contain',
         background: { r: 255, g: 255, b: 255 },
-        // clipart: 'nearest' evită averaging — pixelii negri ai antenelor nu se amestecă cu roz
-        // foto: 'lanczos3' — mai bun pentru tonuri continue
-        kernel: isFabricPhoto ? 'lanczos3' : 'nearest',
+        kernel: 'nearest',
       })
       .removeAlpha()
       .raw()
@@ -295,15 +283,10 @@ export async function generateSchema(
       })
     )
 
-    // smooth doar pentru foto pe pânzăa Aida — clipart: linii subțiri (antene, contur)
-    // sunt "izolate" și ar fi eliminate de smooth → lăsăm gridul exact cum e
-    if (isFabricPhoto) miniGrid = smoothIsolatedPixels(miniGrid, 1)
+    // fără smooth — liniile subțiri (antene, contur) sunt "izolate" și ar fi eliminate
 
-    // Clipart PNG: fundal alb = padding din 'contain' → eliminat automat
-    // Foto pânzăa Aida: eliminat doar dacă userul a activat opțiunea
-    if (settings.removeBackground || !isFabricPhoto) {
-      miniGrid = removeBackgroundFromGrid(miniGrid, heightStitches, widthStitches)
-    }
+    // Fundal eliminat întotdeauna: alb din 'contain' + fundal uniform al oricărui input
+    miniGrid = removeBackgroundFromGrid(miniGrid, heightStitches, widthStitches)
 
     const miniCounts = new Array(topColors.length).fill(0)
     for (const row of miniGrid) for (const idx of row) if (idx >= 0) miniCounts[idx]++
