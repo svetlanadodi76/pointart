@@ -166,7 +166,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
     return withIdx.map(c => ({
       ...c,
       // mini_cross: culoare DMC reală, FĂRĂ simboluri — pixel-art colorat
-      symbol: (isGoblene || isDiamond) ? (c.symbol || '') : isMini ? '' : (byRank.get(c._idx)?.symbol ?? ''),
+      symbol: (isGoblene || isDiamond || isMini) ? (c.symbol || '') : (byRank.get(c._idx)?.symbol ?? ''),
       catColor: byRank.get(c._idx)?.catColor ?? '#cccccc',
       isSolid: (isGoblene || isDiamond || isMini) ? false : (byRank.get(c._idx)?.isSolid ?? false),
     }))
