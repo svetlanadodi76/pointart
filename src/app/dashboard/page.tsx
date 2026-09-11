@@ -23,15 +23,13 @@ export default async function DashboardPage() {
     getLang(),
   ])
 
-  const adminDb = createAdminClient()
-  const { data: schemas, error: schemasError } = await adminDb
+  const { data: schemas, error: schemasError } = await supabase
     .from('schemas')
-    .select('*')
+    .select('id, name, craft_type, canvas_type, width_stitches, height_stitches, width_cm, height_cm, max_colors, colors_used, original_image_url, image_hash, folder, created_at, color_overrides')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   if (schemasError) console.error('[Dashboard] schemas query error:', schemasError)
-  console.log('[Dashboard] user.id:', user.id, '| schemas count:', schemas?.length ?? 0, '| error:', schemasError?.message)
 
   const trialDaysLeft = subscription?.trial_ends_at
     ? Math.max(0, Math.ceil((new Date(subscription.trial_ends_at).getTime() - Date.now()) / 86400000))
@@ -146,12 +144,6 @@ export default async function DashboardPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* DEBUG TEMPORAR — șterge după diagnostic */}
-        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-4 text-xs font-mono text-yellow-800">
-          user.id: {user.id}<br/>
-          schemas în DB: {schemas?.length ?? 0}<br/>
-          eroare: {schemasError?.message ?? 'niciuna'}
-        </div>
         {/* Banner expirat */}
         {subscription?.status === 'expired' && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
