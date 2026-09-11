@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getSubscription } from '@/lib/supabase/getSubscription'
 import { redirect } from 'next/navigation'
 import { logout } from '../auth/actions'
@@ -23,13 +23,15 @@ export default async function DashboardPage() {
     getLang(),
   ])
 
-  const { data: schemas, error: schemasError } = await supabase
+  const adminDb = createAdminClient()
+  const { data: schemas, error: schemasError } = await adminDb
     .from('schemas')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   if (schemasError) console.error('[Dashboard] schemas query error:', schemasError)
+  console.log('[Dashboard] user.id:', user.id, '| schemas count:', schemas?.length ?? 0, '| error:', schemasError?.message)
 
   const trialDaysLeft = subscription?.trial_ends_at
     ? Math.max(0, Math.ceil((new Date(subscription.trial_ends_at).getTime() - Date.now()) / 86400000))
