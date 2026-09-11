@@ -146,6 +146,12 @@ export default async function DashboardPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* DEBUG TEMPORAR — șterge după diagnostic */}
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-4 text-xs font-mono text-yellow-800">
+          user.id: {user.id}<br/>
+          schemas în DB: {schemas?.length ?? 0}<br/>
+          eroare: {schemasError?.message ?? 'niciuna'}
+        </div>
         {/* Banner expirat */}
         {subscription?.status === 'expired' && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
