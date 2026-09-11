@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSubscription } from '@/lib/supabase/getSubscription'
 import { redirect } from 'next/navigation'
