@@ -21,11 +21,13 @@ export default async function DashboardPage() {
     getLang(),
   ])
 
-  const { data: schemas } = await supabase
+  const { data: schemas, error: schemasError } = await supabase
     .from('schemas')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+
+  if (schemasError) console.error('[Dashboard] schemas query error:', schemasError)
 
   const trialDaysLeft = subscription?.trial_ends_at
     ? Math.max(0, Math.ceil((new Date(subscription.trial_ends_at).getTime() - Date.now()) / 86400000))
