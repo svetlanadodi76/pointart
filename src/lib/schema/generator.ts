@@ -110,9 +110,10 @@ const FACES_PROFILE = {
   qFactor:           28,   // 24→28: merge skin tone similare → mai puține culori (target 20-28)
   maxErr:            15,
   diffuse:           0.12, // 0.20→0.12: mai puțin zgomot pe pielea netedă de bebeluș/copil
-  gammaVal:          1.15, // gamma uniform pe toate canalele — nu distorsionează hue ca normalize()
-  satBoost:          0.90, // sub 1.0: reduce tonuri calde fără a aplatiza fața
-  brightnessOffset:  0,
+  normLower:         4,    // 2→4: stretch mai puțin agresiv → midtone-uri mai naturale
+  normUpper:         96,   // 98→96
+  satBoost:          0.95, // ușor sub 1.0: evită portocaliu fără a aplatiza fața; NU combina cu mod portret
+  brightnessOffset:  0,    // fără offset: portretele de bebeluș sunt deja bine expuse
   hueDiversityBonus: false,
   smoothPasses:      0,
   skinColorRatio:    0,
@@ -125,8 +126,9 @@ const FACES_GROUP_PROFILE = {
   qFactor:           24,   // 20→24: blocuri mai curate pe rochie/haine (zone mari de culoare)
   maxErr:            12,
   diffuse:           0.10, // 0.15→0.10: mai puțin noise pe suprafețe uniforme (rochie, mâini)
-  gammaVal:          1.10, // mai puțin decât FACES — portretele de grup sunt mai bine expuse
-  satBoost:          0.95,
+  normLower:         5,
+  normUpper:         95,
+  satBoost:          0.95, // ușor sub 1.0 pentru piele naturală
   brightnessOffset:  0,
   hueDiversityBonus: false,
   smoothPasses:      0,
@@ -138,7 +140,8 @@ const NATURE_PROFILE = {
   qFactor:           32,
   maxErr:            10,
   diffuse:           0.15,
-  gammaVal:          1.3,  // gamma mai mare pentru peisaje — aduce detalii din umbre
+  normLower:         2,
+  normUpper:         98,
   satBoost:          1.08, // boost saturation pentru culori naturale vii (flori, peisaje)
   brightnessOffset:  8,    // offset pentru peisaje care pot fi ușor subexpuse
   hueDiversityBonus: true,
@@ -157,7 +160,6 @@ const MINI_PROFILE = {
   diffuse:           0,    // nu se aplică pe nearest-neighbor, dar 0 pentru claritate
   normLower:         2,
   normUpper:         98,
-  gammaVal:          1.0,  // fără gamma: clipart-ul e deja la tonurile corecte
   satBoost:          1.0,
   brightnessOffset:  0,
   hueDiversityBonus: true,  // asigură diversitate de culori la paleta mică (5–15 culori)
@@ -355,8 +357,10 @@ export async function generateSchema(
     kernel: 'lanczos3',
   })
 
-  if (profile.gammaVal && profile.gammaVal !== 1.0) {
-    pipeline.gamma(profile.gammaVal)
+  if (profile.pipelineMode === 'faces') {
+    pipeline.normalize({ lower: profile.normLower, upper: profile.normUpper })
+  } else {
+    pipeline.gamma(1.3)
   }
 
   const sharpen = pipeline
