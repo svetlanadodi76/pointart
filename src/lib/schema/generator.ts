@@ -112,6 +112,8 @@ const FACES_PROFILE = {
   diffuse:           0.12, // 0.20→0.12: mai puțin zgomot pe pielea netedă de bebeluș/copil
   normLower:         4,    // 2→4: stretch mai puțin agresiv → midtone-uri mai naturale
   normUpper:         96,   // 98→96
+  satBoost:          0.90, // sub 1.0: desaturează ușor pielea → evită tonuri portocalii pe bebeluș
+  brightnessOffset:  0,    // fără offset: portretele de bebeluș sunt deja bine expuse
   hueDiversityBonus: false,
   smoothPasses:      0,
   skinColorRatio:    0,
@@ -126,6 +128,8 @@ const FACES_GROUP_PROFILE = {
   diffuse:           0.10, // 0.15→0.10: mai puțin noise pe suprafețe uniforme (rochie, mâini)
   normLower:         5,
   normUpper:         95,
+  satBoost:          0.95, // ușor sub 1.0 pentru piele naturală
+  brightnessOffset:  0,
   hueDiversityBonus: false,
   smoothPasses:      0,
   skinColorRatio:    0,
@@ -138,6 +142,8 @@ const NATURE_PROFILE = {
   diffuse:           0.15,
   normLower:         2,
   normUpper:         98,
+  satBoost:          1.08, // boost saturation pentru culori naturale vii (flori, peisaje)
+  brightnessOffset:  8,    // offset pentru peisaje care pot fi ușor subexpuse
   hueDiversityBonus: true,
   smoothPasses:      0,
   skinColorRatio:    0,
@@ -154,6 +160,8 @@ const MINI_PROFILE = {
   diffuse:           0,    // nu se aplică pe nearest-neighbor, dar 0 pentru claritate
   normLower:         2,
   normUpper:         98,
+  satBoost:          1.0,
+  brightnessOffset:  0,
   hueDiversityBonus: true,  // asigură diversitate de culori la paleta mică (5–15 culori)
   smoothPasses:      1,     // esențial: curăță pixeli izolați la scară de 14–35 puncte
   skinColorRatio:    0,
@@ -218,10 +226,8 @@ export async function generateSchema(
         ? FACES_GROUP_PROFILE
         : FACES_PROFILE
 
-  // normalize pentru FACES dă deja contrast și saturație → satBoost 1.08 ca iulie 13
-  const satBoost = 1.08
   const brightness = 1.0 * (settings.imgBrightness ?? 1.0)
-  const saturation = satBoost * (settings.imgSaturation ?? 1.0)
+  const saturation = profile.satBoost * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
   const isMini = settings.craftType === 'mini_cross'
@@ -357,10 +363,11 @@ export async function generateSchema(
     pipeline.gamma(1.3)
   }
 
-  const { data: pixels } = await pipeline
+  const sharpen = pipeline
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
-    .linear(1.0, 8)
+  if (profile.brightnessOffset) sharpen.linear(1.0, profile.brightnessOffset)
+  const { data: pixels } = await sharpen
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
