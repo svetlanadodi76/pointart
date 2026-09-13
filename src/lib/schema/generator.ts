@@ -107,14 +107,11 @@ function rgbToHue(r: number, g: number, b: number): number {
 // ─────────────────────────────────────────────────────────────────────────────
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
-  qFactor:           28,   // 24→28: merge skin tone similare → mai puține culori (target 20-28)
+  qFactor:           24,
   maxErr:            15,
-  diffuse:           0.12, // 0.20→0.12: mai puțin zgomot pe pielea netedă de bebeluș/copil
+  diffuse:           0.20,
   normLower:         2,
   normUpper:         98,
-  satBoost:          1.0,  // neutru — hueShift se ocupă de portocaliu, nu satBoost
-  hueShift:          -6,   // -6°: orange(30°)→24° = ocru neutru; buze roșii(0°)→354° = vizibile
-  brightnessOffset:  0,
   hueDiversityBonus: false,
   smoothPasses:      0,
   skinColorRatio:    0,
@@ -127,11 +124,8 @@ const FACES_GROUP_PROFILE = {
   qFactor:           24,   // 20→24: blocuri mai curate pe rochie/haine (zone mari de culoare)
   maxErr:            12,
   diffuse:           0.10, // 0.15→0.10: mai puțin noise pe suprafețe uniforme (rochie, mâini)
-  normLower:         2,
-  normUpper:         98,
-  satBoost:          0.95,
-  hueShift:          -3,   // ușor mai puțin decât FACES — portrete grup au lumină mai variată
-  brightnessOffset:  0,
+  normLower:         5,
+  normUpper:         95,
   hueDiversityBonus: false,
   smoothPasses:      0,
   skinColorRatio:    0,
@@ -144,9 +138,6 @@ const NATURE_PROFILE = {
   diffuse:           0.15,
   normLower:         2,
   normUpper:         98,
-  satBoost:          1.08, // boost saturation pentru culori naturale vii (flori, peisaje)
-  hueShift:          0,
-  brightnessOffset:  8,    // offset pentru peisaje care pot fi ușor subexpuse
   hueDiversityBonus: true,
   smoothPasses:      0,
   skinColorRatio:    0,
@@ -163,9 +154,6 @@ const MINI_PROFILE = {
   diffuse:           0,    // nu se aplică pe nearest-neighbor, dar 0 pentru claritate
   normLower:         2,
   normUpper:         98,
-  satBoost:          1.0,
-  hueShift:          0,
-  brightnessOffset:  0,
   hueDiversityBonus: true,  // asigură diversitate de culori la paleta mică (5–15 culori)
   smoothPasses:      1,     // esențial: curăță pixeli izolați la scară de 14–35 puncte
   skinColorRatio:    0,
@@ -230,8 +218,10 @@ export async function generateSchema(
         ? FACES_GROUP_PROFILE
         : FACES_PROFILE
 
+  // normalize pentru FACES dă deja contrast și saturație → satBoost 1.08 ca iulie 13
+  const satBoost = 1.08
   const brightness = 1.0 * (settings.imgBrightness ?? 1.0)
-  const saturation = profile.satBoost * (settings.imgSaturation ?? 1.0)
+  const saturation = satBoost * (settings.imgSaturation ?? 1.0)
   const contrast   = settings.imgContrast ?? 1.0
 
   const isMini = settings.craftType === 'mini_cross'
@@ -367,11 +357,10 @@ export async function generateSchema(
     pipeline.gamma(1.3)
   }
 
-  const sharpen = pipeline
-    .modulate({ saturation, brightness, hue: profile.hueShift ?? 0 })
+  const { data: pixels } = await pipeline
+    .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
-  if (profile.brightnessOffset) sharpen.linear(1.0, profile.brightnessOffset)
-  const { data: pixels } = await sharpen
+    .linear(1.0, 8)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
