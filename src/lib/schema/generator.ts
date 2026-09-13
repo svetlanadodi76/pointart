@@ -107,11 +107,11 @@ function rgbToHue(r: number, g: number, b: number): number {
 // ─────────────────────────────────────────────────────────────────────────────
 const FACES_PROFILE = {
   pipelineMode:      'faces' as const,
-  qFactor:           24,
+  qFactor:           28,   // 24→28: merge skin tone similare → mai puține culori (target 20-28)
   maxErr:            15,
-  diffuse:           0.20,
-  normLower:         2,
-  normUpper:         98,
+  diffuse:           0.12, // 0.20→0.12: mai puțin zgomot pe pielea netedă de bebeluș/copil
+  normLower:         4,    // 2→4: stretch mai puțin agresiv → midtone-uri mai naturale
+  normUpper:         96,   // 98→96
   hueDiversityBonus: false,
   smoothPasses:      0,
   skinColorRatio:    0,
