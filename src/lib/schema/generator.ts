@@ -112,8 +112,9 @@ const FACES_PROFILE = {
   diffuse:           0.12, // 0.20→0.12: mai puțin zgomot pe pielea netedă de bebeluș/copil
   normLower:         4,    // 2→4: stretch mai puțin agresiv → midtone-uri mai naturale
   normUpper:         96,   // 98→96
-  satBoost:          0.95, // ușor sub 1.0: evită portocaliu fără a aplatiza fața; NU combina cu mod portret
-  brightnessOffset:  0,    // fără offset: portretele de bebeluș sunt deja bine expuse
+  satBoost:          1.0,  // neutru — hueShift se ocupă de portocaliu, nu satBoost
+  hueShift:          -6,   // -6°: orange(30°)→24° = ocru neutru; buze roșii(0°)→354° = vizibile
+  brightnessOffset:  0,
   hueDiversityBonus: false,
   smoothPasses:      0,
   skinColorRatio:    0,
@@ -128,7 +129,8 @@ const FACES_GROUP_PROFILE = {
   diffuse:           0.10, // 0.15→0.10: mai puțin noise pe suprafețe uniforme (rochie, mâini)
   normLower:         5,
   normUpper:         95,
-  satBoost:          0.95, // ușor sub 1.0 pentru piele naturală
+  satBoost:          0.95,
+  hueShift:          -3,   // ușor mai puțin decât FACES — portrete grup au lumină mai variată
   brightnessOffset:  0,
   hueDiversityBonus: false,
   smoothPasses:      0,
@@ -143,6 +145,7 @@ const NATURE_PROFILE = {
   normLower:         2,
   normUpper:         98,
   satBoost:          1.08, // boost saturation pentru culori naturale vii (flori, peisaje)
+  hueShift:          0,
   brightnessOffset:  8,    // offset pentru peisaje care pot fi ușor subexpuse
   hueDiversityBonus: true,
   smoothPasses:      0,
@@ -161,6 +164,7 @@ const MINI_PROFILE = {
   normLower:         2,
   normUpper:         98,
   satBoost:          1.0,
+  hueShift:          0,
   brightnessOffset:  0,
   hueDiversityBonus: true,  // asigură diversitate de culori la paleta mică (5–15 culori)
   smoothPasses:      1,     // esențial: curăță pixeli izolați la scară de 14–35 puncte
@@ -364,7 +368,7 @@ export async function generateSchema(
   }
 
   const sharpen = pipeline
-    .modulate({ saturation, brightness })
+    .modulate({ saturation, brightness, hue: profile.hueShift ?? 0 })
     .linear(contrast, Math.round(128 * (1 - contrast)))
   if (profile.brightnessOffset) sharpen.linear(1.0, profile.brightnessOffset)
   const { data: pixels } = await sharpen
