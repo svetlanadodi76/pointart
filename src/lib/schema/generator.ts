@@ -110,8 +110,8 @@ const FACES_PROFILE = {
   qFactor:           28,   // 24→28: merge skin tone similare → mai puține culori (target 20-28)
   maxErr:            15,
   diffuse:           0.12, // 0.20→0.12: mai puțin zgomot pe pielea netedă de bebeluș/copil
-  normLower:         4,    // 2→4: stretch mai puțin agresiv → midtone-uri mai naturale
-  normUpper:         96,   // 98→96
+  normLower:         2,
+  normUpper:         98,
   satBoost:          1.0,  // neutru — hueShift se ocupă de portocaliu, nu satBoost
   hueShift:          -6,   // -6°: orange(30°)→24° = ocru neutru; buze roșii(0°)→354° = vizibile
   brightnessOffset:  0,
@@ -127,8 +127,8 @@ const FACES_GROUP_PROFILE = {
   qFactor:           24,   // 20→24: blocuri mai curate pe rochie/haine (zone mari de culoare)
   maxErr:            12,
   diffuse:           0.10, // 0.15→0.10: mai puțin noise pe suprafețe uniforme (rochie, mâini)
-  normLower:         5,
-  normUpper:         95,
+  normLower:         2,
+  normUpper:         98,
   satBoost:          0.95,
   hueShift:          -3,   // ușor mai puțin decât FACES — portrete grup au lumină mai variată
   brightnessOffset:  0,
