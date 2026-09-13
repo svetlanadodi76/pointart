@@ -112,7 +112,7 @@ const FACES_PROFILE = {
   diffuse:           0.12, // 0.20→0.12: mai puțin zgomot pe pielea netedă de bebeluș/copil
   normLower:         4,    // 2→4: stretch mai puțin agresiv → midtone-uri mai naturale
   normUpper:         96,   // 98→96
-  satBoost:          0.90, // sub 1.0: desaturează ușor pielea → evită tonuri portocalii pe bebeluș
+  satBoost:          0.95, // ușor sub 1.0: evită portocaliu fără a aplatiza fața; NU combina cu mod portret
   brightnessOffset:  0,    // fără offset: portretele de bebeluș sunt deja bine expuse
   hueDiversityBonus: false,
   smoothPasses:      0,
