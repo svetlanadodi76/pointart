@@ -26,9 +26,9 @@ const CM_PER_SKEIN = 800 * 6  // 4800cm fir simplu per sculă (6 fire × 8m)
 
 function quantizeColor(r: number, g: number, b: number, factor = 24): [number, number, number] {
   return [
-    Math.round(r / factor) * factor,
-    Math.round(g / factor) * factor,
-    Math.round(b / factor) * factor,
+    Math.min(255, Math.round(r / factor) * factor),
+    Math.min(255, Math.round(g / factor) * factor),
+    Math.min(255, Math.round(b / factor) * factor),
   ]
 }
 
@@ -357,10 +357,12 @@ export async function generateSchema(
     pipeline.gamma(1.3)
   }
 
-  const { data: pixels } = await pipeline
+  pipeline
     .modulate({ saturation, brightness })
     .linear(contrast, Math.round(128 * (1 - contrast)))
-    .linear(1.0, 8)
+  // +8 offset numai pentru portrete (nu natură — culorile vii ≥248 depășesc 255 → bucket greșit)
+  if (profile.pipelineMode === 'faces') pipeline.linear(1.0, 8)
+  const { data: pixels } = await pipeline
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
