@@ -667,6 +667,17 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       }`}>{analysis.complexityLabel} ({analysis.complexityScore}/10)</span>
                     </div>
 
+                    {analysis.photoWarnings.length > 0 && (
+                      <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-1.5">
+                        {analysis.photoWarnings.map((w, i) => (
+                          <div key={i} className="flex items-start gap-2 text-sm text-amber-800">
+                            <span className="mt-0.5 shrink-0">⚠️</span>
+                            <span>{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="overflow-x-auto rounded-xl border border-gray-200">
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50 border-b border-gray-100">

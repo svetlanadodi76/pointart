@@ -18,6 +18,7 @@ export interface AnalysisResult {
   suggestedWidthCm: number
   suggestedHeightCm: number
   faceCount: number   // 0 = nicio față detectată, 1 = portret, 2+ = grup
+  photoWarnings: string[]  // avertismente calitate fotografie
 }
 
 const CANVAS_CONFIG = [
@@ -119,6 +120,26 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
   }
   faceCount = maxVal < 1 ? 0 : Math.min(8, faceCount)  // 0 dacă nu există deloc skin
 
+  // Avertismente calitate fotografie — pe baza pixelilor 100×100 deja calculați
+  const photoWarnings: string[] = []
+  let sumR = 0, sumG = 0, sumB = 0, sumLum = 0
+  const n = colorPixels.length / 3
+  for (let i = 0; i < colorPixels.length; i += 3) {
+    const r = colorPixels[i], g = colorPixels[i + 1], b = colorPixels[i + 2]
+    sumR += r; sumG += g; sumB += b
+    sumLum += 0.299 * r + 0.587 * g + 0.114 * b
+  }
+  const avgR = sumR / n, avgB = sumB / n, avgLum = sumLum / n
+
+  if (avgR - avgB > 40)
+    photoWarnings.push('Tonuri calde detectate — rezultat mai bun cu White Balance neutralizat (Snapseed: Warmth → −20)')
+  if (avgLum < 55)
+    photoWarnings.push('Fotografie prea întunecată — iluminare insuficientă poate reduce calitatea schemei')
+  if (avgLum > 215)
+    photoWarnings.push('Fotografie supraexpusă — detaliile pot fi pierdute în zonele luminoase')
+  if (origW < 400 || origH < 400)
+    photoWarnings.push('Rezoluție scăzută — pentru o schemă clară recomandăm minimum 800×800 px')
+
   const colorScore = Math.min(10, colorSet.size / 14)
 
   // Scor combinat: 60% margini + 40% culori
@@ -175,5 +196,6 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<AnalysisResult>
     suggestedWidthCm: suggested.minWidthCm,
     suggestedHeightCm: suggested.minHeightCm,
     faceCount,
+    photoWarnings,
   }
 }
