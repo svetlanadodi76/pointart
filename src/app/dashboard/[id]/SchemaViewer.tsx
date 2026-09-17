@@ -67,6 +67,8 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const [pdfLoading, setPdfLoading] = useState<'schema' | 'fabric' | null>(null)
   const [pdfError, setPdfError] = useState<string | null>(null)
+  const [jsonLoading, setJsonLoading] = useState(false)
+  const [jsonError, setJsonError] = useState<string | null>(null)
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [zoom, setZoom] = useState(1)
   const [saving, setSaving] = useState(false)
@@ -137,6 +139,29 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
       setPdfError(e.message)
     } finally {
       setPdfLoading(null)
+    }
+  }
+
+  async function downloadJson() {
+    setJsonLoading(true)
+    setJsonError(null)
+    try {
+      const res = await fetch(`/api/export/${schemaId}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Eroare la exportul JSON (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'schema-pointart.json'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setJsonError(e.message)
+    } finally {
+      setJsonLoading(false)
     }
   }
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -442,9 +467,19 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                   {pdfLoading === 'fabric' ? '⏳ Generez...' : '🖨️ Tipărire pânză (1:1)'}
                 </button>
               )}
+              <button
+                onClick={downloadJson}
+                disabled={jsonLoading}
+                className="bg-gray-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-gray-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
+              >
+                {jsonLoading ? '⏳ Exportez...' : '🧵 Exportă JSON'}
+              </button>
             </div>
             {pdfError && (
               <p className="text-red-600 text-xs">{pdfError}</p>
+            )}
+            {jsonError && (
+              <p className="text-red-600 text-xs">{jsonError}</p>
             )}
           </div>
         ) : (
