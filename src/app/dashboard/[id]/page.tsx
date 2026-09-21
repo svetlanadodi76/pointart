@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { SchemaViewer } from './SchemaViewer'
+import { DeleteSchemaButton } from './DeleteSchemaButton'
 import type { GeneratedSchema } from '@/types'
 
 interface Props {
@@ -23,11 +24,11 @@ export default async function SchemaDetailPage({ params }: Props) {
   if (!schema) notFound()
 
   // Alte variante din aceeași poză
-  let variants: Array<{ id: string; colors_used: number }> = []
+  let variants: Array<{ id: string; colors_used: number; width_cm: number; height_cm: number; canvas_type: string | null }> = []
   if (schema.image_hash) {
     const { data: variantRows } = await supabase
       .from('schemas')
-      .select('id, colors_used')
+      .select('id, colors_used, width_cm, height_cm, canvas_type')
       .eq('user_id', user.id)
       .eq('image_hash', schema.image_hash)
       .neq('id', id)
@@ -94,17 +95,28 @@ export default async function SchemaDetailPage({ params }: Props) {
               Variante din aceeași poză ({variants.length + 1} total)
             </p>
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-semibold text-amber-900 bg-amber-200 px-3 py-1.5 rounded-lg">
-                ✓ {schema.colors_used} culori (curent)
+              {/* Chip schema curentă */}
+              <span className="inline-flex items-center text-sm font-semibold text-amber-900 bg-amber-200 px-3 py-1.5 rounded-lg">
+                ✓ {schema.width_cm}×{schema.height_cm} cm · {schema.canvas_type} · {schema.colors_used} culori
+                <DeleteSchemaButton
+                  schemaId={id}
+                  currentPageId={id}
+                  redirectAfterDelete={variants[0] ? `/dashboard/${variants[0].id}` : '/dashboard'}
+                />
               </span>
+              {/* Chipuri variante */}
               {variants.map(v => (
-                <Link
-                  key={v.id}
-                  href={`/dashboard/${v.id}`}
-                  className="text-sm text-amber-700 bg-white border border-amber-300 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  {v.colors_used} culori
-                </Link>
+                <span key={v.id} className="inline-flex items-center text-sm text-amber-700 bg-white border border-amber-300 rounded-lg">
+                  <Link
+                    href={`/dashboard/${v.id}`}
+                    className="hover:bg-amber-100 px-3 py-1.5 rounded-l-lg transition-colors"
+                  >
+                    {v.width_cm}×{v.height_cm} cm · {v.canvas_type ?? '—'} · {v.colors_used} culori
+                  </Link>
+                  <span className="pr-2">
+                    <DeleteSchemaButton schemaId={v.id} currentPageId={id} />
+                  </span>
+                </span>
               ))}
             </div>
           </div>
