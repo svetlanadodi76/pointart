@@ -166,11 +166,17 @@ function removeBackgroundFromGrid(grid: number[][], H: number, W: number): numbe
   for (const c of corners) freq.set(c, (freq.get(c) ?? 0) + 1)
   const bgIdx = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0]
 
-  // Flood-fill din toate colțurile cu culoarea de fundal
+  // Flood-fill din toată marginea grilei (nu doar colțuri) — prinde buzunarele de fundal
+  // accesibile din mijlocul unei margini, nu doar din colțuri
   const visited = Array.from({ length: H }, () => new Array(W).fill(false))
   const stack: [number, number][] = []
-  for (const [cy, cx] of [[0, 0], [0, W - 1], [H - 1, 0], [H - 1, W - 1]] as [number, number][]) {
-    if (grid[cy][cx] === bgIdx) stack.push([cy, cx])
+  for (let y = 0; y < H; y++) {
+    if (grid[y][0] === bgIdx) stack.push([y, 0])
+    if (grid[y][W - 1] === bgIdx) stack.push([y, W - 1])
+  }
+  for (let x = 0; x < W; x++) {
+    if (grid[0][x] === bgIdx) stack.push([0, x])
+    if (grid[H - 1][x] === bgIdx) stack.push([H - 1, x])
   }
   while (stack.length > 0) {
     const [y, x] = stack.pop()!
