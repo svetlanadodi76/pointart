@@ -291,60 +291,8 @@ export async function generateSchema(
 
     // fără smooth — liniile subțiri (antene, contur) sunt "izolate" și ar fi eliminate
 
-    // Fundal eliminat la rezoluție 4× (golurile subțiri din design sunt conectate la exterior
-    // la 228×228 dar pot fi izolate la 57×57 → flood-fill pe grila mică nu le găsește)
-    {
-      const bgScale = 4
-      const bgW = widthStitches * bgScale
-      const bgH = heightStitches * bgScale
-      const { data: bgPx } = await sharp(imageBuffer)
-        .flatten({ background: { r: 255, g: 255, b: 255 } })
-        .trim({ background: '#ffffff', threshold: 15 })
-        .resize(bgW, bgH, { fit: 'contain', background: { r: 255, g: 255, b: 255 }, kernel: 'nearest' })
-        .removeAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true })
-
-      const isNearWhite = (pos: number) => {
-        const i = pos * 3
-        return bgPx[i] >= 235 && bgPx[i + 1] >= 235 && bgPx[i + 2] >= 235
-      }
-      const bgVisited = new Uint8Array(bgH * bgW)
-      const bgQueue: number[] = []
-      for (let y = 0; y < bgH; y++) {
-        const l = y * bgW, r = l + bgW - 1
-        if (isNearWhite(l)) bgQueue.push(l)
-        if (isNearWhite(r)) bgQueue.push(r)
-      }
-      for (let x = 0; x < bgW; x++) {
-        const t = x, b = (bgH - 1) * bgW + x
-        if (isNearWhite(t)) bgQueue.push(t)
-        if (isNearWhite(b)) bgQueue.push(b)
-      }
-      let qi = 0
-      while (qi < bgQueue.length) {
-        const pos = bgQueue[qi++]
-        if (bgVisited[pos] || !isNearWhite(pos)) continue
-        bgVisited[pos] = 1
-        const y = Math.floor(pos / bgW), x = pos % bgW
-        if (y > 0) bgQueue.push(pos - bgW)
-        if (y < bgH - 1) bgQueue.push(pos + bgW)
-        if (x > 0) bgQueue.push(pos - 1)
-        if (x < bgW - 1) bgQueue.push(pos + 1)
-      }
-      // Downsample: dacă ≥50% din blocul bgScale×bgScale e fundal → celula e goală
-      const half = (bgScale * bgScale) / 2
-      for (let gy = 0; gy < heightStitches; gy++) {
-        for (let gx = 0; gx < widthStitches; gx++) {
-          if (miniGrid[gy][gx] < 0) continue
-          let cnt = 0
-          for (let dy = 0; dy < bgScale; dy++)
-            for (let dx = 0; dx < bgScale; dx++)
-              if (bgVisited[(gy * bgScale + dy) * bgW + (gx * bgScale + dx)]) cnt++
-          if (cnt >= half) miniGrid[gy][gx] = -1
-        }
-      }
-    }
+    // Fundal eliminat întotdeauna: alb din 'contain' + fundal uniform al oricărui input
+    miniGrid = removeBackgroundFromGrid(miniGrid, heightStitches, widthStitches)
 
     const miniCounts = new Array(topColors.length).fill(0)
     for (const row of miniGrid) for (const idx of row) if (idx >= 0) miniCounts[idx]++
