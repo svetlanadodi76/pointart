@@ -448,45 +448,47 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
           </button>
         </div>
 
-        {canDownloadPdf ? (
-          <div className="flex flex-col gap-2 items-end">
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => downloadPdf('schema')}
-                disabled={pdfLoading !== null}
-                className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
-              >
-                {pdfLoading === 'schema' ? '⏳ Generez...' : '📄 PDF schemă'}
-              </button>
-              {!isMini && (
+        <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-wrap gap-2">
+            {canDownloadPdf ? (
+              <>
                 <button
-                  onClick={() => downloadPdf('fabric')}
+                  onClick={() => downloadPdf('schema')}
                   disabled={pdfLoading !== null}
-                  className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
+                  className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
                 >
-                  {pdfLoading === 'fabric' ? '⏳ Generez...' : '🖨️ Tipărire pânză (1:1)'}
+                  {pdfLoading === 'schema' ? '⏳ Generez...' : '📄 PDF schemă'}
                 </button>
-              )}
-              <button
-                onClick={downloadJson}
-                disabled={jsonLoading}
-                className="bg-gray-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-gray-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
-              >
-                {jsonLoading ? '⏳ Exportez...' : '🧵 Exportă JSON'}
-              </button>
-            </div>
-            {pdfError && (
-              <p className="text-red-600 text-xs">{pdfError}</p>
+                {!isMini && (
+                  <button
+                    onClick={() => downloadPdf('fabric')}
+                    disabled={pdfLoading !== null}
+                    className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
+                  >
+                    {pdfLoading === 'fabric' ? '⏳ Generez...' : '🖨️ Tipărire pânză (1:1)'}
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-amber-700 text-sm self-center">
+                📄 PDF disponibil doar pe plan plătit
+              </div>
             )}
-            {jsonError && (
-              <p className="text-red-600 text-xs">{jsonError}</p>
-            )}
+            <button
+              onClick={downloadJson}
+              disabled={jsonLoading}
+              className="bg-gray-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-gray-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
+            >
+              {jsonLoading ? '⏳ Exportez...' : '🧵 Exportă JSON'}
+            </button>
           </div>
-        ) : (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-amber-700 text-sm">
-            📄 PDF disponibil doar pe plan plătit
-          </div>
-        )}
+          {pdfError && (
+            <p className="text-red-600 text-xs">{pdfError}</p>
+          )}
+          {jsonError && (
+            <p className="text-red-600 text-xs">{jsonError}</p>
+          )}
+        </div>
       </div>
 
       {/* Schema cu simboluri — canvas (previne crash Chrome la scheme mari) */}
