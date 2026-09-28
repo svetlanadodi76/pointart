@@ -38,6 +38,14 @@ export async function SiteFooter() {
               {t(lang, 'footer.privacy')}
             </Link>
             <span>·</span>
+            <Link href="/terms" className="hover:text-violet-600 transition-colors">
+              Termeni
+            </Link>
+            <span>·</span>
+            <Link href="/refund" className="hover:text-violet-600 transition-colors">
+              Rambursare
+            </Link>
+            <span>·</span>
             <p>{t(lang, 'footer.rights').replace('{year}', String(year))}</p>
           </div>
         </div>
