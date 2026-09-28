@@ -41,6 +41,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
   const [aiSteps, setAiSteps] = useState<{ upscaled: boolean; faceEnhanced: boolean; sharpened: boolean } | null>(null)
   const [schemaId, setSchemaId] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState<'schema' | 'fabric' | null>(null)
+  const [jsonLoading, setJsonLoading] = useState(false)
+  const [jsonError, setJsonError] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   // Preprocessing Premium
@@ -277,6 +279,30 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
       setError(e.message)
     } finally {
       setPdfLoading(null)
+    }
+  }
+
+  async function downloadJson() {
+    if (!schemaId) return
+    setJsonLoading(true)
+    setJsonError(null)
+    try {
+      const res = await fetch(`/api/export/${schemaId}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Eroare la exportul JSON (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'schema-pointart.json'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setJsonError(e.message)
+    } finally {
+      setJsonLoading(false)
     }
   }
 
@@ -1221,6 +1247,18 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 <Link href="/pricing" className="text-violet-700 text-sm font-medium hover:underline mt-1 block">
                   Vezi planurile →
                 </Link>
+              </div>
+            )}
+            {result && schemaId && (
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={downloadJson}
+                  disabled={jsonLoading}
+                  className="w-full bg-gray-700 text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {jsonLoading ? '⏳ Exportez...' : '🧵 Exportă JSON'}
+                </button>
+                {jsonError && <p className="text-red-600 text-xs text-center">{jsonError}</p>}
               </div>
             )}
             {variants && (
