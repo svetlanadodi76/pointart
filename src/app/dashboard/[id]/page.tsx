@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { SchemaViewer } from './SchemaViewer'
 import { DeleteSchemaButton } from './DeleteSchemaButton'
 import type { GeneratedSchema } from '@/types'
+import { getLang } from '@/lib/i18n/getLang'
+import { t } from '@/lib/i18n/translations'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -16,9 +18,10 @@ export default async function SchemaDetailPage({ params }: Props) {
 
   if (!user) redirect('/auth/login')
 
-  const [{ data: schema }, subscription] = await Promise.all([
+  const [{ data: schema }, subscription, lang] = await Promise.all([
     supabase.from('schemas').select('*').eq('id', id).eq('user_id', user.id).single(),
     (await import('@/lib/supabase/getSubscription')).getSubscription(supabase, user.id),
+    getLang(),
   ])
 
   if (!schema) notFound()
@@ -42,9 +45,9 @@ export default async function SchemaDetailPage({ params }: Props) {
 
   const craftLabel =
     schema.craft_type === 'cross_stitch' ? 'Cross Stitch'
-    : schema.craft_type === 'goblene' ? 'Goblene'
-    : schema.craft_type === 'mini_cross' ? '🌸 Mini Cros'
-    : 'Diamante'
+    : schema.craft_type === 'goblene' ? t(lang, 'generate.craft_tapestry')
+    : schema.craft_type === 'mini_cross' ? `🌸 ${t(lang, 'generate.craft_mini_cross')}`
+    : t(lang, 'generate.craft_diamond')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -71,10 +74,10 @@ export default async function SchemaDetailPage({ params }: Props) {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Info bandă */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center gap-4 text-sm text-gray-600">
-          <span>📐 {schema.width_stitches}×{schema.height_stitches} puncte</span>
+          <span>📐 {schema.width_stitches}×{schema.height_stitches} {t(lang, 'schema.stitches_unit')}</span>
           <span>📏 {schema.width_cm}×{schema.height_cm} cm</span>
           {schema.canvas_type && <span>🧵 Canvas {schema.canvas_type}</span>}
-          <span>🎨 {schema.colors_used} culori DMC</span>
+          <span>🎨 {schema.colors_used} {t(lang, 'schema.dmc_colors_unit')}</span>
           {schema.folder && (
             <span className="flex items-center gap-1 text-violet-600">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -92,16 +95,17 @@ export default async function SchemaDetailPage({ params }: Props) {
         {variants.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
             <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-3">
-              Variante din aceeași poză ({variants.length + 1} total)
+              {t(lang, 'schema.variants_banner')} ({variants.length + 1} total)
             </p>
             <div className="flex flex-wrap gap-2 items-center">
               {/* Chip schema curentă */}
               <span className="inline-flex items-center text-sm font-semibold text-amber-900 bg-amber-200 px-3 py-1.5 rounded-lg">
-                ✓ {schema.width_cm}×{schema.height_cm} cm · {schema.canvas_type} · {schema.colors_used} culori
+                ✓ {schema.width_cm}×{schema.height_cm} cm · {schema.canvas_type} · {schema.colors_used} {t(lang, 'schema.dmc_colors_unit')}
                 <DeleteSchemaButton
                   schemaId={id}
                   currentPageId={id}
                   redirectAfterDelete={variants[0] ? `/dashboard/${variants[0].id}` : '/dashboard'}
+                  lang={lang}
                 />
               </span>
               {/* Chipuri variante */}
@@ -111,10 +115,10 @@ export default async function SchemaDetailPage({ params }: Props) {
                     href={`/dashboard/${v.id}`}
                     className="hover:bg-amber-100 px-3 py-1.5 rounded-l-lg transition-colors"
                   >
-                    {v.width_cm}×{v.height_cm} cm · {v.canvas_type ?? '—'} · {v.colors_used} culori
+                    {v.width_cm}×{v.height_cm} cm · {v.canvas_type ?? '—'} · {v.colors_used} {t(lang, 'schema.dmc_colors_unit')}
                   </Link>
                   <span className="pr-2">
-                    <DeleteSchemaButton schemaId={v.id} currentPageId={id} />
+                    <DeleteSchemaButton schemaId={v.id} currentPageId={id} lang={lang} />
                   </span>
                 </span>
               ))}
@@ -131,6 +135,7 @@ export default async function SchemaDetailPage({ params }: Props) {
           craftType={schema.craft_type}
           canvasType={schema.canvas_type}
           savedOverrides={schema.color_overrides ?? null}
+          lang={lang}
         />
       </div>
     </div>

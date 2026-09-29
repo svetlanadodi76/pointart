@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react'
 import type { GeneratedSchema, CraftType, CanvasType, DmcColor } from '@/types'
 import { getCategoricalColor, SOLID_THRESHOLD, SIMPLE_SYMBOLS, GEOMETRIC_SYMBOLS } from '@/lib/dmc/categoricalColors'
+import { t, type Lang } from '@/lib/i18n/translations'
 
 interface SavedOverrides {
   cell?: Record<string, DmcColor>
@@ -17,6 +18,7 @@ interface Props {
   craftType: CraftType
   canvasType: CanvasType | null
   savedOverrides?: SavedOverrides | null
+  lang?: Lang
 }
 
 function contrastColor(hex: string): string {
@@ -63,7 +65,7 @@ function renderShapeSvg(symbol: string, color: string, size: number) {
   return <svg width={size} height={size} style={{ display: 'block', overflow: 'visible' }}>{shape}</svg>
 }
 
-export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType, canvasType, savedOverrides }: Props) {
+export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType, canvasType, savedOverrides, lang = 'ro' }: Props) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const [pdfLoading, setPdfLoading] = useState<'schema' | 'fabric' | null>(null)
   const [pdfError, setPdfError] = useState<string | null>(null)
@@ -436,7 +438,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               view === 'schema' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            📐 {isGoblene ? 'Schema (culori + simboluri)' : 'Schema (cu simboluri)'}
+            📐 {isGoblene ? t(lang, 'schema.tab_color_symbols') : t(lang, 'schema.tab_symbols')}
           </button>
           <button
             onClick={() => setView('final')}
@@ -444,7 +446,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               view === 'final' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            🖼️ Final (culori)
+            🖼️ {t(lang, 'schema.tab_final')}
           </button>
         </div>
 
@@ -457,7 +459,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                   disabled={pdfLoading !== null}
                   className="bg-green-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-green-700 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
                 >
-                  {pdfLoading === 'schema' ? '⏳ Generez...' : '📄 PDF schemă'}
+                  {pdfLoading === 'schema' ? t(lang, 'generate.generating_pdf_btn') : t(lang, 'generate.download_schema_pdf')}
                 </button>
                 {!isMini && (
                   <button
@@ -465,13 +467,13 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                     disabled={pdfLoading !== null}
                     className="bg-violet-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-violet-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
                   >
-                    {pdfLoading === 'fabric' ? '⏳ Generez...' : '🖨️ Tipărire pânză (1:1)'}
+                    {pdfLoading === 'fabric' ? t(lang, 'generate.generating_pdf_btn') : t(lang, 'generate.print_canvas_pdf')}
                   </button>
                 )}
               </>
             ) : (
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-amber-700 text-sm self-center">
-                📄 PDF disponibil doar pe plan plătit
+                {t(lang, 'schema.pdf_paid_only')}
               </div>
             )}
             <button
@@ -479,7 +481,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               disabled={jsonLoading}
               className="bg-gray-700 text-white px-5 py-2 rounded-xl font-medium hover:bg-gray-800 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-60"
             >
-              {jsonLoading ? '⏳ Exportez...' : '🧵 Exportă JSON'}
+              {jsonLoading ? t(lang, 'generate.exporting_json_btn') : t(lang, 'generate.export_json_btn')}
             </button>
           </div>
           {pdfError && (
@@ -496,17 +498,17 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
         <div className="border border-gray-200 rounded-xl bg-white overflow-hidden">
           {/* Bara zoom */}
           <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
-            <span className="text-xs text-gray-500 font-medium">Zoom:</span>
+            <span className="text-xs text-gray-500 font-medium">{t(lang, 'schema.zoom_label')}</span>
             <button
               onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
               className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold flex items-center justify-center"
-              title="Micșorează"
+              title={t(lang, 'schema.zoom_out_title')}
             >−</button>
             <span className="text-xs font-mono text-gray-700 w-10 text-center">{Math.round(zoom * 100)}%</span>
             <button
               onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
               className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold flex items-center justify-center"
-              title="Mărește"
+              title={t(lang, 'schema.zoom_in_title')}
             >+</button>
             <button
               onClick={() => setZoom(1)}
@@ -517,14 +519,14 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               onClick={handleUndo}
               disabled={undoStack.length === 0}
               className="text-xs text-orange-600 hover:text-orange-800 ml-2 disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Anulează ultima modificare de culoare"
-            >↩ Anulează</button>
+              title={t(lang, 'schema.undo_btn')}
+            >{t(lang, 'schema.undo_btn')}</button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="text-xs font-medium ml-auto px-2.5 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title="Salvează modificările de culoare în cont"
-            >{saving ? '⏳ Salvez...' : saved ? '✓ Salvat' : '💾 Salvează'}</button>
+            >{saving ? t(lang, 'schema.saving') : saved ? t(lang, 'schema.saved_btn') : t(lang, 'schema.save_btn')}</button>
           </div>
           <div className="overflow-auto p-2">
             <canvas
@@ -539,17 +541,17 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
       {view === 'final' && (
         <div className="border border-gray-200 rounded-xl bg-white overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
-            <span className="text-xs text-gray-500 font-medium">Zoom:</span>
+            <span className="text-xs text-gray-500 font-medium">{t(lang, 'schema.zoom_label')}</span>
             <button
               onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
               className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold flex items-center justify-center"
-              title="Micșorează"
+              title={t(lang, 'schema.zoom_out_title')}
             >−</button>
             <span className="text-xs font-mono text-gray-700 w-10 text-center">{Math.round(zoom * 100)}%</span>
             <button
               onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
               className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold flex items-center justify-center"
-              title="Mărește"
+              title={t(lang, 'schema.zoom_in_title')}
             >+</button>
             <button
               onClick={() => setZoom(1)}
@@ -560,14 +562,14 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
               onClick={handleUndo}
               disabled={undoStack.length === 0}
               className="text-xs text-orange-600 hover:text-orange-800 ml-2 disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Anulează ultima modificare de culoare"
-            >↩ Anulează</button>
+              title={t(lang, 'schema.undo_btn')}
+            >{t(lang, 'schema.undo_btn')}</button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="text-xs font-medium ml-auto px-2.5 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title="Salvează modificările de culoare în cont"
-            >{saving ? '⏳ Salvez...' : saved ? '✓ Salvat' : '💾 Salvează'}</button>
+            >{saving ? t(lang, 'schema.saving') : saved ? t(lang, 'schema.saved_btn') : t(lang, 'schema.save_btn')}</button>
           </div>
           <div className="overflow-auto p-2">
             <canvas
@@ -585,18 +587,18 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-sm font-semibold text-indigo-800">
-                {selectedRegion.size} celule selectate
+                {t(lang, 'schema.region_cells_selected').replace('{n}', String(selectedRegion.size))}
               </p>
               <p className="text-xs text-indigo-600 mt-0.5">
-                Click pe zonă nouă = adaugă • Click pe zonă selectată = elimină • Esc = anulează
+                {t(lang, 'schema.region_click_hint')}
               </p>
             </div>
             <button
               onClick={() => { setSelectedRegion(null); setRegionSrcIdx(null) }}
               className="text-xs text-indigo-500 hover:text-indigo-800 px-2 py-1 rounded-lg hover:bg-indigo-100"
-            >✕ Anulează</button>
+            >{t(lang, 'schema.region_cancel')}</button>
           </div>
-          <p className="text-xs font-medium text-indigo-700 mb-2">Alege culoarea nouă din paleta schemei:</p>
+          <p className="text-xs font-medium text-indigo-700 mb-2">{t(lang, 'schema.region_choose_color')}</p>
           <div className="flex flex-wrap gap-1.5">
             {[...effectiveColors]
               .sort((a, b) => b.count - a.count)
@@ -631,7 +633,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
             <button
               onClick={() => setCellOverrides(new Map())}
               className="mt-3 text-xs text-red-500 hover:text-red-700"
-            >↩ Resetează toate modificările de regiuni</button>
+            >{t(lang, 'schema.region_reset_all')}</button>
           )}
         </div>
       )}
@@ -639,17 +641,17 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
       {/* Legendă culori */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h3 className="font-semibold text-gray-800 mb-4">
-          Culori folosite ({colors.length})
+          {t(lang, 'schema.colors_used_legend').replace('{n}', String(colors.length))}
         </h3>
         {/* Header tabel */}
         <div className={`grid ${isCrossStitch ? 'grid-cols-[28px_52px_1fr_auto]' : 'grid-cols-[28px_28px_1fr_auto]'} gap-x-3 pb-1.5 mb-1 border-b border-gray-200`}>
           <span className="text-[10px] font-semibold text-gray-400 text-center">#</span>
-          <span className="text-[10px] font-semibold text-gray-400 text-center">Simbol</span>
-          <span className="text-[10px] font-semibold text-gray-400">Culoare DMC</span>
-          <span className="text-[10px] font-semibold text-gray-400 text-right">Cantitate</span>
+          <span className="text-[10px] font-semibold text-gray-400 text-center">{t(lang, 'schema.col_symbol')}</span>
+          <span className="text-[10px] font-semibold text-gray-400">{t(lang, 'schema.col_dmc')}</span>
+          <span className="text-[10px] font-semibold text-gray-400 text-right">{t(lang, 'schema.col_qty')}</span>
         </div>
 
-        <p className="text-xs text-gray-400 mb-3">Click pe schemă pentru a selecta o regiune · Click pe mai multe zone pentru a le acumula · Apoi alege culoarea nouă</p>
+        <p className="text-xs text-gray-400 mb-3">{t(lang, 'schema.select_region_hint')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
           {[...effectiveColors]
             .sort((a, b) => b.count - a.count)
@@ -689,7 +691,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                         const effCount = effectiveCounts.get(color._idx) ?? color.count
                         const effSkeins = effCount === 0 ? 0 : Math.max(1, Math.ceil(effCount * color.skeins / Math.max(1, color.count)))
                         const changed = effCount !== color.count
-                        const unitLabel = color.unit === 'packets' ? 'pach.' : color.unit === 'wool_skeins' ? 'scule lână' : color.unit === 'silk_skeins' ? 'scule mătase' : color.unit === 'cotton_skeins' ? 'scule bumbac' : 'scule'
+                        const unitLabel = color.unit === 'packets' ? t(lang, 'schema.unit_packets') : color.unit === 'wool_skeins' ? t(lang, 'schema.unit_wool_skeins') : color.unit === 'silk_skeins' ? t(lang, 'schema.unit_silk_skeins') : color.unit === 'cotton_skeins' ? t(lang, 'schema.unit_cotton_skeins') : t(lang, 'schema.unit_skeins')
                         return (
                           <>
                             <p className={`text-xs font-semibold ${changed ? 'text-indigo-600' : 'text-gray-700'}`}>
@@ -709,7 +711,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                       className={`w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${
                         isEditing ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
                       }`}
-                      title="Schimbă culoarea"
+                      title={t(lang, 'schema.change_color_title')}
                     >
                       ✏️
                     </button>
@@ -729,14 +731,14 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
                           className="flex items-center gap-1 px-2 py-1 bg-white border-2 border-gray-300 rounded-lg text-xs hover:border-violet-400 transition-colors"
                         >
                           <span className="w-4 h-4 rounded border border-gray-200 inline-block" style={{ backgroundColor: schema.colors[color._idx]?.dmcColor?.hex }} />
-                          <span className="text-gray-500">↩ Restaurează originalul</span>
+                          <span className="text-gray-500">{t(lang, 'schema.restore_original')}</span>
                         </button>
                       )}
 
                       {/* Alternativele pre-calculate (cele mai apropiate DMC) */}
                       {(schema.colors[color._idx]?.alternatives ?? []).length > 0 && (
                         <div>
-                          <p className="text-xs font-semibold text-violet-700 mb-1.5">Nuanțe apropiate:</p>
+                          <p className="text-xs font-semibold text-violet-700 mb-1.5">{t(lang, 'schema.similar_shades')}</p>
                           <div className="flex flex-wrap gap-1.5">
                             {(schema.colors[color._idx]?.alternatives ?? []).map((alt, ai) => (
                               <button
@@ -760,7 +762,7 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
 
                       {/* Toate celelalte culori din paleta schemei */}
                       <div>
-                        <p className="text-xs font-semibold text-violet-700 mb-1.5">Din paleta schemei:</p>
+                        <p className="text-xs font-semibold text-violet-700 mb-1.5">{t(lang, 'schema.from_palette')}</p>
                         <div className="flex flex-wrap gap-1.5">
                           {effectiveColors
                             .filter(c => c._idx !== color._idx)
@@ -790,7 +792,9 @@ export function SchemaViewer({ schema, name, schemaId, canDownloadPdf, craftType
             })}
         </div>
         <p className="text-xs text-gray-400 mt-4 pt-3 border-t border-gray-100">
-          Total: {schema.widthStitches * schema.heightStitches} puncte • {colors.length} culori DMC
+          {t(lang, 'schema.total_summary')
+            .replace('{stitches}', String(schema.widthStitches * schema.heightStitches))
+            .replace('{colors}', String(colors.length))}
         </p>
       </div>
     </div>

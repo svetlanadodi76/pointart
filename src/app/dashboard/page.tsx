@@ -225,13 +225,16 @@ export default async function DashboardPage() {
                   <span className="text-2xl">⚠️</span>
                   <div>
                     <p className="font-semibold text-amber-800">
-                      Abonamentul Premium AI expiră în {daysLeft} {daysLeft === 1 ? 'zi' : 'zile'}
+                      {t(lang, 'banner.premium_expiring')
+                        .replace('{days}', String(daysLeft))
+                        .replace('{unit}', lang === 'ru' ? (daysLeft === 1 ? 'день' : 'дн.') : lang === 'en' ? (daysLeft === 1 ? 'day' : 'days') : (daysLeft === 1 ? 'zi' : 'zile'))
+                      }
                     </p>
-                    <p className="text-amber-600 text-sm">Reînnoiește pentru a păstra accesul la funcțiile AI</p>
+                    <p className="text-amber-600 text-sm">{t(lang, 'banner.premium_expiring_desc')}</p>
                   </div>
                 </div>
                 <Link href="/pricing" className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
-                  Reînnoiește
+                  {t(lang, 'banner.renew')}
                 </Link>
               </div>
             ) : null
@@ -270,16 +273,20 @@ export default async function DashboardPage() {
             <div className="flex items-center gap-3">
               <span className="text-2xl">ℹ️</span>
               <div>
-                <p className="font-semibold text-gray-700">Abonament anulat</p>
+                <p className="font-semibold text-gray-700">{t(lang, 'banner.canceled_title')}</p>
                 <p className="text-gray-500 text-sm">
-                  Accesul rămâne activ până pe{' '}
-                  <strong>{new Date(subscription.current_period_end).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>.
-                  După această dată generarea de scheme noi va fi blocată până la un nou abonament.
+                  {t(lang, 'banner.canceled_desc').replace(
+                    '{date}',
+                    new Date(subscription.current_period_end).toLocaleDateString(
+                      lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'ro-RO',
+                      { day: 'numeric', month: 'long', year: 'numeric' }
+                    )
+                  )}
                 </p>
               </div>
             </div>
             <Link href="/pricing" className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-violet-700 transition-colors">
-              Reactivează
+              {t(lang, 'banner.reactivate')}
             </Link>
           </div>
         )}
@@ -287,7 +294,7 @@ export default async function DashboardPage() {
         {/* Buton anulare abonament Pro/Premium activ */}
         {(subscription?.plan === 'pro' || subscription?.plan === 'premium') && subscription?.status === 'active' && (
           <div className="flex justify-end mb-4">
-            <CancelSubscriptionButton />
+            <CancelSubscriptionButton lang={lang} />
           </div>
         )}
 
@@ -313,7 +320,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {(grouped.get(folderName) ?? []).map(schema => (
-                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(`${schema.image_hash}__${schema.craft_type}`) ?? []).filter(v => v.id !== schema.id) : []} imageUrl={schema.original_image_url ? signedUrlMap.get(schema.original_image_url) : undefined} />
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(`${schema.image_hash}__${schema.craft_type}`) ?? []).filter(v => v.id !== schema.id) : []} imageUrl={schema.original_image_url ? signedUrlMap.get(schema.original_image_url) : undefined} lang={lang} />
                   ))}
                 </div>
               </section>
@@ -333,7 +340,7 @@ export default async function DashboardPage() {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {unfoldered.map(schema => (
-                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(`${schema.image_hash}__${schema.craft_type}`) ?? []).filter(v => v.id !== schema.id) : []} imageUrl={schema.original_image_url ? signedUrlMap.get(schema.original_image_url) : undefined} />
+                    <SchemaCard key={schema.id} schema={schema} existingFolders={existingFolders} variants={schema.image_hash ? (hashGroup.get(`${schema.image_hash}__${schema.craft_type}`) ?? []).filter(v => v.id !== schema.id) : []} imageUrl={schema.original_image_url ? signedUrlMap.get(schema.original_image_url) : undefined} lang={lang} />
                   ))}
                 </div>
               </section>

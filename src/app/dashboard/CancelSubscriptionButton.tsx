@@ -1,24 +1,25 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { t, type Lang } from '@/lib/i18n/translations'
 
-export function CancelSubscriptionButton() {
+interface Props {
+  lang?: Lang
+}
+
+export function CancelSubscriptionButton({ lang = 'ro' }: Props) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
   async function handleCancel() {
-    if (!confirm(
-      'Ești sigur că vrei să anulezi abonamentul?\n\n' +
-      'Vei păstra accesul până la sfârșitul perioadei plătite. ' +
-      'După expirare, generarea de scheme noi va fi blocată până la achiziția unui nou abonament.'
-    )) return
+    if (!confirm(t(lang, 'cancel_sub.confirm'))) return
 
     setLoading(true)
     try {
       const res = await fetch('/api/subscription/cancel', { method: 'POST' })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        alert(data.error || 'Eroare la anulare. Încearcă din nou.')
+        alert(data.error || t(lang, 'cancel_sub.error'))
         return
       }
       router.refresh()
@@ -33,7 +34,7 @@ export function CancelSubscriptionButton() {
       disabled={loading}
       className="text-sm text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40 underline underline-offset-2"
     >
-      {loading ? 'Se anulează...' : 'Anulează abonamentul'}
+      {loading ? t(lang, 'cancel_sub.loading') : t(lang, 'cancel_sub.btn')}
     </button>
   )
 }
