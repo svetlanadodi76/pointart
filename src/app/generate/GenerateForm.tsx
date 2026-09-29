@@ -385,7 +385,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
             {/* Upload imagine */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="font-semibold text-gray-900 mb-4">1. Încarcă fotografia</h2>
+              <h2 className="font-semibold text-gray-900 mb-4">{t(lang, 'generate.upload_title')}</h2>
               <div
                 onClick={() => fileRef.current?.click()}
                 className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-colors"
@@ -406,8 +406,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 ) : (
                   <div>
                     <div className="text-4xl mb-3">📷</div>
-                    <p className="text-gray-600 font-medium">Click pentru a încărca</p>
-                    <p className="text-gray-400 text-sm mt-1">JPG, PNG, WebP, HEIC — max 10MB</p>
+                    <p className="text-gray-600 font-medium">{t(lang, 'generate.upload_click')}</p>
+                    <p className="text-gray-400 text-sm mt-1">{t(lang, 'generate.upload_types_full')}</p>
                   </div>
                 )}
               </div>
@@ -420,7 +420,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               />
               {preview && (
                 <button onClick={() => fileRef.current?.click()} className="text-violet-600 text-sm mt-2 hover:underline">
-                  Schimbă fotografia
+                  {t(lang, 'generate.change_photo')}
                 </button>
               )}
             </div>
@@ -430,19 +430,19 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-amber-600 font-bold text-sm">★ Premium AI</span>
-                  <span className="text-xs text-amber-700">Îmbunătățire imagine cu AI înainte de generare</span>
+                  <span className="text-xs text-amber-700">{t(lang, 'generate.premium_ai_subtitle')}</span>
                 </div>
 
                 {!preprocessedPreview && !preprocessing && (
                   <div className="space-y-3">
                     <p className="text-xs text-amber-700">
-                      Aplică upscaling 4×, îmbunătățire portret și claritate optimizată (30–60 sec)
+                      {t(lang, 'generate.preprocess_desc')}
                     </p>
                     <button
                       onClick={handlePreprocess}
                       className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors"
                     >
-                      ✨ Îmbunătățește imaginea cu AI
+                      {t(lang, 'generate.enhance_btn')}
                     </button>
                     <p className="text-xs text-amber-600 bg-amber-100 rounded-lg px-3 py-2">
                       Rezultat optim pe <strong>portrete individuale</strong>. Fotografii de grup sau peisaje → generează direct fără AI.
@@ -456,7 +456,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                     </svg>
-                    <span className="text-sm text-amber-700 font-medium">Procesare AI... (30–60 sec)</span>
+                    <span className="text-sm text-amber-700 font-medium">{t(lang, 'generate.preprocessing_status')}</span>
                   </div>
                 )}
 
@@ -487,10 +487,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-green-700 font-medium flex items-center gap-1.5">
                           <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</span>
-                          Imaginea AI selectată
+                          {t(lang, 'generate.ai_selected_lbl')}
                         </span>
                         <button onClick={() => setUsePreprocessed(false)} className="text-xs text-gray-500 hover:text-gray-700 underline">
-                          Revino la original
+                          {t(lang, 'generate.back_original_btn')}
                         </button>
                       </div>
                     ) : (
@@ -499,13 +499,13 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                           onClick={() => { setUsePreprocessed(true); setUseSmartFocus(false) }}
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-semibold transition-colors"
                         >
-                          Folosește imaginea AI
+                          {t(lang, 'generate.use_ai_btn')}
                         </button>
                         <button
                           onClick={() => { setPreprocessedPreview(null); setPreprocessedBlob(null); setPreprocessedSteps(null) }}
                           className="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-xl text-sm transition-colors"
                         >
-                          Anulează
+                          {t(lang, 'generate.cancel_btn')}
                         </button>
                       </div>
                     )}
@@ -514,7 +514,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
                 {/* ── Smart Focus ── */}
                 <div className="border-t border-amber-200 mt-4 pt-4">
-                  <p className="text-xs font-semibold text-amber-700 mb-3">🎯 Smart Focus — optimizare fundal</p>
+                  <p className="text-xs font-semibold text-amber-700 mb-3">{t(lang, 'generate.smart_focus_title')}</p>
 
                   {!smartFocusPreview && !smartFocusing && (
                     <div className="space-y-2">
@@ -523,10 +523,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         disabled={preprocessing || smartFocusing}
                         className="w-full bg-violet-600 hover:bg-violet-700 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50"
                       >
-                        🎯 Optimizează imaginea
+                        {t(lang, 'generate.optimize_btn')}
                       </button>
                       <p className="text-xs text-amber-600 bg-amber-100 rounded-lg px-3 py-2">
-                        Detectează subiectul automat și simplifică fundalul — eliberează culori pentru zone importante (portret, peisaj, flori, animal).
+                        {t(lang, 'generate.smart_focus_desc')}
                       </p>
                     </div>
                   )}
@@ -537,7 +537,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                       </svg>
-                      <span className="text-sm text-violet-700 font-medium">Analizez imaginea... (20–40 sec)</span>
+                      <span className="text-sm text-violet-700 font-medium">{t(lang, 'generate.smart_analyzing')}</span>
                     </div>
                   )}
 
@@ -566,10 +566,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-green-700 font-medium flex items-center gap-1.5">
                             <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</span>
-                            Smart Focus selectat
+                            {t(lang, 'generate.smart_focus_selected')}
                           </span>
                           <button onClick={() => setUseSmartFocus(false)} className="text-xs text-gray-500 hover:text-gray-700 underline">
-                            Revino la original
+                            {t(lang, 'generate.back_original_btn')}
                           </button>
                         </div>
                       ) : (
@@ -578,13 +578,13 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                             onClick={() => { setUseSmartFocus(true); setUsePreprocessed(false) }}
                             className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-semibold transition-colors"
                           >
-                            Folosește Smart Focus
+                            {t(lang, 'generate.use_smart_focus_btn')}
                           </button>
                           <button
                             onClick={() => { setSmartFocusPreview(null); setSmartFocusBlob(null); setUseSmartFocus(false) }}
                             className="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-xl text-sm transition-colors"
                           >
-                            Anulează
+                            {t(lang, 'generate.cancel_btn')}
                           </button>
                         </div>
                       )}
@@ -599,8 +599,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h2 className="font-semibold text-gray-900">✨ Ajustare imagine</h2>
-                    <p className="text-xs text-gray-400">Preview instant — se aplică la generare</p>
+                    <h2 className="font-semibold text-gray-900">{t(lang, 'generate.adjust_title')}</h2>
+                    <p className="text-xs text-gray-400">{t(lang, 'generate.adjust_subtitle')}</p>
                   </div>
                   {(imgBrightness !== 1 || imgContrast !== 1 || imgSaturation !== 1 || portraitMode) && (
                     <button
@@ -613,10 +613,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 </div>
                 <div className="space-y-4">
                   {([
-                    { label: '☀️ Luminozitate', value: imgBrightness, set: setImgBrightness, min: 0.5, max: 1.5 },
-                    { label: '◑ Contrast',      value: imgContrast,   set: setImgContrast,   min: 0.5, max: 1.5 },
-                    { label: '🎨 Saturație',    value: imgSaturation, set: setImgSaturation, min: 0.5, max: 2.0 },
-                  ] as const).map(({ label, value, set, min, max }) => (
+                    { label: t(lang, 'generate.brightness'), value: imgBrightness, set: setImgBrightness, min: 0.5, max: 1.5 },
+                    { label: t(lang, 'generate.contrast_lbl'), value: imgContrast, set: setImgContrast, min: 0.5, max: 1.5 },
+                    { label: t(lang, 'generate.saturation'), value: imgSaturation, set: setImgSaturation, min: 0.5, max: 2.0 },
+                  ]).map(({ label, value, set, min, max }) => (
                     <div key={label}>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-gray-600">{label}</span>
@@ -649,8 +649,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   >
                     <span className="text-base">👤</span>
                     <div className="text-left flex-1">
-                      <div className="leading-tight">Mod portret</div>
-                      <div className="text-xs font-normal opacity-60 leading-tight">Tranziții mai fine între culori</div>
+                      <div className="leading-tight">{t(lang, 'generate.portrait_mode')}</div>
+                      <div className="text-xs font-normal opacity-60 leading-tight">{t(lang, 'generate.portrait_mode_desc')}</div>
                     </div>
                     <div className={`w-8 h-5 rounded-full transition-colors flex items-center px-0.5 ${
                       portraitMode ? 'bg-violet-600 justify-end' : 'bg-gray-300 justify-start'
@@ -667,8 +667,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h2 className="font-semibold text-gray-900">2. Analiză imagine</h2>
-                    <p className="text-xs text-gray-400">Recomandări automate de dimensiuni și culori</p>
+                    <h2 className="font-semibold text-gray-900">2. {t(lang, 'generate.analysis_title')}</h2>
+                    <p className="text-xs text-gray-400">{t(lang, 'generate.analysis_subtitle')}</p>
                   </div>
                   <button
                     onClick={handleAnalyze}
@@ -676,15 +676,15 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     className="flex items-center gap-2 bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-violet-800 transition-colors disabled:opacity-60"
                   >
                     {analyzing ? (
-                      <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg> Analizez...</>
-                    ) : '🔍 Analizează imaginea'}
+                      <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg> {t(lang, 'generate.analyzing_btn')}</>
+                    ) : t(lang, 'generate.analyze_btn')}
                   </button>
                 </div>
 
                 {analysis && (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-sm text-gray-600">Complexitate:</span>
+                      <span className="text-sm text-gray-600">{t(lang, 'generate.complexity_lbl')}</span>
                       <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
                         analysis.complexityScore >= 8 ? 'bg-red-100 text-red-700' :
                         analysis.complexityScore >= 6 ? 'bg-orange-100 text-orange-700' :
@@ -708,10 +708,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50 border-b border-gray-100">
                           <tr>
-                            <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Pânză</th>
-                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Culori</th>
-                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Dimensiuni min.</th>
-                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Timp est.</th>
+                            <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">{t(lang, 'generate.tbl_canvas')}</th>
+                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">{t(lang, 'generate.tbl_colors')}</th>
+                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">{t(lang, 'generate.tbl_min_size')}</th>
+                            <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">{t(lang, 'generate.tbl_time')}</th>
                             <th className="px-3 py-2"></th>
                           </tr>
                         </thead>
@@ -746,7 +746,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                                     onClick={() => applyRecommendation(rec)}
                                     className="text-xs bg-violet-100 text-violet-700 hover:bg-violet-200 px-2 py-1 rounded-lg font-medium transition-colors"
                                   >
-                                    Aplică
+                                    {t(lang, 'generate.apply')}
                                   </button>
                                 </td>
                               </tr>
@@ -785,25 +785,25 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
             {/* Tip lucrare */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="font-semibold text-gray-900 mb-4">{image ? '3.' : '2.'} Tip de lucrare</h2>
+              <h2 className="font-semibold text-gray-900 mb-4">{image ? '3.' : '2.'} {t(lang, 'generate.craft_title')}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { value: 'cross_stitch', label: 'Cross Stitch', icon: '✕',  iconClass: 'text-rose-500 font-bold' },
-                  { value: 'goblene',      label: 'Goblene',      icon: '🧵', iconClass: '' },
-                  { value: 'diamond',      label: 'Diamante',     icon: '💎', iconClass: '' },
-                  { value: 'mini_cross',   label: 'Mini Cros',    icon: '🌸', iconClass: '' },
-                ].map(t => (
+                  { value: 'cross_stitch', label: t(lang, 'generate.craft_cross'),      icon: '✕',  iconClass: 'text-rose-500 font-bold' },
+                  { value: 'goblene',      label: t(lang, 'generate.craft_tapestry'),   icon: '🧵', iconClass: '' },
+                  { value: 'diamond',      label: t(lang, 'generate.craft_diamond'),    icon: '💎', iconClass: '' },
+                  { value: 'mini_cross',   label: t(lang, 'generate.craft_mini_cross'), icon: '🌸', iconClass: '' },
+                ].map(item => (
                   <button
-                    key={t.value}
-                    onClick={() => changeSetting(() => setCraftType(t.value))}
+                    key={item.value}
+                    onClick={() => changeSetting(() => setCraftType(item.value))}
                     className={`p-3 rounded-xl border-2 text-center transition-colors ${
-                      craftType === t.value
+                      craftType === item.value
                         ? 'border-violet-500 bg-violet-50'
                         : 'border-gray-200 hover:border-violet-300'
                     }`}
                   >
-                    <div className={`text-2xl mb-1 ${t.iconClass}`}>{t.icon}</div>
-                    <div className="text-sm font-medium text-gray-700">{t.label}</div>
+                    <div className={`text-2xl mb-1 ${item.iconClass}`}>{item.icon}</div>
+                    <div className="text-sm font-medium text-gray-700">{item.label}</div>
                   </button>
                 ))}
               </div>
@@ -812,26 +812,26 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {/* Tip ață goblen */}
             {craftType === 'goblene' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="font-semibold text-gray-900 mb-1">4. Tip ață</h2>
-                <p className="text-xs text-gray-400 mb-4">Afectează calculul cantității necesare</p>
+                <h2 className="font-semibold text-gray-900 mb-1">{t(lang, 'generate.thread_title')}</h2>
+                <p className="text-xs text-gray-400 mb-4">{t(lang, 'generate.thread_subtitle')}</p>
                 <div className="grid grid-cols-3 gap-3">
                   {([
-                    { value: 'wool',   icon: '🐑', label: 'Lână',    desc: 'DMC Tapestry' },
-                    { value: 'silk',   icon: '🪡', label: 'Mătase',  desc: 'DMC Silk' },
-                    { value: 'cotton', icon: '🌿', label: 'Bumbac',  desc: 'DMC Cotton' },
-                  ] as const).map(t => (
+                    { value: 'wool',   icon: '🐑', label: t(lang, 'generate.thread_wool'),    desc: 'DMC Tapestry' },
+                    { value: 'silk',   icon: '🪡', label: t(lang, 'generate.thread_silk'),    desc: 'DMC Silk' },
+                    { value: 'cotton', icon: '🌿', label: t(lang, 'generate.thread_cotton'),  desc: 'DMC Cotton' },
+                  ] as const).map(item => (
                     <button
-                      key={t.value}
-                      onClick={() => changeSetting(() => setThreadType(t.value))}
+                      key={item.value}
+                      onClick={() => changeSetting(() => setThreadType(item.value))}
                       className={`p-3 rounded-xl border-2 text-center transition-colors ${
-                        threadType === t.value
+                        threadType === item.value
                           ? 'border-violet-500 bg-violet-50'
                           : 'border-gray-200 hover:border-violet-300'
                       }`}
                     >
-                      <div className="text-xl mb-1">{t.icon}</div>
-                      <div className="text-sm font-medium text-gray-700">{t.label}</div>
-                      <div className="text-xs text-gray-400">{t.desc}</div>
+                      <div className="text-xl mb-1">{item.icon}</div>
+                      <div className="text-sm font-medium text-gray-700">{item.label}</div>
+                      <div className="text-xs text-gray-400">{item.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -841,7 +841,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {/* Canvas broderie */}
             {craftType === 'cross_stitch' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="font-semibold text-gray-900 mb-4">3. Canvas Aida</h2>
+                <h2 className="font-semibold text-gray-900 mb-4">3. {t(lang, 'generate.canvas_aida_title')}</h2>
                 <div className="grid grid-cols-2 gap-3">
                   {([
                     { ct: '11CT', strands: '3 fire', desc: '4.3 pt/cm — relaxat' },
@@ -868,8 +868,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {/* Canvas goblen — mesh count */}
             {craftType === 'goblene' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="font-semibold text-gray-900 mb-1">3. Canvas Mono (mesh)</h2>
-                <p className="text-xs text-gray-400 mb-4">Ochiuri per inch — pânză Zweigart sau similară</p>
+                <h2 className="font-semibold text-gray-900 mb-1">3. {t(lang, 'generate.canvas_mono_title')}</h2>
+                <p className="text-xs text-gray-400 mb-4">{t(lang, 'generate.canvas_mono_subtitle')}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {([
                     { ct: '10mesh', label: '10 mesh', thread: '1 fir lână', desc: '3.9 pt/cm — gros' },
@@ -896,9 +896,9 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {/* Mărime diamante */}
             {craftType === 'diamond' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="font-semibold text-gray-900 mb-1">3. Mărimea diamantelor</h2>
+                <h2 className="font-semibold text-gray-900 mb-1">3. {t(lang, 'generate.canvas_diamond_title')}</h2>
                 <p className="text-xs text-gray-400 mb-4">
-                  Dimensiunea unui diamant determină rezoluția schemei
+                  {t(lang, 'generate.canvas_diamond_subtitle')}
                 </p>
                 <div className="grid grid-cols-3 gap-3">
                   {([
@@ -931,8 +931,8 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {/* Canvas mini cros */}
             {craftType === 'mini_cross' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="font-semibold text-gray-900 mb-1">3. Canvas Aida (mini)</h2>
-                <p className="text-xs text-gray-400 mb-4">Pentru miniaturi se recomandă 18CT — cel mai fin detaliu</p>
+                <h2 className="font-semibold text-gray-900 mb-1">3. {t(lang, 'generate.canvas_mini_title')}</h2>
+                <p className="text-xs text-gray-400 mb-4">{t(lang, 'generate.canvas_mini_subtitle')}</p>
                 <div className="grid grid-cols-3 gap-3">
                   {([
                     { ct: '14CT', strands: '2 fire', desc: '5.5 pt/cm' },
@@ -958,7 +958,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {/* Dimensiune */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                <h2 className="font-semibold text-gray-900">4. Dimensiunea lucrării</h2>
+                <h2 className="font-semibold text-gray-900">4. {t(lang, 'generate.size_title')}</h2>
                 <div className={`flex bg-gray-100 rounded-lg p-0.5 gap-0.5 ${craftType === 'mini_cross' ? 'hidden' : ''}`}>
                   <button
                     onClick={() => handleOrientation('landscape')}
@@ -968,7 +968,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     title="Orizontal (lățime > înălțime)"
                   >
                     <span className="inline-block w-5 h-3.5 border-2 border-current rounded-sm" />
-                    Orizontal
+                    {t(lang, 'generate.orientation_h')}
                   </button>
                   <button
                     onClick={() => handleOrientation('portrait')}
@@ -978,13 +978,13 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                     title="Vertical (înălțime > lățime)"
                   >
                     <span className="inline-block w-3.5 h-5 border-2 border-current rounded-sm" />
-                    Vertical
+                    {t(lang, 'generate.orientation_v')}
                   </button>
                 </div>
               </div>
               {craftType === 'mini_cross' ? (
                 <>
-                  <p className="text-xs text-gray-400 mb-3">Dimensiunea finală a broderiei (pentru bijuterii, brose, agrafe)</p>
+                  <p className="text-xs text-gray-400 mb-3">{t(lang, 'generate.mini_size_subtitle')}</p>
                   <div className="grid grid-cols-4 gap-2 mb-4">
                     {[2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(cm => {
                       const isActive = widthCm === cm && heightCm === cm
@@ -1029,7 +1029,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Lățime (cm)</label>
+                  <label className="text-xs text-gray-500 block mb-1">{t(lang, 'generate.width')}</label>
                   <input type="number" value={widthCm}
                     min={craftType === 'mini_cross' ? 2 : 5}
                     max={craftType === 'mini_cross' ? 5 : 200}
@@ -1039,7 +1039,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Înălțime (cm)</label>
+                  <label className="text-xs text-gray-500 block mb-1">{t(lang, 'generate.height')}</label>
                   <input type="number" value={heightCm}
                     min={craftType === 'mini_cross' ? 2 : 5}
                     max={craftType === 'mini_cross' ? 5 : 200}
@@ -1105,11 +1105,11 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
             {/* Culori */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="font-semibold text-gray-900 mb-1">5. Număr culori DMC</h2>
+              <h2 className="font-semibold text-gray-900 mb-1">5. {t(lang, 'generate.colors_title')}</h2>
               <p className="text-xs text-gray-400 mb-4">
                 {craftType === 'mini_cross'
-                  ? 'Miniatura — maxim 15 culori pentru lizibilitate optimă'
-                  : 'Mai puține = mai simplu de brodat'}
+                  ? t(lang, 'generate.mini_colors_desc')
+                  : t(lang, 'generate.colors_simple_desc')}
               </p>
               <div className="flex items-center gap-4">
                 <input
@@ -1134,7 +1134,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
 
             {/* Opțiuni avansate */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="font-semibold text-gray-900 mb-3">6. Opțiuni avansate</h2>
+              <h2 className="font-semibold text-gray-900 mb-3">6. {t(lang, 'generate.advanced_title')}</h2>
               <label className="flex items-start gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
@@ -1144,10 +1144,10 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 />
                 <div>
                   <span className="text-sm font-medium text-gray-800 group-hover:text-violet-700 transition-colors">
-                    Excludeți fundalul din schemă
+                    {t(lang, 'generate.exclude_bg_label')}
                   </span>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Fundalul conectat cu marginile imaginii nu va fi cusut. Ideal pentru imagini cu subiect pe fundal alb/uniform (fluturi, icoane, clipart).
+                    {t(lang, 'generate.exclude_bg_desc')}
                   </p>
                 </div>
               </label>
@@ -1157,7 +1157,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
             {settingsChanged && result && (
               <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
                 <span>⚠️</span>
-                <span>Setările s-au schimbat — apasă <strong>Generează</strong> pentru a actualiza schema</span>
+                <span>{t(lang, 'generate.settings_changed_msg')}</span>
               </div>
             )}
 
@@ -1171,13 +1171,13 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               {isPremium && useSmartFocus && (
                 <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-700 flex items-center gap-2">
                   <span>✓</span>
-                  <span>Schema se va genera cu Smart Focus aplicat</span>
+                  <span>{t(lang, 'generate.smart_focus_used')}</span>
                 </div>
               )}
               {isPremium && usePreprocessed && !useSmartFocus && (
                 <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-700 flex items-center gap-2">
                   <span>✓</span>
-                  <span>Schema se va genera din imaginea îmbunătățită AI</span>
+                  <span>{t(lang, 'generate.ai_enhanced_used')}</span>
                 </div>
               )}
               <button
@@ -1186,21 +1186,21 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                 className="w-full bg-violet-700 text-white py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading
-                  ? '⏳ Generez schema...'
-                  : settingsChanged ? '🔄 Regenerează schema' : '✨ Generează schema'}
+                  ? t(lang, 'generate.btn_generating')
+                  : settingsChanged ? t(lang, 'generate.btn_regenerate') : t(lang, 'generate.btn_generate')}
               </button>
               <button
                 onClick={handleGenerateVariants}
                 disabled={!image || loading || !canGenerate}
                 className="w-full bg-white border-2 border-violet-700 text-violet-700 py-3 rounded-xl font-semibold hover:bg-violet-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                ⚡ 3 variante simultan (20 / 35 / 50 culori)
+                {t(lang, 'generate.btn_variants')}
               </button>
             </div>
 
             {!canGenerate && (
               <p className="text-center text-sm text-red-500">
-                Ai depășit limita planului. <Link href="/pricing" className="underline">Upgrade</Link>
+                {t(lang, 'generate.limit_exceeded')} <Link href="/pricing" className="underline">Upgrade</Link>
               </p>
             )}
           </div>
@@ -1224,7 +1224,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                       disabled={pdfLoading !== null}
                       className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                     >
-                      {pdfLoading === 'schema' ? '⏳ Generez PDF...' : '📄 Descarcă PDF schemă'}
+                      {pdfLoading === 'schema' ? t(lang, 'generate.generating_pdf_btn') : t(lang, 'generate.download_schema_pdf')}
                     </button>
                     {craftType !== 'mini_cross' && (
                       <button
@@ -1232,20 +1232,20 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                         disabled={pdfLoading !== null}
                         className="w-full bg-violet-700 text-white py-3 rounded-xl font-semibold hover:bg-violet-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                       >
-                        {pdfLoading === 'fabric' ? '⏳ Generez PDF...' : '🖨️ Tipărire pe pânză (1:1)'}
+                        {pdfLoading === 'fabric' ? t(lang, 'generate.generating_pdf_btn') : t(lang, 'generate.print_canvas_pdf')}
                       </button>
                     )}
                   </>
                 ) : (
-                  <p className="text-xs text-center text-gray-400">Generează o schemă nouă pentru a descărca PDF</p>
+                  <p className="text-xs text-center text-gray-400">{t(lang, 'generate.new_schema_pdf_hint')}</p>
                 )}
               </div>
             )}
             {result && subscription?.plan === 'free_trial' && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                <p className="text-amber-700 text-sm font-medium">📄 Descărcarea PDF necesită un plan plătit</p>
+                <p className="text-amber-700 text-sm font-medium">{t(lang, 'generate.pdf_trial_msg')}</p>
                 <Link href="/pricing" className="text-violet-700 text-sm font-medium hover:underline mt-1 block">
-                  Vezi planurile →
+                  {t(lang, 'generate.see_plans_link')}
                 </Link>
               </div>
             )}
@@ -1256,7 +1256,7 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
                   disabled={jsonLoading}
                   className="w-full bg-gray-700 text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                 >
-                  {jsonLoading ? '⏳ Exportez...' : '🧵 Exportă JSON'}
+                  {jsonLoading ? t(lang, 'generate.exporting_json_btn') : t(lang, 'generate.export_json_btn')}
                 </button>
                 {jsonError && <p className="text-red-600 text-xs text-center">{jsonError}</p>}
               </div>
@@ -1279,12 +1279,12 @@ export default function GenerateForm({ subscription, lang = 'ro' }: { subscripti
               </div>
             )}
             {result ? (
-              <SchemaPreview schema={result} craftType={craftType} />
+              <SchemaPreview schema={result} craftType={craftType} lang={lang} />
             ) : (
               <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-16 text-center h-full flex flex-col items-center justify-center">
                 <div className="text-5xl mb-4">🖼️</div>
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">Schema ta apare aici</h3>
-                <p className="text-gray-400 text-sm">Încarcă o fotografie și apasă Generează</p>
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">{t(lang, 'generate.schema_empty_title')}</h3>
+                <p className="text-gray-400 text-sm">{t(lang, 'generate.schema_empty_desc')}</p>
               </div>
             )}
           </div>
@@ -1326,7 +1326,7 @@ function buildColors(colors: GeneratedSchema['colors'], craftType = 'cross_stitc
   }))
 }
 
-function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftType: string }) {
+function SchemaPreview({ schema, craftType, lang = 'ro' }: { schema: GeneratedSchema; craftType: string; lang?: Lang }) {
   const [view, setView] = useState<'schema' | 'final'>('schema')
   const [localColors, setLocalColors] = useState(() => buildColors(schema.colors, craftType))
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
@@ -1487,7 +1487,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
       {/* Header cu toggle */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="font-semibold text-gray-900">Previzualizare</h2>
+          <h2 className="font-semibold text-gray-900">{t(lang, 'generate.preview_lbl')}</h2>
           <p className="text-xs text-gray-400">{schema.widthStitches}×{schema.heightStitches} puncte • {schema.widthCm}×{schema.heightCm} cm</p>
         </div>
         <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
@@ -1529,7 +1529,7 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
             style={{ display: 'block', imageRendering: 'pixelated', maxWidth: '100%' }}
           />
           <p className="text-xs text-gray-400 text-center py-2">
-            Cum va arăta lucrarea terminată cu culorile DMC selectate
+            {t(lang, 'generate.final_view_desc')}
           </p>
         </div>
       )}
@@ -1537,8 +1537,8 @@ function SchemaPreview({ schema, craftType }: { schema: GeneratedSchema; craftTy
       {/* Legendă culori cu editare */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium text-gray-800">Culori folosite ({effectiveColors.length})</h3>
-          <p className="text-xs text-gray-400">Click pe culoare pentru a o schimba</p>
+          <h3 className="font-medium text-gray-800">{t(lang, 'generate.colors_used_lbl')} ({effectiveColors.length})</h3>
+          <p className="text-xs text-gray-400">{t(lang, 'generate.click_color_hint')}</p>
         </div>
         <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
           {sortedWithOrigIdx.map((color, i) => {
