@@ -8,6 +8,7 @@ import { logout } from '../auth/actions'
 import Link from 'next/link'
 import Image from 'next/image'
 import { SchemaCard } from './SchemaCard'
+import { CancelSubscriptionButton } from './CancelSubscriptionButton'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { getLang } from '@/lib/i18n/getLang'
 import { t } from '@/lib/i18n/translations'
@@ -261,6 +262,33 @@ export default async function DashboardPage() {
               </div>
             ) : null
           })()
+        )}
+
+        {/* Banner abonament anulat — activ până la expirare */}
+        {(subscription?.plan === 'pro' || subscription?.plan === 'premium') && subscription?.status === 'canceled' && subscription.current_period_end && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">ℹ️</span>
+              <div>
+                <p className="font-semibold text-gray-700">Abonament anulat</p>
+                <p className="text-gray-500 text-sm">
+                  Accesul rămâne activ până pe{' '}
+                  <strong>{new Date(subscription.current_period_end).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>.
+                  După această dată contul trece pe plan gratuit.
+                </p>
+              </div>
+            </div>
+            <Link href="/pricing" className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-violet-700 transition-colors">
+              Reactivează
+            </Link>
+          </div>
+        )}
+
+        {/* Buton anulare abonament Pro/Premium activ */}
+        {(subscription?.plan === 'pro' || subscription?.plan === 'premium') && subscription?.status === 'active' && (
+          <div className="flex justify-end mb-4">
+            <CancelSubscriptionButton />
+          </div>
         )}
 
         {/* Titlu + buton */}

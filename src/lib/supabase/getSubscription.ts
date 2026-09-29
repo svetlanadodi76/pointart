@@ -60,10 +60,10 @@ export async function getSubscription(
     return { ...sub, status: 'expired' }
   }
 
-  // Auto-expiră Pro
+  // Auto-expiră Pro (activ sau anulat dar cu perioada expirată)
   if (
     sub.plan === 'pro' &&
-    sub.status === 'active' &&
+    (sub.status === 'active' || sub.status === 'canceled') &&
     sub.current_period_end &&
     new Date(sub.current_period_end) < now
   ) {
@@ -75,10 +75,10 @@ export async function getSubscription(
     return { ...sub, status: 'expired' }
   }
 
-  // Auto-expiră Premium
+  // Auto-expiră Premium (activ sau anulat dar cu perioada expirată)
   if (
     sub.plan === 'premium' &&
-    sub.status === 'active' &&
+    (sub.status === 'active' || sub.status === 'canceled') &&
     sub.current_period_end &&
     new Date(sub.current_period_end) < now
   ) {
@@ -90,5 +90,6 @@ export async function getSubscription(
     return { ...sub, status: 'expired' }
   }
 
+  // Abonament anulat dar încă în perioadă activă → acces permis până la current_period_end
   return sub
 }
