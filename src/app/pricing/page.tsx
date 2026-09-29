@@ -62,6 +62,7 @@ export default async function PricingPage() {
         <PricingCards
           currentPlan={currentPlan}
           userEmail={user?.email ?? null}
+          lang={lang}
         />
 
         {/* FAQ */}

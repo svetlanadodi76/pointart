@@ -14,7 +14,7 @@ export async function SiteFooter() {
           <Image src="/logo.jpg" alt="PointArt" width={36} height={36} className="rounded-full" />
           <div>
             <span className="font-semibold text-gray-700 block leading-tight">PointArt</span>
-            <span className="text-xs text-gray-600 italic">Păstrăm amintirile prin artă</span>
+            <span className="text-xs text-gray-600 italic">{t(lang, 'footer.tagline')}</span>
           </div>
         </div>
 
@@ -39,11 +39,11 @@ export async function SiteFooter() {
             </Link>
             <span>·</span>
             <Link href="/terms" className="hover:text-violet-600 transition-colors">
-              Termeni
+              {t(lang, 'footer.terms')}
             </Link>
             <span>·</span>
             <Link href="/refund" className="hover:text-violet-600 transition-colors">
-              Rambursare
+              {t(lang, 'footer.refund')}
             </Link>
             <span>·</span>
             <p>{t(lang, 'footer.rights').replace('{year}', String(year))}</p>

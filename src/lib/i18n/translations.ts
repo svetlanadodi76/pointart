@@ -309,6 +309,80 @@ const t_ro = {
   'cancel_sub.error': 'Eroare la anulare. Încearcă din nou.',
   'cancel_sub.loading': 'Se anulează...',
   'cancel_sub.btn': 'Anulează abonamentul',
+
+  // Nav suplimentar
+  'nav.my_account': 'Contul meu',
+
+  // Footer suplimentar
+  'footer.terms': 'Termeni',
+  'footer.refund': 'Rambursare',
+  'footer.tagline': 'Păstrăm amintirile prin artă',
+
+  // Homepage — pricing ternare
+  'home.pricing_free_price': 'Gratuit',
+  'home.pricing_popular': 'POPULAR',
+  'home.pricing_buy': 'Cumpără',
+  'home.pricing_subscribe': 'Abonează-te',
+  'home.pricing_buy_premium': 'Cumpără Premium AI',
+  'home.pricing_starter_schemes': '3 scheme',
+
+  // Homepage — liste funcționalități planuri
+  'home.free_f1': '1 schemă generată',
+  'home.free_f2': 'Previzualizare în browser',
+  'home.free_f3': 'Toate tipurile de lucrări',
+  'home.free_f4_no': 'Descărcare PDF',
+  'home.starter_f1': '3 scheme cu PDF',
+  'home.starter_f2': 'Toate tipurile de lucrări',
+  'home.starter_f3': 'Calcul materiale',
+  'home.starter_f4': 'Fără abonament',
+  'home.pro_f1': 'Scheme nelimitate',
+  'home.pro_f2': 'PDF descărcabil',
+  'home.pro_f3': 'Toate tipurile de lucrări',
+  'home.pro_f4': 'Calcul materiale',
+  'home.pro_f5': 'Prioritate suport',
+  'home.premium_f1': 'Scheme nelimitate',
+  'home.premium_f2': 'PDF schemă',
+  'home.premium_f3': 'Mărire AI (4×)',
+  'home.premium_f4': 'Îmbunătățire portret AI',
+  'home.premium_f5': 'Culori CIEDE2000',
+
+  // PricingCards
+  'pricing.current_plan': 'Plan actual',
+  'pricing.your_current': '✓ Planul tău curent',
+  'pricing.start_free': 'Începe gratuit',
+  'pricing.recommended': 'Recomandat',
+  'pricing.plan_period_trial': '5 zile',
+  'pricing.plan_period_once': 'o singură dată',
+  'pricing.plan_f_preview': 'Preview browser',
+  'pricing.plan_f_all_canvas': 'Toate tipurile de pânză',
+  'pricing.plan_f_pdf_export': 'Export PDF schemă',
+  'pricing.plan_f_canvas_print': 'Tipărire pânză 1:1',
+  'pricing.plan_f_folders': 'Foldere organizare',
+  'pricing.plan_f_permanent': 'Valabil permanent',
+  'pricing.plan_f_unlimited': 'Scheme nelimitate',
+  'pricing.plan_f_priority': 'Prioritate la funcții noi',
+  'pricing.plan_f_ai_upscale': 'Mărire imagine AI (4×)',
+  'pricing.plan_f_smart_bg': 'Fundal simplificat automat',
+  'pricing.plan_f_ai_portrait': 'Îmbunătățire portret AI',
+  'pricing.plan_f_ciede': 'Culori perceptuale CIEDE2000',
+  'pricing.modal_amount': 'Suma de plată',
+  'pricing.modal_or_mdl': 'sau {n} MDL',
+  'pricing.modal_sent_title': 'Emailul a fost trimis!',
+  'pricing.modal_sent_check': 'Verifică inbox-ul la',
+  'pricing.modal_sent_desc': 'Răspunde la email după ce efectuezi transferul. Planul se activează în maxim 24 ore.',
+  'pricing.modal_understood': 'Am înțeles',
+  'pricing.modal_send_btn': 'Trimite-mi detaliile pe email',
+  'pricing.modal_sending': 'Se trimite...',
+  'pricing.modal_send_to': 'Se trimite la',
+  'pricing.modal_close_btn': 'Închide',
+  'pricing.modal_error': 'Nu am putut trimite emailul. Încearcă din nou.',
+  'pricing.modal_activate': 'Activare plan {name}',
+
+  // Pagini legale
+  'legal.last_updated': 'Ultima actualizare',
+  'legal.privacy_title': 'Politică de confidențialitate',
+  'legal.terms_title': 'Termeni și condiții',
+  'legal.refund_title': 'Politică de rambursare',
 } as const
 
 const t_ru = {
@@ -620,6 +694,80 @@ const t_ru = {
   'cancel_sub.error': 'Ошибка при отмене. Попробуйте снова.',
   'cancel_sub.loading': 'Отменяю...',
   'cancel_sub.btn': 'Отменить подписку',
+
+  // Nav дополнительно
+  'nav.my_account': 'Мой кабинет',
+
+  // Footer дополнительно
+  'footer.terms': 'Условия',
+  'footer.refund': 'Возврат',
+  'footer.tagline': 'Сохраняем воспоминания через искусство',
+
+  // Главная — ценообразование
+  'home.pricing_free_price': 'Бесплатно',
+  'home.pricing_popular': 'ПОПУЛЯРНЫЙ',
+  'home.pricing_buy': 'Купить',
+  'home.pricing_subscribe': 'Подписаться',
+  'home.pricing_buy_premium': 'Купить Premium AI',
+  'home.pricing_starter_schemes': '3 схемы',
+
+  // Главная — списки функций планов
+  'home.free_f1': '1 схема',
+  'home.free_f2': 'Предпросмотр в браузере',
+  'home.free_f3': 'Все типы изделий',
+  'home.free_f4_no': 'Скачать PDF',
+  'home.starter_f1': '3 схемы с PDF',
+  'home.starter_f2': 'Все типы изделий',
+  'home.starter_f3': 'Расчёт материалов',
+  'home.starter_f4': 'Без подписки',
+  'home.pro_f1': 'Неограниченные схемы',
+  'home.pro_f2': 'Скачать PDF',
+  'home.pro_f3': 'Все типы изделий',
+  'home.pro_f4': 'Расчёт материалов',
+  'home.pro_f5': 'Приоритетная поддержка',
+  'home.premium_f1': 'Неограниченные схемы',
+  'home.premium_f2': 'PDF схемы',
+  'home.premium_f3': 'Увеличение AI (4×)',
+  'home.premium_f4': 'Улучшение портрета AI',
+  'home.premium_f5': 'Цвета CIEDE2000',
+
+  // PricingCards
+  'pricing.current_plan': 'Текущий план',
+  'pricing.your_current': '✓ Ваш текущий план',
+  'pricing.start_free': 'Начать бесплатно',
+  'pricing.recommended': 'Рекомендуется',
+  'pricing.plan_period_trial': '5 дней',
+  'pricing.plan_period_once': 'единоразово',
+  'pricing.plan_f_preview': 'Предпросмотр в браузере',
+  'pricing.plan_f_all_canvas': 'Все типы холста',
+  'pricing.plan_f_pdf_export': 'Экспорт PDF схемы',
+  'pricing.plan_f_canvas_print': 'Печать на ткани 1:1',
+  'pricing.plan_f_folders': 'Организация папками',
+  'pricing.plan_f_permanent': 'Навсегда',
+  'pricing.plan_f_unlimited': 'Неограниченные схемы',
+  'pricing.plan_f_priority': 'Приоритет новых функций',
+  'pricing.plan_f_ai_upscale': 'Масштабирование AI (4×)',
+  'pricing.plan_f_smart_bg': 'Автоупрощение фона',
+  'pricing.plan_f_ai_portrait': 'Улучшение портрета AI',
+  'pricing.plan_f_ciede': 'Перцептивные цвета CIEDE2000',
+  'pricing.modal_amount': 'Сумма к оплате',
+  'pricing.modal_or_mdl': 'или {n} MDL',
+  'pricing.modal_sent_title': 'Email отправлен!',
+  'pricing.modal_sent_check': 'Проверьте входящие на',
+  'pricing.modal_sent_desc': 'Ответьте на email после перевода. План активируется в течение 24 часов.',
+  'pricing.modal_understood': 'Понятно',
+  'pricing.modal_send_btn': 'Отправьте мне детали на email',
+  'pricing.modal_sending': 'Отправляю...',
+  'pricing.modal_send_to': 'Отправляется на',
+  'pricing.modal_close_btn': 'Закрыть',
+  'pricing.modal_error': 'Не удалось отправить email. Попробуйте снова.',
+  'pricing.modal_activate': 'Активация плана {name}',
+
+  // Юридические страницы
+  'legal.last_updated': 'Последнее обновление',
+  'legal.privacy_title': 'Политика конфиденциальности',
+  'legal.terms_title': 'Условия использования',
+  'legal.refund_title': 'Политика возврата',
 } as const
 
 const t_en = {
@@ -931,6 +1079,80 @@ const t_en = {
   'cancel_sub.error': 'Cancellation error. Try again.',
   'cancel_sub.loading': 'Canceling...',
   'cancel_sub.btn': 'Cancel subscription',
+
+  // Nav extra
+  'nav.my_account': 'My account',
+
+  // Footer extra
+  'footer.terms': 'Terms',
+  'footer.refund': 'Refund',
+  'footer.tagline': 'Preserving memories through art',
+
+  // Homepage — pricing ternaries
+  'home.pricing_free_price': 'Free',
+  'home.pricing_popular': 'POPULAR',
+  'home.pricing_buy': 'Buy',
+  'home.pricing_subscribe': 'Subscribe',
+  'home.pricing_buy_premium': 'Buy Premium AI',
+  'home.pricing_starter_schemes': '3 patterns',
+
+  // Homepage — plan feature lists
+  'home.free_f1': '1 pattern',
+  'home.free_f2': 'Browser preview',
+  'home.free_f3': 'All craft types',
+  'home.free_f4_no': 'PDF download',
+  'home.starter_f1': '3 patterns with PDF',
+  'home.starter_f2': 'All craft types',
+  'home.starter_f3': 'Material calculation',
+  'home.starter_f4': 'No subscription',
+  'home.pro_f1': 'Unlimited patterns',
+  'home.pro_f2': 'Downloadable PDF',
+  'home.pro_f3': 'All craft types',
+  'home.pro_f4': 'Material calculation',
+  'home.pro_f5': 'Priority support',
+  'home.premium_f1': 'Unlimited patterns',
+  'home.premium_f2': 'Pattern PDF',
+  'home.premium_f3': 'AI upscaling (4×)',
+  'home.premium_f4': 'AI portrait enhancement',
+  'home.premium_f5': 'CIEDE2000 colors',
+
+  // PricingCards
+  'pricing.current_plan': 'Current plan',
+  'pricing.your_current': '✓ Your current plan',
+  'pricing.start_free': 'Start for free',
+  'pricing.recommended': 'Recommended',
+  'pricing.plan_period_trial': '5 days',
+  'pricing.plan_period_once': 'one-time',
+  'pricing.plan_f_preview': 'Browser preview',
+  'pricing.plan_f_all_canvas': 'All canvas types',
+  'pricing.plan_f_pdf_export': 'Pattern PDF export',
+  'pricing.plan_f_canvas_print': 'Canvas print 1:1',
+  'pricing.plan_f_folders': 'Folder organization',
+  'pricing.plan_f_permanent': 'Permanent access',
+  'pricing.plan_f_unlimited': 'Unlimited patterns',
+  'pricing.plan_f_priority': 'Priority new features',
+  'pricing.plan_f_ai_upscale': 'AI image upscaling (4×)',
+  'pricing.plan_f_smart_bg': 'Auto background simplification',
+  'pricing.plan_f_ai_portrait': 'AI portrait enhancement',
+  'pricing.plan_f_ciede': 'Perceptual CIEDE2000 colors',
+  'pricing.modal_amount': 'Amount to pay',
+  'pricing.modal_or_mdl': 'or {n} MDL',
+  'pricing.modal_sent_title': 'Email sent!',
+  'pricing.modal_sent_check': 'Check your inbox at',
+  'pricing.modal_sent_desc': 'Reply to the email after making the transfer. Plan activates within 24 hours.',
+  'pricing.modal_understood': 'Got it',
+  'pricing.modal_send_btn': 'Send me details by email',
+  'pricing.modal_sending': 'Sending...',
+  'pricing.modal_send_to': 'Sending to',
+  'pricing.modal_close_btn': 'Close',
+  'pricing.modal_error': 'Could not send email. Try again.',
+  'pricing.modal_activate': 'Activate {name} plan',
+
+  // Legal pages
+  'legal.last_updated': 'Last updated',
+  'legal.privacy_title': 'Privacy Policy',
+  'legal.terms_title': 'Terms and Conditions',
+  'legal.refund_title': 'Refund Policy',
 } as const
 
 type TranslationKey = keyof typeof t_ro

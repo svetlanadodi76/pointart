@@ -21,22 +21,22 @@ export default async function HomePage() {
             <Image src="/logo.jpg" alt="PointArt" width={40} height={40} className="rounded-full" />
             <div>
               <span className="text-xl font-bold text-violet-700 block leading-tight">PointArt</span>
-              <span className="text-xs text-gray-600 italic hidden sm:block">Păstrăm amintirile prin artă</span>
+              <span className="text-xs text-gray-600 italic hidden sm:block">{t(lang, 'footer.tagline')}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <LanguageToggle lang={lang} />
             {user ? (
               <Link href="/dashboard" className="bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors">
-                {lang === 'ru' ? 'Мой кабинет' : 'Contul meu'}
+                {t(lang, 'nav.my_account')}
               </Link>
             ) : (
               <>
                 <Link href="/auth/register" className="text-sm text-gray-600 hover:text-violet-700 font-medium transition-colors hidden sm:block">
-                  {lang === 'ru' ? 'Регистрация' : 'Înregistrare'}
+                  {t(lang, 'nav.register')}
                 </Link>
                 <Link href="/auth/login" className="bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors">
-                  {lang === 'ru' ? 'Войти' : 'Intră în cont'}
+                  {t(lang, 'nav.login')}
                 </Link>
               </>
             )}
@@ -66,7 +66,7 @@ export default async function HomePage() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href={user ? '/dashboard' : '/auth/register'} className="bg-violet-700 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-800 transition-colors">
-              {user ? (lang === 'ru' ? 'Мой кабинет' : 'Contul meu') : t(lang, 'home.cta_start')}
+              {user ? t(lang, 'nav.my_account') : t(lang, 'home.cta_start')}
             </Link>
             <Link href="#cum-functioneaza" className="text-gray-600 hover:text-violet-700 font-medium transition-colors">
               {t(lang, 'home.cta_how')}
@@ -131,19 +131,16 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             <div className="bg-white rounded-2xl p-8 border border-gray-200">
               <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">{t(lang, 'home.pricing_free_title')}</div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">{lang === 'ru' ? 'Бесплатно' : 'Gratuit'}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{t(lang, 'home.pricing_free_price')}</div>
               <div className="text-gray-500 text-sm mb-6">{t(lang, 'home.pricing_free_desc')}</div>
               <ul className="space-y-3 mb-8">
-                {(lang === 'ru'
-                  ? ['1 схема', 'Предпросмотр в браузере', 'Все типы изделий']
-                  : ['1 schemă generată', 'Previzualizare în browser', 'Toate tipurile de lucrări']
-                ).map(f => (
-                  <li key={f} className="flex items-center gap-2 text-gray-600">
-                    <span className="text-green-500">✓</span>{f}
+                {(['home.free_f1', 'home.free_f2', 'home.free_f3'] as const).map(k => (
+                  <li key={k} className="flex items-center gap-2 text-gray-600">
+                    <span className="text-green-500">✓</span>{t(lang, k)}
                   </li>
                 ))}
                 <li className="flex items-center gap-2 text-gray-400">
-                  <span>✗</span>{lang === 'ru' ? 'Скачать PDF' : 'Descărcare PDF'}
+                  <span>✗</span>{t(lang, 'home.free_f4_no')}
                 </li>
               </ul>
               <Link href={user ? '/dashboard' : '/auth/register'} className="block text-center bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors">
@@ -154,41 +151,35 @@ export default async function HomePage() {
             <div className="bg-white rounded-2xl p-8 border border-gray-200">
               <div className="text-sm font-semibold text-violet-600 uppercase tracking-wide mb-2">{t(lang, 'home.pricing_starter_title')}</div>
               <div className="text-3xl font-bold text-gray-900 mb-1">5€</div>
-              <div className="text-gray-500 text-sm mb-6">3 {lang === 'ru' ? 'схемы' : 'scheme'} — {t(lang, 'home.pricing_starter_desc')}</div>
+              <div className="text-gray-500 text-sm mb-6">{t(lang, 'home.pricing_starter_schemes')} — {t(lang, 'home.pricing_starter_desc')}</div>
               <ul className="space-y-3 mb-8">
-                {(lang === 'ru'
-                  ? ['3 схемы с PDF', 'Все типы изделий', 'Расчёт материалов', 'Без подписки']
-                  : ['3 scheme cu PDF', 'Toate tipurile de lucrări', 'Calcul materiale', 'Fără abonament']
-                ).map(f => (
-                  <li key={f} className="flex items-center gap-2 text-gray-600">
-                    <span className="text-green-500">✓</span>{f}
+                {(['home.starter_f1', 'home.starter_f2', 'home.starter_f3', 'home.starter_f4'] as const).map(k => (
+                  <li key={k} className="flex items-center gap-2 text-gray-600">
+                    <span className="text-green-500">✓</span>{t(lang, k)}
                   </li>
                 ))}
               </ul>
               <Link href="/pricing" className="block text-center bg-violet-100 text-violet-700 py-3 rounded-xl font-medium hover:bg-violet-200 transition-colors">
-                {lang === 'ru' ? 'Купить' : 'Cumpără'}
+                {t(lang, 'home.pricing_buy')}
               </Link>
             </div>
 
             <div className="bg-violet-700 rounded-2xl p-8 relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">
-                {lang === 'ru' ? 'ПОПУЛЯРНЫЙ' : 'POPULAR'}
+                {t(lang, 'home.pricing_popular')}
               </div>
               <div className="text-sm font-semibold text-violet-200 uppercase tracking-wide mb-2">{t(lang, 'home.pricing_pro_title')}</div>
               <div className="text-3xl font-bold text-white mb-1">10€</div>
               <div className="text-violet-200 text-sm mb-6">{t(lang, 'home.pricing_per_month')}</div>
               <ul className="space-y-3 mb-8">
-                {(lang === 'ru'
-                  ? ['Неограниченные схемы', 'Скачать PDF', 'Все типы изделий', 'Расчёт материалов', 'Приоритетная поддержка']
-                  : ['Scheme nelimitate', 'PDF descărcabil', 'Toate tipurile de lucrări', 'Calcul materiale', 'Prioritate suport']
-                ).map(f => (
-                  <li key={f} className="flex items-center gap-2 text-violet-100">
-                    <span className="text-green-300">✓</span>{f}
+                {(['home.pro_f1', 'home.pro_f2', 'home.pro_f3', 'home.pro_f4', 'home.pro_f5'] as const).map(k => (
+                  <li key={k} className="flex items-center gap-2 text-violet-100">
+                    <span className="text-green-300">✓</span>{t(lang, k)}
                   </li>
                 ))}
               </ul>
               <Link href="/pricing" className="block text-center bg-white text-violet-700 py-3 rounded-xl font-semibold hover:bg-violet-50 transition-colors">
-                {lang === 'ru' ? 'Подписаться' : 'Abonează-te'}
+                {t(lang, 'home.pricing_subscribe')}
               </Link>
             </div>
 
@@ -198,19 +189,16 @@ export default async function HomePage() {
               </div>
               <div className="text-sm font-semibold text-amber-600 uppercase tracking-wide mb-2">Premium AI</div>
               <div className="text-3xl font-bold text-gray-900 mb-1">25€</div>
-              <div className="text-gray-500 text-sm mb-6">{lang === 'ru' ? 'в месяц' : 'pe lună'}</div>
+              <div className="text-gray-500 text-sm mb-6">{t(lang, 'home.pricing_per_month')}</div>
               <ul className="space-y-3 mb-8">
-                {(lang === 'ru'
-                  ? ['Неограниченные схемы', 'PDF схемы', 'Увеличение AI (4×)', 'Улучшение портрета AI', 'Цвета CIEDE2000']
-                  : ['Scheme nelimitate', 'PDF schemă', 'Mărire AI (4×)', 'Îmbunătățire portret AI', 'Culori CIEDE2000']
-                ).map(f => (
-                  <li key={f} className="flex items-center gap-2 text-gray-600">
-                    <span className="text-amber-500">✓</span>{f}
+                {(['home.premium_f1', 'home.premium_f2', 'home.premium_f3', 'home.premium_f4', 'home.premium_f5'] as const).map(k => (
+                  <li key={k} className="flex items-center gap-2 text-gray-600">
+                    <span className="text-amber-500">✓</span>{t(lang, k)}
                   </li>
                 ))}
               </ul>
               <Link href="/pricing" className="block text-center bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition-colors">
-                {lang === 'ru' ? 'Купить Premium AI' : 'Cumpără Premium AI'}
+                {t(lang, 'home.pricing_buy_premium')}
               </Link>
             </div>
           </div>
