@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   const { lang } = await request.json()
-  const value = lang === 'ru' ? 'ru' : 'ro'
+  const value = lang === 'ru' ? 'ru' : lang === 'en' ? 'en' : 'ro'
 
   const response = NextResponse.json({ ok: true })
   response.cookies.set('lang', value, {

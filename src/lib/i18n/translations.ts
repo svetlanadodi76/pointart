@@ -1,4 +1,4 @@
-export type Lang = 'ro' | 'ru'
+export type Lang = 'ro' | 'ru' | 'en'
 
 const t_ro = {
   // Nav comun
@@ -344,11 +344,184 @@ const t_ru = {
   'generate.new_schema': '+ Новая схема',
 } as const
 
+const t_en = {
+  // Nav
+  'nav.login': 'Sign In',
+  'nav.register': 'Register',
+  'nav.try_free': 'Try for free',
+  'nav.dashboard': 'Dashboard',
+  'nav.pricing': 'Pricing',
+  'nav.logout': 'Sign Out',
+
+  // Landing — Hero
+  'home.badge': '5 days free — no credit card',
+  'home.h1_before': 'Turn any photo',
+  'home.h1_into': 'into ',
+  'home.h1_highlight': 'a handcraft pattern',
+  'home.tagline': 'Generate professional patterns for cross stitch, tapestry and diamond painting. With exact DMC colors, 10×10 ruler and automatic material calculation.',
+  'home.cta_start': 'Start for free',
+  'home.cta_how': 'How it works →',
+
+  // Landing — Sections
+  'home.how_title': 'Simple in 3 steps',
+  'home.step1_title': 'Upload a photo',
+  'home.step1_desc': 'Any photo from your phone or computer. JPG, PNG or HEIC.',
+  'home.step2_title': 'Choose settings',
+  'home.step2_desc': 'Craft type, size in centimeters and number of colors.',
+  'home.step3_title': 'Download the pattern',
+  'home.step3_desc': 'PDF with grid, DMC colors, symbols and material calculation.',
+
+  'home.features_title': 'Everything you need',
+  'home.f1_title': 'Exact DMC colors',
+  'home.f1_desc': 'The algorithm selects the closest DMC colors to your photo.',
+  'home.f2_title': 'Grid with 10×10 ruler',
+  'home.f2_desc': 'The pattern includes a ruler and numbering so you never get lost.',
+  'home.f3_title': 'Material calculation',
+  'home.f3_desc': 'We automatically calculate thread meters and canvas dimensions.',
+  'home.f4_title': 'Cross stitch, tapestry, diamonds',
+  'home.f4_desc': 'Three craft types from a single photo.',
+  'home.f5_title': 'Dual PDF export',
+  'home.f5_desc': 'Working PDF + 1:1 canvas print PDF at actual size.',
+  'home.f6_title': 'HEIC supported',
+  'home.f6_desc': 'Photos directly from iPhone, no prior conversion needed.',
+
+  'home.pricing_title': 'Simple pricing',
+  'home.pricing_free_title': 'Free Trial',
+  'home.pricing_free_desc': 'No card needed',
+  'home.pricing_starter_title': 'Starter',
+  'home.pricing_starter_desc': 'One-time',
+  'home.pricing_pro_title': 'Pro',
+  'home.pricing_per_month': 'per month',
+  'home.see_all_plans': 'See all plans →',
+
+  // Auth
+  'auth.login_title': 'Sign In',
+  'auth.login_subtitle': 'Welcome back',
+  'auth.register_title': 'Create account',
+  'auth.register_subtitle': 'Free, no credit card',
+  'auth.email': 'Email',
+  'auth.password': 'Password',
+  'auth.name': 'Your name',
+  'auth.confirm_password': 'Confirm password',
+  'auth.login_btn': 'Sign In',
+  'auth.register_btn': 'Create free account',
+  'auth.forgot_password': 'Forgot password?',
+  'auth.no_account': "Don't have an account?",
+  'auth.have_account': 'Already have an account?',
+  'auth.register_link': 'Register',
+  'auth.login_link': 'Sign In',
+  'auth.forgot_title': 'Reset password',
+  'auth.forgot_subtitle': "We'll send you a reset link",
+  'auth.forgot_btn': 'Send reset link',
+  'auth.back_login': '← Back to sign in',
+  'auth.forgot_success': 'Check your email — we sent you a reset link.',
+  'auth.reset_title': 'New password',
+  'auth.reset_btn': 'Save new password',
+
+  // Dashboard
+  'dashboard.my_schemas': 'My patterns',
+  'dashboard.new_schema': '+ New pattern',
+  'dashboard.no_schemas': 'No patterns yet',
+  'dashboard.no_schemas_desc': 'Generate your first pattern from any photo',
+  'dashboard.generate_now': 'Generate now',
+  'dashboard.no_folder': 'No folder',
+
+  // Dashboard banners
+  'banner.trial_expired': 'Trial period expired',
+  'banner.sub_expired': 'Your subscription has expired',
+  'banner.expired_desc': 'Your patterns are saved. Activate a plan to generate new ones.',
+  'banner.renew': 'Renew',
+  'banner.starter_exhausted': 'You used all 3 Starter patterns',
+  'banner.starter_exhausted_desc': 'Upgrade to Pro for unlimited patterns.',
+  'banner.upgrade_pro': 'Upgrade to Pro',
+  'banner.trial_used': 'You used your trial pattern',
+  'banner.trial_used_desc': 'Activate a paid plan to generate new patterns.',
+  'banner.upgrade': 'Upgrade',
+  'banner.trial_active': 'Free trial — {days} days left',
+  'banner.trial_schemas_left': '{n} pattern left in trial',
+  'banner.pro_expiring': 'Pro subscription expires in {days} {unit}',
+  'banner.pro_expiring_desc': 'Complete the transfer to continue without interruption.',
+
+  // Pricing
+  'pricing.title': 'Simple, clear pricing',
+  'pricing.subtitle': 'Choose the right plan for your projects',
+  'pricing.faq_title': 'Frequently asked questions',
+  'pricing.faq1_q': 'How do I pay?',
+  'pricing.faq1_a': 'By bank transfer to our account. Click "Buy", follow the instructions and send confirmation. We activate the plan within 24 hours.',
+  'pricing.faq2_q': 'Does the Starter plan expire?',
+  'pricing.faq2_a': 'No. You pay once and get permanent access to 3 patterns, no monthly subscription.',
+  'pricing.faq3_q': 'Can I change plans later?',
+  'pricing.faq3_a': 'Yes. You can switch from Starter to Pro anytime. Contact us and we will upgrade you.',
+  'pricing.faq4_q': 'What happens to trial patterns?',
+  'pricing.faq4_a': 'They stay saved in your account. After upgrading you can view and download the PDF.',
+
+  // Payment modal
+  'modal.title': 'Activate {name} plan',
+  'modal.bank_details': 'Bank transfer details:',
+  'modal.beneficiary': 'Beneficiary',
+  'modal.bank': 'Bank',
+  'modal.iban': 'IBAN',
+  'modal.copy': 'Copy',
+  'modal.copied': '✓ Copied',
+  'modal.amount': 'Amount',
+  'modal.or': 'or',
+  'modal.ref_title': 'Required transfer reference:',
+  'modal.ref_instruction': 'Write this email exactly as the reference (details) in the bank transfer.',
+  'modal.whatsapp': 'Paid — Confirm via WhatsApp',
+  'modal.close': 'Cancel',
+
+  // Footer
+  'footer.rights': '© {year} PointArt. All rights reserved.',
+  'footer.privacy': 'Privacy Policy',
+
+  // 404 page
+  'not_found.code': 'Error 404',
+  'not_found.title': 'Page not found',
+  'not_found.desc': 'This page does not exist or has been moved. Check the URL or go back home.',
+  'not_found.home': 'Home page',
+
+  // General error
+  'error.title': 'Something went wrong',
+  'error.desc': 'An unexpected error occurred. Try again or contact us if the problem persists.',
+  'error.retry': 'Try again',
+
+  // Generate
+  'generate.title': 'New pattern',
+  'generate.step1': '1. Craft type',
+  'generate.step2': '2. Canvas / Material',
+  'generate.step3': '3. Number of colors',
+  'generate.step4': '4. Pattern size',
+  'generate.step5': '5. Photo',
+  'generate.craft_cross': 'Cross Stitch',
+  'generate.craft_goblen': 'Tapestry (goblen)',
+  'generate.craft_diamond': 'Diamond painting',
+  'generate.orientation_h': 'Horizontal',
+  'generate.orientation_v': 'Vertical',
+  'generate.width': 'Width (cm)',
+  'generate.height': 'Height (cm)',
+  'generate.colors': 'colors',
+  'generate.upload_label': 'Click to select a photo',
+  'generate.upload_types': 'JPG, PNG, HEIC — max 10MB',
+  'generate.generate_btn': 'Generate pattern',
+  'generate.generating': 'Generating...',
+  'generate.preview': 'Preview',
+  'generate.schema_view': 'Pattern',
+  'generate.final_view': 'Final',
+  'generate.colors_used': 'DMC colors',
+  'generate.save_title': 'Pattern generated!',
+  'generate.save_desc': 'You can download the PDF or view the full pattern in the dashboard.',
+  'generate.view_dashboard': '→ View in Dashboard',
+  'generate.download_pdf': '↓ Download pattern PDF',
+  'generate.download_canvas': '↓ Canvas PDF 1:1',
+  'generate.new_schema': '+ New pattern',
+} as const
+
 type TranslationKey = keyof typeof t_ro
 
 const translations: Record<Lang, Record<TranslationKey, string>> = {
   ro: t_ro as Record<TranslationKey, string>,
   ru: t_ru as Record<TranslationKey, string>,
+  en: t_en as Record<TranslationKey, string>,
 }
 
 export function t(lang: Lang, key: TranslationKey): string {

@@ -24,7 +24,7 @@ export function LanguageToggle({ lang }: Props) {
   }
 
   return (
-    <div className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5" aria-label="Limbă / Язык">
+    <div className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5" aria-label="Limbă / Язык / Language">
       <button
         onClick={() => switchLang('ro')}
         disabled={isPending}
@@ -48,6 +48,18 @@ export function LanguageToggle({ lang }: Props) {
         title="Русский"
       >
         RU
+      </button>
+      <button
+        onClick={() => switchLang('en')}
+        disabled={isPending}
+        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+          lang === 'en'
+            ? 'bg-white text-violet-700 shadow-sm'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+        title="English"
+      >
+        EN
       </button>
     </div>
   )
