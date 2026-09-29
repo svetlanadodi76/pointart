@@ -274,7 +274,7 @@ export default async function DashboardPage() {
                 <p className="text-gray-500 text-sm">
                   Accesul rămâne activ până pe{' '}
                   <strong>{new Date(subscription.current_period_end).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>.
-                  După această dată contul trece pe plan gratuit.
+                  După această dată generarea de scheme noi va fi blocată până la un nou abonament.
                 </p>
               </div>
             </div>

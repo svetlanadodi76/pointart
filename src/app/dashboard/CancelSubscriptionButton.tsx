@@ -10,7 +10,7 @@ export function CancelSubscriptionButton() {
     if (!confirm(
       'Ești sigur că vrei să anulezi abonamentul?\n\n' +
       'Vei păstra accesul până la sfârșitul perioadei plătite. ' +
-      'După expirare, contul trece pe plan gratuit.'
+      'După expirare, generarea de scheme noi va fi blocată până la achiziția unui nou abonament.'
     )) return
 
     setLoading(true)
