@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { t, type Lang } from '@/lib/i18n/translations'
+import { usePaddle } from '@/components/PaddleProvider'
 
 interface Props {
   currentPlan: string | null
   userEmail: string | null
+  userId: string | null
   lang?: Lang
 }
 
@@ -23,11 +25,26 @@ interface PaidPlan {
   badge?: string
 }
 
-export function PricingCards({ currentPlan, userEmail, lang = 'ro' }: Props) {
+export function PricingCards({ currentPlan, userEmail, userId, lang = 'ro' }: Props) {
+  const paddle = usePaddle()
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null)
   const [sending, setSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function handleBuy(plan: PaidPlan & { priceId?: string }) {
+    if (plan.priceId && paddle && userEmail) {
+      paddle.Checkout.open({
+        items: [{ priceId: plan.priceId, quantity: 1 }],
+        customer: { email: userEmail },
+        customData: { userId: userId ?? '', plan: plan.id },
+      })
+    } else {
+      setEmailSent(false)
+      setError(null)
+      setSelectedPlan(plan)
+    }
+  }
 
   const PLANS = [
     {
@@ -59,6 +76,7 @@ export function PricingCards({ currentPlan, userEmail, lang = 'ro' }: Props) {
         t(lang, 'pricing.plan_f_permanent'),
       ],
       cta: `${t(lang, 'home.pricing_buy')} Starter`,
+      priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER || process.env.NEXT_PUBLIC_PADDLE_PRICE_TRACKER || '',
     },
     {
       id: 'pro',
@@ -77,6 +95,7 @@ export function PricingCards({ currentPlan, userEmail, lang = 'ro' }: Props) {
       ],
       cta: `${t(lang, 'home.pricing_buy')} Pro`,
       badge: t(lang, 'pricing.recommended'),
+      priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO || '',
     },
     {
       id: 'premium',
@@ -98,6 +117,7 @@ export function PricingCards({ currentPlan, userEmail, lang = 'ro' }: Props) {
       ],
       cta: t(lang, 'home.pricing_buy_premium'),
       badge: 'AI ✨',
+      priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_PREMIUM || '',
     },
   ]
 
@@ -195,7 +215,7 @@ export function PricingCards({ currentPlan, userEmail, lang = 'ro' }: Props) {
               ) : isPaid ? (
                 userEmail ? (
                   <button
-                    onClick={() => { setEmailSent(false); setError(null); setSelectedPlan(plan as PaidPlan) }}
+                    onClick={() => handleBuy(plan as PaidPlan & { priceId?: string })}
                     className={`w-full py-3 rounded-xl font-semibold transition-colors ${
                       plan.id === 'premium'
                         ? 'bg-amber-500 text-white hover:bg-amber-600'
