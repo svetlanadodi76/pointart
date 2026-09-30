@@ -227,7 +227,7 @@ export function PricingCards({ currentPlan, userEmail, userId, lang = 'ro' }: Pr
                     {plan.cta}
                   </button>
                 ) : (
-                  <Link href="/auth/login" className={`w-full py-3 rounded-xl font-semibold text-center transition-colors block ${
+                  <Link href="/auth/login?redirect=/pricing" className={`w-full py-3 rounded-xl font-semibold text-center transition-colors block ${
                     plan.id === 'premium'
                       ? 'bg-amber-500 text-white hover:bg-amber-600'
                       : plan.badge

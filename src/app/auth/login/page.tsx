@@ -4,8 +4,8 @@ import { getLang } from '@/lib/i18n/getLang'
 import { t } from '@/lib/i18n/translations'
 import { LanguageToggle } from '@/components/LanguageToggle'
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error } = await searchParams
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; redirect?: string }> }) {
+  const { error, redirect } = await searchParams
   const lang = await getLang()
 
   return (
@@ -30,6 +30,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         )}
 
         <form action={login} className="space-y-4">
+          {redirect && <input type="hidden" name="redirect" value={redirect} />}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               {t(lang, 'auth.email')}

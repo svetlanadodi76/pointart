@@ -7,6 +7,7 @@ import { logSecurity } from '@/lib/supabase/logSecurity'
 export async function login(formData: FormData) {
   const supabase = await createClient()
   const email = formData.get('email') as string
+  const redirectTo = (formData.get('redirect') as string) || '/dashboard'
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -15,10 +16,11 @@ export async function login(formData: FormData) {
 
   if (error) {
     await logSecurity('login_failed', email, error.message)
-    redirect('/auth/login?error=Date+incorecte')
+    const redirectParam = redirectTo !== '/dashboard' ? `&redirect=${encodeURIComponent(redirectTo)}` : ''
+    redirect(`/auth/login?error=Date+incorecte${redirectParam}`)
   }
 
-  redirect('/dashboard')
+  redirect(redirectTo)
 }
 
 export async function register(formData: FormData) {
