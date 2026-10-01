@@ -13,12 +13,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Map Paddle price IDs → plan names
 const PRICE_TO_PLAN: Record<string, string> = {
   [process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER || '']: 'starter',
   [process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO || '']: 'pro',
   [process.env.NEXT_PUBLIC_PADDLE_PRICE_PREMIUM || '']: 'premium',
-  [process.env.NEXT_PUBLIC_PADDLE_PRICE_TRACKER || '']: 'starter', // tracker = starter pentru test
+  [process.env.NEXT_PUBLIC_PADDLE_PRICE_TRACKER || '']: 'starter',
 }
 
 export async function POST(req: NextRequest) {
@@ -38,25 +37,54 @@ export async function POST(req: NextRequest) {
   try {
     switch (event.eventType) {
 
-      // Plată unică (Starter) sau prima plată abonament
+      // ── Customers ──────────────────────────────────────────────────────────
+      case EventName.CustomerCreated:
+      case EventName.CustomerUpdated: {
+        const customer = event.data
+        // Look up user by email to link Paddle customer → our user
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', customer.email)
+          .single()
+
+        await supabase.from('customers').upsert(
+          {
+            paddle_customer_id: customer.id,
+            email: customer.email,
+            user_id: profile?.id ?? null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'paddle_customer_id' }
+        )
+        break
+      }
+
+      // ── Transaction completed (one-time / first payment) ───────────────────
       case EventName.TransactionCompleted: {
         const tx = event.data
-        const userId = tx.customData?.userId as string | undefined
+        const userId = (tx.customData as Record<string, string> | null)?.userId
         if (!userId) break
 
         const priceId = tx.items?.[0]?.price?.id ?? ''
+        const productId = tx.items?.[0]?.price?.productId ?? ''
         const plan = PRICE_TO_PLAN[priceId] ?? 'starter'
-        const customerId = tx.customerId ?? null
-        const txId = tx.id
 
-        // Plată unică (starter) — fără subscription ID
+        // Link Paddle customer to our user if not already done
+        if (tx.customerId) {
+          await linkCustomer(tx.customerId, userId, '')
+        }
+
+        // One-time purchase (no subscriptionId)
         if (!tx.subscriptionId) {
           await upsertSubscription({
             userId,
             plan,
             status: 'active',
-            paddleCustomerId: customerId,
-            paddleTransactionId: txId,
+            priceId,
+            productId,
+            paddleCustomerId: tx.customerId ?? null,
+            paddleTransactionId: tx.id,
             currentPeriodEnd: null,
             schemasRemaining: plan === 'starter' ? 3 : null,
           })
@@ -64,21 +92,30 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // Abonament nou creat (Pro / Premium)
+      // ── Subscription created ───────────────────────────────────────────────
       case EventName.SubscriptionCreated: {
         const sub = event.data
-        const userId = sub.customData?.userId as string | undefined
+        const userId = (sub.customData as Record<string, string> | null)?.userId
         if (!userId) break
 
         const priceId = sub.items?.[0]?.price?.id ?? ''
+        const productId = sub.items?.[0]?.price?.productId ?? ''
         const plan = PRICE_TO_PLAN[priceId] ?? 'pro'
+
+        if (sub.customerId) {
+          await linkCustomer(sub.customerId, userId, '')
+        }
 
         await upsertSubscription({
           userId,
           plan,
-          status: 'active',
+          status: paddleStatusToLocal(sub.status),
+          priceId,
+          productId,
           paddleSubscriptionId: sub.id,
           paddleCustomerId: sub.customerId ?? null,
+          scheduledChangeAction: sub.scheduledChange?.action ?? null,
+          scheduledChangeAt: sub.scheduledChange?.effectiveAt ?? null,
           currentPeriodEnd: sub.currentBillingPeriod?.endsAt
             ? new Date(sub.currentBillingPeriod.endsAt).toISOString()
             : null,
@@ -87,22 +124,26 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // Abonament actualizat (reînnoire, upgrade, downgrade)
+      // ── Subscription updated (renewal, plan change, status change) ─────────
       case EventName.SubscriptionUpdated: {
         const sub = event.data
-        const userId = sub.customData?.userId as string | undefined
+        const userId = (sub.customData as Record<string, string> | null)?.userId
         if (!userId) break
 
         const priceId = sub.items?.[0]?.price?.id ?? ''
+        const productId = sub.items?.[0]?.price?.productId ?? ''
         const plan = PRICE_TO_PLAN[priceId] ?? 'pro'
-        const status = sub.status === 'active' ? 'active' : 'expired'
 
         await upsertSubscription({
           userId,
           plan,
-          status,
+          status: paddleStatusToLocal(sub.status),
+          priceId,
+          productId,
           paddleSubscriptionId: sub.id,
           paddleCustomerId: sub.customerId ?? null,
+          scheduledChangeAction: sub.scheduledChange?.action ?? null,
+          scheduledChangeAt: sub.scheduledChange?.effectiveAt ?? null,
           currentPeriodEnd: sub.currentBillingPeriod?.endsAt
             ? new Date(sub.currentBillingPeriod.endsAt).toISOString()
             : null,
@@ -111,18 +152,15 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // Abonament anulat
+      // ── Subscription canceled ──────────────────────────────────────────────
       case EventName.SubscriptionCanceled: {
         const sub = event.data
-        const userId = sub.customData?.userId as string | undefined
+        const userId = (sub.customData as Record<string, string> | null)?.userId
         if (!userId) break
 
         await supabase
           .from('subscriptions')
-          .update({
-            status: 'cancelled',
-            updated_at: new Date().toISOString(),
-          })
+          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
           .eq('user_id', userId)
         break
       }
@@ -135,22 +173,45 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true })
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function paddleStatusToLocal(status: string): string {
+  if (status === 'active') return 'active'
+  if (status === 'trialing') return 'trialing'
+  if (status === 'paused') return 'paused'
+  if (status === 'past_due') return 'past_due'
+  if (status === 'canceled') return 'cancelled'
+  return 'expired'
+}
+
+async function linkCustomer(paddleCustomerId: string, userId: string, email: string) {
+  await supabase.from('customers').upsert(
+    {
+      paddle_customer_id: paddleCustomerId,
+      user_id: userId,
+      email,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'paddle_customer_id', ignoreDuplicates: false }
+  )
+}
+
 async function upsertSubscription({
-  userId,
-  plan,
-  status,
-  paddleSubscriptionId,
-  paddleCustomerId,
-  paddleTransactionId,
-  currentPeriodEnd,
-  schemasRemaining,
+  userId, plan, status, priceId, productId,
+  paddleSubscriptionId, paddleCustomerId, paddleTransactionId,
+  scheduledChangeAction, scheduledChangeAt,
+  currentPeriodEnd, schemasRemaining,
 }: {
   userId: string
   plan: string
   status: string
+  priceId?: string
+  productId?: string
   paddleSubscriptionId?: string | null
   paddleCustomerId?: string | null
   paddleTransactionId?: string | null
+  scheduledChangeAction?: string | null
+  scheduledChangeAt?: string | null
   currentPeriodEnd: string | null
   schemasRemaining: number | null
 }) {
@@ -165,10 +226,14 @@ async function upsertSubscription({
     plan,
     status,
     updated_at: new Date().toISOString(),
+    ...(priceId !== undefined && { price_id: priceId }),
+    ...(productId !== undefined && { product_id: productId }),
     ...(paddleSubscriptionId !== undefined && { paddle_subscription_id: paddleSubscriptionId }),
     ...(paddleCustomerId !== undefined && { paddle_customer_id: paddleCustomerId }),
     ...(paddleTransactionId !== undefined && { paddle_transaction_id: paddleTransactionId }),
-    ...(currentPeriodEnd !== undefined && { current_period_end: currentPeriodEnd }),
+    ...(scheduledChangeAction !== undefined && { scheduled_change_action: scheduledChangeAction }),
+    ...(scheduledChangeAt !== undefined && { scheduled_change_at: scheduledChangeAt }),
+    ...(currentPeriodEnd !== null && { current_period_end: currentPeriodEnd }),
     ...(schemasRemaining !== null && { schemas_remaining: schemasRemaining }),
   }
 
