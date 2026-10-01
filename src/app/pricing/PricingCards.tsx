@@ -38,6 +38,9 @@ export function PricingCards({ currentPlan, userEmail, userId, lang = 'ro' }: Pr
         items: [{ priceId: plan.priceId, quantity: 1 }],
         customer: { email: userEmail },
         customData: { userId: userId ?? '', plan: plan.id },
+        settings: {
+          successUrl: `https://pointart.art/dashboard?payment=success`,
+        },
       })
     } else {
       setEmailSent(false)
