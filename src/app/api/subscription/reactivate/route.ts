@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Paddle, Environment } from '@paddle/paddle-node-sdk'
 
 const paddle = new Paddle(process.env.PADDLE_API_KEY!, {
@@ -36,6 +37,17 @@ export async function POST() {
     console.error('[Reactivate] Paddle error:', err)
     return NextResponse.json({ error: 'Eroare la reactivare Paddle' }, { status: 500 })
   }
+
+  // Update Supabase immediately so the dashboard reflects the change at once
+  // The webhook will arrive shortly after and write the same null values
+  const admin = createAdminClient()
+  await admin.from('subscriptions')
+    .update({
+      scheduled_change_action: null,
+      scheduled_change_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', user.id)
 
   return NextResponse.json({ ok: true })
 }
