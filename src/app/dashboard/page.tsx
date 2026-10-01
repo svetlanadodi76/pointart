@@ -9,6 +9,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { SchemaCard } from './SchemaCard'
 import { CancelSubscriptionButton } from './CancelSubscriptionButton'
+import { ReactivateButton } from './ReactivateButton'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { getLang } from '@/lib/i18n/getLang'
 import { t } from '@/lib/i18n/translations'
@@ -285,9 +286,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
             </div>
-            <Link href="/pricing" className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-violet-700 transition-colors">
-              {t(lang, 'banner.reactivate')}
-            </Link>
+            <ReactivateButton lang={lang} />
           </div>
         )}
 
