@@ -27,8 +27,10 @@ export async function POST(req: NextRequest) {
   let event
   try {
     event = await paddle.webhooks.unmarshal(rawBody, process.env.PADDLE_WEBHOOK_SECRET!, signature)
-  } catch {
-    console.error('[Paddle webhook] Invalid signature')
+  } catch (err) {
+    console.error('[Paddle webhook] Signature verification failed:', err)
+    console.error('[Paddle webhook] Secret present:', !!process.env.PADDLE_WEBHOOK_SECRET)
+    console.error('[Paddle webhook] Signature header:', signature?.slice(0, 30))
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
