@@ -258,6 +258,8 @@ const t_ro = {
   'banner.premium_expiring_desc': 'Reînnoiește pentru a păstra accesul la funcțiile AI',
   'banner.canceled_title': 'Abonament anulat',
   'banner.canceled_desc': 'Accesul rămâne activ până pe {date}. După această dată generarea de scheme noi va fi blocată până la un nou abonament.',
+  'banner.cancel_scheduled_title': 'Abonament programat pentru anulare',
+  'banner.cancel_scheduled_desc': 'Abonamentul tău va fi anulat pe {date}. Vei păstra accesul complet până atunci.',
   'banner.reactivate': 'Reactivează',
 
   // Schema card & viewer
@@ -643,6 +645,8 @@ const t_ru = {
   'banner.premium_expiring_desc': 'Продлите, чтобы сохранить доступ к функциям AI',
   'banner.canceled_title': 'Подписка отменена',
   'banner.canceled_desc': 'Доступ остаётся активным до {date}. После этой даты создание новых схем будет заблокировано до оформления новой подписки.',
+  'banner.cancel_scheduled_title': 'Подписка запланирована к отмене',
+  'banner.cancel_scheduled_desc': 'Ваша подписка будет отменена {date}. До этой даты у вас сохраняется полный доступ.',
   'banner.reactivate': 'Реактивировать',
 
   // Карточки схем и просмотрщик
@@ -1028,6 +1032,8 @@ const t_en = {
   'banner.premium_expiring_desc': 'Renew to keep access to AI features',
   'banner.canceled_title': 'Subscription canceled',
   'banner.canceled_desc': 'Access remains active until {date}. After this date new pattern generation will be blocked until a new subscription.',
+  'banner.cancel_scheduled_title': 'Subscription scheduled for cancellation',
+  'banner.cancel_scheduled_desc': 'Your subscription will be canceled on {date}. You keep full access until then.',
   'banner.reactivate': 'Reactivate',
 
   // Schema cards & viewer

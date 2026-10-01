@@ -267,6 +267,30 @@ export default async function DashboardPage() {
           })()
         )}
 
+        {/* Banner anulare programată — status încă active, dar scheduledChange = cancel */}
+        {(subscription?.plan === 'pro' || subscription?.plan === 'premium') && subscription?.status === 'active' && subscription?.scheduled_change_action === 'cancel' && subscription.scheduled_change_at && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⏳</span>
+              <div>
+                <p className="font-semibold text-orange-800">{t(lang, 'banner.cancel_scheduled_title')}</p>
+                <p className="text-orange-600 text-sm">
+                  {t(lang, 'banner.cancel_scheduled_desc').replace(
+                    '{date}',
+                    new Date(subscription.scheduled_change_at).toLocaleDateString(
+                      lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'ro-RO',
+                      { day: 'numeric', month: 'long', year: 'numeric' }
+                    )
+                  )}
+                </p>
+              </div>
+            </div>
+            <Link href="/pricing" className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-violet-700 transition-colors">
+              {t(lang, 'banner.reactivate')}
+            </Link>
+          </div>
+        )}
+
         {/* Banner abonament anulat — activ până la expirare */}
         {(subscription?.plan === 'pro' || subscription?.plan === 'premium') && subscription?.status === 'canceled' && subscription.current_period_end && (
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">

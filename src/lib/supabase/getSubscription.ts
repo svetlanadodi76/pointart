@@ -8,6 +8,8 @@ export interface Subscription {
   schemas_remaining: number | null
   trial_ends_at: string | null
   current_period_end: string | null
+  scheduled_change_action: string | null
+  scheduled_change_at: string | null
   created_at: string
 }
 
