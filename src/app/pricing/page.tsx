@@ -1,12 +1,46 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Image from 'next/image'
+import { headers } from 'next/headers'
+import { Paddle, Environment } from '@paddle/paddle-node-sdk'
 import { PricingCards } from './PricingCards'
 import { SiteFooter } from '@/components/SiteFooter'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { getLang } from '@/lib/i18n/getLang'
 import { t } from '@/lib/i18n/translations'
 import { TrackView } from '@/components/TrackView'
+
+async function getPaddlePrices(countryCode?: string): Promise<Record<string, string>> {
+  const apiKey = process.env.PADDLE_API_KEY
+  const env = process.env.NEXT_PUBLIC_PADDLE_ENV
+  if (!apiKey || !env) return {}
+
+  const paddle = new Paddle(apiKey, {
+    environment: env === 'sandbox' ? Environment.sandbox : Environment.production,
+  })
+
+  const priceIds = [
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER,
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO,
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_PREMIUM,
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_TRACKER,
+  ].filter(Boolean) as string[]
+
+  if (priceIds.length === 0) return {}
+
+  try {
+    const preview = await paddle.pricingPreview.preview({
+      items: priceIds.map(priceId => ({ priceId, quantity: 1 })),
+      ...(countryCode && { address: { countryCode: countryCode as Parameters<typeof paddle.pricingPreview.preview>[0]['address'] extends { countryCode: infer C } ? C : never } }),
+    })
+    return Object.fromEntries(
+      preview.details.lineItems.map(item => [item.price.id, item.formattedTotals.total])
+    )
+  } catch (err) {
+    console.error('[PricePreview] Failed:', err)
+    return {}
+  }
+}
 
 export default async function PricingPage() {
   const supabase = await createClient()
@@ -21,6 +55,10 @@ export default async function PricingPage() {
       .single()
     if (sub?.status === 'active') currentPlan = sub.plan
   }
+
+  const headersList = await headers()
+  const countryCode = headersList.get('x-vercel-ip-country') ?? undefined
+  const paddlePrices = await getPaddlePrices(countryCode)
 
   const lang = await getLang()
 
@@ -63,6 +101,7 @@ export default async function PricingPage() {
           currentPlan={currentPlan}
           userEmail={user?.email ?? null}
           userId={user?.id ?? null}
+          paddlePrices={paddlePrices}
           lang={lang}
         />
 

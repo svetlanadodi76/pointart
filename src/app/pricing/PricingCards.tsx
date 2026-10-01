@@ -9,6 +9,7 @@ interface Props {
   currentPlan: string | null
   userEmail: string | null
   userId: string | null
+  paddlePrices?: Record<string, string>
   lang?: Lang
 }
 
@@ -25,7 +26,7 @@ interface PaidPlan {
   badge?: string
 }
 
-export function PricingCards({ currentPlan, userEmail, userId, lang = 'ro' }: Props) {
+export function PricingCards({ currentPlan, userEmail, userId, paddlePrices = {}, lang = 'ro' }: Props) {
   const paddle = usePaddle()
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null)
   const [sending, setSending] = useState(false)
@@ -40,6 +41,8 @@ export function PricingCards({ currentPlan, userEmail, userId, lang = 'ro' }: Pr
         customData: { userId: userId ?? '', plan: plan.id },
         settings: {
           successUrl: `https://pointart.art/dashboard?payment=success`,
+          displayMode: 'overlay',
+          variant: 'one-page',
         },
       })
     } else {
@@ -192,7 +195,11 @@ export function PricingCards({ currentPlan, userEmail, userId, lang = 'ro' }: Pr
               <div className="mb-4">
                 <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
                 <div className="mt-2 flex items-baseline gap-2 flex-wrap">
-                  <span className="text-3xl font-bold text-gray-900">{plan.price}</span>
+                  <span className="text-3xl font-bold text-gray-900">
+                    {'priceId' in plan && plan.priceId && paddlePrices[plan.priceId]
+                      ? paddlePrices[plan.priceId]
+                      : plan.price}
+                  </span>
                   {plan.priceMdl && (
                     <span className="text-lg font-semibold text-gray-400">/ {plan.priceMdl}</span>
                   )}

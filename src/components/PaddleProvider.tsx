@@ -13,9 +13,13 @@ export function PaddleProvider({ children }: { children: React.ReactNode }) {
   const [paddle, setPaddle] = useState<Paddle | undefined>()
 
   useEffect(() => {
+    const env = process.env.NEXT_PUBLIC_PADDLE_ENV
+    const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
+    if (!env) throw new Error('NEXT_PUBLIC_PADDLE_ENV is not set')
+    if (!token) throw new Error('NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set')
     initializePaddle({
-      environment: (process.env.NEXT_PUBLIC_PADDLE_ENV ?? 'sandbox') as 'sandbox' | 'production',
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
+      environment: env as 'sandbox' | 'production',
+      token,
     }).then(setPaddle)
   }, [])
 
