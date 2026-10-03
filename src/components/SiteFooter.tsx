@@ -46,6 +46,10 @@ export async function SiteFooter() {
               {t(lang, 'footer.refund')}
             </Link>
             <span>·</span>
+            <a href="mailto:contact@pointart.md" className="hover:text-violet-600 transition-colors">
+              contact@pointart.md
+            </a>
+            <span>·</span>
             <p>{t(lang, 'footer.rights').replace('{year}', String(year))}</p>
           </div>
         </div>
