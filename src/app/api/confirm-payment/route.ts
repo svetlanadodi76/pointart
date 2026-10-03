@@ -15,6 +15,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
     }
 
+    const ALLOWED_PLANS = ['starter', 'pro', 'premium']
+    if (!ALLOWED_PLANS.includes(planId)) {
+      return NextResponse.json({ error: 'Plan invalid' }, { status: 400 })
+    }
+
     const admin = createAdminClient()
     const email = user.email!
 

@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation'
 const COOKIE_NAME = 'admin_pin_session'
 const COOKIE_OPTIONS = {
   httpOnly: true,
+  secure: true,
   sameSite: 'strict' as const,
   path: '/admin',
   maxAge: 60 * 60 * 24 * 30, // 30 zile

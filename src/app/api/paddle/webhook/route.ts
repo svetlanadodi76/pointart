@@ -14,12 +14,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const PRICE_TO_PLAN: Record<string, string> = {
-  [process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER || '']: 'starter',
-  [process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO || '']: 'pro',
-  [process.env.NEXT_PUBLIC_PADDLE_PRICE_PREMIUM || '']: 'premium',
-  [process.env.NEXT_PUBLIC_PADDLE_PRICE_TRACKER || '']: 'starter',
-}
+const PRICE_TO_PLAN: Record<string, string> = Object.fromEntries(
+  [
+    [process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER, 'starter'],
+    [process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO, 'pro'],
+    [process.env.NEXT_PUBLIC_PADDLE_PRICE_PREMIUM, 'premium'],
+    [process.env.NEXT_PUBLIC_PADDLE_PRICE_TRACKER, 'starter'],
+  ].filter(([k]) => k)
+)
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get('paddle-signature') ?? ''

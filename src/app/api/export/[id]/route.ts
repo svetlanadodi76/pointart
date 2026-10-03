@@ -27,8 +27,8 @@ export async function GET(
   if (!schema) return NextResponse.json({ error: 'Schemă negăsită' }, { status: 404 })
 
   const schemaData = schema.schema_data as GeneratedSchema
-  const name = schema.name as string
-  const filename = `${name.replace(/\s+/g, '-')}-schema.json`
+  const name = (schema.name as string).replace(/[^\w\s\-_.()]/g, '').replace(/\s+/g, '-') || 'schema'
+  const filename = `${name}-schema.json`
 
   const exported = {
     craftType: schema.craft_type,

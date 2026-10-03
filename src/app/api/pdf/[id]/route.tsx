@@ -32,7 +32,7 @@ export async function GET(
   const schemaData = schema.schema_data as GeneratedSchema
   const craftType = schema.craft_type as CraftType
   const canvasType = (schema.canvas_type ?? '14CT') as CanvasType
-  const name = schema.name as string
+  const name = (schema.name as string).replace(/[^\w\s\-_.()]/g, '').replace(/\s+/g, '-') || 'schema'
 
   try {
     let buffer: Buffer
@@ -43,7 +43,7 @@ export async function GET(
       buffer = await generateSchemaPdf(schemaData, craftType, canvasType, name)
     }
 
-    const filename = `${name.replace(/\s+/g, '-')}-${type}.pdf`
+    const filename = `${name}-${type}.pdf`
     const body = new Uint8Array(buffer)
 
     return new NextResponse(body, {
