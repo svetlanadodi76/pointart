@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Paddle, Environment, EventName } from '@paddle/paddle-node-sdk'
 import { createClient } from '@supabase/supabase-js'
+import { logSecurity } from '@/lib/supabase/logSecurity'
 
 const paddle = new Paddle(process.env.PADDLE_API_KEY!, {
   environment: process.env.NEXT_PUBLIC_PADDLE_ENV === 'sandbox'
@@ -29,8 +30,8 @@ export async function POST(req: NextRequest) {
     event = await paddle.webhooks.unmarshal(rawBody, process.env.PADDLE_WEBHOOK_SECRET!, signature)
   } catch (err) {
     console.error('[Paddle webhook] Signature verification failed:', err)
-    console.error('[Paddle webhook] Secret present:', !!process.env.PADDLE_WEBHOOK_SECRET)
-    console.error('[Paddle webhook] Signature header:', signature?.slice(0, 30))
+    const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown'
+    await logSecurity('paddle_webhook_invalid_sig', ip, `sig=${signature?.slice(0, 20)}`)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 

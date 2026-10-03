@@ -11,11 +11,12 @@ interface Props {
 }
 
 const EVENT_CONFIG: Record<string, { label: string; color: string }> = {
-  login_failed:       { label: 'Login eșuat',       color: 'bg-red-100 text-red-700' },
-  register_failed:    { label: 'Înregistrare eșuată', color: 'bg-orange-100 text-orange-700' },
-  generation_failed:  { label: 'Eroare generare',   color: 'bg-yellow-100 text-yellow-700' },
-  generation_blocked: { label: 'Generare blocată',  color: 'bg-gray-100 text-gray-600' },
-  admin_pin_failed:   { label: 'PIN admin greșit',  color: 'bg-rose-100 text-rose-700' },
+  login_failed:                { label: 'Login eșuat',            color: 'bg-red-100 text-red-700' },
+  register_failed:             { label: 'Înregistrare eșuată',    color: 'bg-orange-100 text-orange-700' },
+  generation_failed:           { label: 'Eroare generare',        color: 'bg-yellow-100 text-yellow-700' },
+  generation_blocked:          { label: 'Generare blocată',       color: 'bg-gray-100 text-gray-600' },
+  admin_pin_failed:            { label: 'PIN admin greșit',       color: 'bg-rose-100 text-rose-700' },
+  paddle_webhook_invalid_sig:  { label: '⚠️ Webhook semn. invalidă', color: 'bg-red-200 text-red-800' },
 }
 
 export function SecurityLog({ logs }: Props) {
