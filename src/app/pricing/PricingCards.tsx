@@ -62,7 +62,7 @@ export function PricingCards({ currentPlan, userEmail, userId, paddlePrices = {}
       features: [
         t(lang, 'pricing.plan_f_preview'),
         t(lang, 'pricing.plan_f_all_canvas'),
-        lang === 'en' ? '1 pattern' : lang === 'ru' ? '1 схема' : '1 schemă',
+        lang === 'en' ? '3 patterns' : lang === 'ru' ? '3 схемы' : '3 scheme',
       ],
       cta: null,
     },
